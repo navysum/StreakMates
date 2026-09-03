@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { typography } from '@/theme/tokens';
 import { StatusDot } from './StatusDot';
@@ -9,10 +9,13 @@ type Props = {
   metaTone?: 'muted' | 'warn';
   complete: boolean;
   last?: boolean;
+  onToggle?: () => void;
+  onPress?: () => void;
 };
 
-export function HabitRow({ name, meta, metaTone = 'muted', complete, last }: Props) {
+export function HabitRow({ name, meta, metaTone = 'muted', complete, last, onToggle, onPress }: Props) {
   const { colors } = useTheme();
+
   return (
     <View
       style={[
@@ -20,7 +23,13 @@ export function HabitRow({ name, meta, metaTone = 'muted', complete, last }: Pro
         { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
       ]}
     >
-      <View style={styles.info}>
+      <Pressable
+        style={styles.info}
+        onPress={onPress}
+        disabled={!onPress}
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={onPress ? `Open ${name}` : undefined}
+      >
         <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
           {name}
         </Text>
@@ -34,19 +43,29 @@ export function HabitRow({ name, meta, metaTone = 'muted', complete, last }: Pro
             {meta}
           </Text>
         ) : null}
-      </View>
-      <StatusDot complete={complete} />
+      </Pressable>
+
+      <Pressable
+        onPress={onToggle}
+        disabled={!onToggle}
+        hitSlop={12}
+        accessibilityRole="checkbox"
+        accessibilityState={{ checked: complete }}
+        accessibilityLabel={complete ? `Undo ${name}` : `Check in ${name}`}
+      >
+        <StatusDot complete={complete} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 44,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 14,
   },
-  info: { flex: 1, minWidth: 0, gap: 1 },
+  info: { flex: 1, minWidth: 0, gap: 1, paddingVertical: 6 },
 });
