@@ -1,0 +1,143 @@
+import { useEffect, useRef, useState } from 'react';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Field } from '@/components/Field';
+import { Notice } from '@/components/Notice';
+import { Pill } from '@/components/Pill';
+import { useAuth } from '@/auth/AuthProvider';
+import { useProfile, useSetUsername, useUsernameAvailable } from '@/lib/queries';
+import { useTheme } from '@/theme/ThemeProvider';
+import { spacing, typography } from '@/theme/tokens';
+
+const VALID = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
+
+export default function UsernameScreen() {
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const { userId } = useAuth();
+
+  const profile = useProfile(userId);
+  const check = useUsernameAvailable();
+  const save = useSetUsername(userId);
+
+  const [username, setUsername] = useState('');
+  const [available, setAvailable] = useState<boolean | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const first = !profile.data?.username;
+  const wellFormed = VALID.test(username);
+  const unchanged = username === (profile.data?.username ?? '');
+
+  useEffect(() => {
+    if (profile.data?.username) setUsername(profile.data.username);
+  }, [profile.data?.username]);
+
+  // Check as they type, but not on every keystroke.
+  useEffect(() => {
+    setAvailable(null);
+    setError(null);
+    if (!wellFormed || unchanged) return;
+
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      check
+        .mutateAsync(username)
+        .then(setAvailable)
+        .catch(() => setAvailable(null));
+    }, 400);
+
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [username, wellFormed, unchanged]);
+
+  async function onSave() {
+    setError(null);
+    try {
+      await save.mutateAsync(username);
+      if (first) router.replace('/');
+      else if (router.canGoBack()) router.back();
+      else router.replace('/');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not save that username.');
+      setAvailable(false);
+    }
+  }
+
+  return (
+    <ScrollView
+      style={{ backgroundColor: colors.bgPage }}
+      contentContainerStyle={[
+        styles.body,
+        { paddingTop: insets.top + (first ? 60 : 24), paddingBottom: insets.bottom + 24 },
+      ]}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.head}>
+        <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>
+          {first ? 'Pick a username' : 'Your username'}
+        </Text>
+        <Text style={[typography.body, styles.lede, { color: colors.textSecondary }]}>
+          {first
+            ? 'This is how friends will recognise you in a group. It has to be yours alone — no two people in the app can share one.'
+            : 'Changing this changes how you appear in every group you are in.'}
+        </Text>
+      </View>
+
+      <Card>
+        <Field
+          label="Username"
+          value={username}
+          onChangeText={(t) => setUsername(t.replace(/[^a-zA-Z0-9_]/g, '').slice(0, 20))}
+          placeholder="craig"
+          autoCapitalize="none"
+          autoCorrect={false}
+          autoFocus
+          maxLength={20}
+          last
+        />
+      </Card>
+
+      <View style={styles.status}>
+        {!username ? null : !wellFormed ? (
+          <Pill label="3–20 chars, start with a letter" tone="warn" />
+        ) : unchanged ? (
+          <Pill label="Unchanged" />
+        ) : check.isPending || available === null ? (
+          <Pill label="Checking…" />
+        ) : available ? (
+          <Pill label={`@${username} is free`} tone="good" />
+        ) : (
+          <Pill label="Already taken" tone="bad" />
+        )}
+      </View>
+
+      <Button
+        label={first ? 'Claim it' : 'Save username'}
+        variant="primary"
+        busy={save.isPending}
+        disabled={!wellFormed || unchanged || available !== true}
+        onPress={onSave}
+      />
+
+      {error ? <Notice label="Could not save" tone="bad">{error}</Notice> : null}
+
+      <Notice label="Why a username">
+        {'Display names come from Google and repeat — two friends called Craig look identical on a board. A username is checked against everyone in the app, so yours is only ever yours.'}
+      </Notice>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  body: { paddingHorizontal: spacing.page, gap: spacing.card },
+  head: { gap: 8, marginBottom: 4 },
+  lede: { lineHeight: 19 },
+  status: { minHeight: 24, justifyContent: 'center' },
+});

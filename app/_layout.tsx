@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
+import { useProfile } from '@/lib/queries';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -25,18 +26,42 @@ const queryClient = new QueryClient({
 /** Sends people to sign-in when signed out, and away from it once signed in. */
 function AuthGate() {
   const { colors, scheme } = useTheme();
-  const { loading, session, configured } = useAuth();
+  const { loading, session, configured, userId } = useAuth();
+  const profile = useProfile(userId);
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
     if (loading) return;
     const onSignIn = segments[0] === 'sign-in';
+    const onUsername = segments[0] === 'username';
 
     // With no Supabase project yet, sign-in doubles as the setup screen.
-    if ((!session || !configured) && !onSignIn) router.replace('/sign-in');
-    else if (session && configured && onSignIn) router.replace('/');
-  }, [loading, session, configured, segments, router]);
+    if ((!session || !configured) && !onSignIn) {
+      router.replace('/sign-in');
+      return;
+    }
+    if (!session || !configured) return;
+
+    if (onSignIn) {
+      router.replace('/');
+      return;
+    }
+
+    // Everyone needs a handle before anyone else can see them in a group.
+    // Wait for the profile so a slow first load doesn't bounce people here.
+    if (!profile.isSuccess) return;
+    if (!profile.data?.username && !onUsername) router.replace('/username');
+    else if (profile.data?.username && onUsername && !router.canGoBack()) router.replace('/');
+  }, [
+    loading,
+    session,
+    configured,
+    segments,
+    router,
+    profile.isSuccess,
+    profile.data?.username,
+  ]);
 
   return (
     <>
@@ -51,6 +76,7 @@ function AuthGate() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
+        <Stack.Screen name="username" />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="manage" options={{ presentation: 'modal' }} />
