@@ -8,9 +8,10 @@ auth and data.
 
 - **Full plan:** [`PLAN.md`](./PLAN.md) · rendered with screen mockups in [`docs/plan.html`](./docs/plan.html)
 - **LifeOS sync (proposed, not built):** [`docs/lifeos-sync.md`](./docs/lifeos-sync.md)
-- **Status:** Phases 0–3 complete — app shell and design system, Google sign-in, private
-  habits with check-ins and streaks, groups with invite codes, and shared habits with a live
-  group board. The leaderboard, activity feed and reactions are Phase 4.
+- **Status:** Phases 0–4 complete — app shell and design system, Google sign-in, private
+  habits with check-ins and streaks, groups with invite codes, shared habits with a live
+  group board, and the social layer: activity feed, reactions and the group leaderboard.
+  Push reminders, the offline queue and account deletion are Phase 5.
 
 ---
 
@@ -85,10 +86,11 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 | | |
 | --- | --- |
-| `supabase/migrations/` | `0001` tables, security policies and invite codes; `0002` live updates; `0003` unique usernames. See [`supabase/README.md`](./supabase/README.md) |
+| `supabase/migrations/` | `0001` tables, security policies and invite codes; `0002` live updates; `0003` unique usernames; `0004` reactions and nudges. See [`supabase/README.md`](./supabase/README.md) |
 | `app/_layout.tsx` | Fonts, splash, theme, data cache, and the redirect to sign-in when signed out |
 | `app/sign-in.tsx` | Continue with Google — doubles as the setup notice until Supabase is connected |
 | `app/(tabs)/` | Today (Mine / Shared), Groups, Activity, You |
+| `src/lib/leaderboard.ts` | Consistency, group streak, perfect days, habit rates — pure, tested |
 | `app/habit/` | Create and edit a habit; archive, restore and delete live on the edit screen |
 | `app/manage.tsx` | Reorder, archive and restore in one place |
 | `app/group/` | Create a group, join by code, and the group screen: today's board, shared habits, members, invite code |
@@ -113,6 +115,20 @@ check in, and row-level security applies to those events too, so nothing arrives
 the viewer could not already read.
 
 Making a private habit shared asks first — that can't be un-seen.
+
+### How the leaderboard counts
+
+**Consistency, not volume:** completed ÷ what was *owed* of you. Tracking more
+habits is not an advantage, and joining a group late is not a penalty — nothing is
+expected of you before you joined, before a habit existed, or after it was
+archived. Someone owed nothing scores `—`, not 0% and not 100%.
+
+**Only shared habits count.** A private habit feeding a group percentage would
+leak it: watch a score move on a day someone logged nothing shared, and you have
+learned something they chose not to show you.
+
+The collective numbers sit above the ranking on purpose — a group streak is
+something to win together before the part where you beat each other.
 
 ### How check-ins work
 

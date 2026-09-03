@@ -27,6 +27,8 @@ people in, and tell the app where the project is.
    which switches on the live updates the group board uses.
 5. Repeat with [`migrations/0003_usernames.sql`](./migrations/0003_usernames.sql),
    which adds the unique-username handle.
+6. Repeat with [`migrations/0004_social.sql`](./migrations/0004_social.sql),
+   which adds reactions and nudges.
 
    Run the files in order, and each one only once.
 
@@ -167,6 +169,8 @@ bypasses every policy. It is not used anywhere in this project.
 | `group_members` | Members of that group | Yourself to leave; the owner to remove |
 | `habits` | The owner, or members of its group | The owner; group habits by any member |
 | `check_ins` | Anyone who can see the habit | Only your own, dated within 3 days |
+| `reactions` | Anyone who can see the check-in | Only your own |
+| `nudges` | Only the sender and the recipient | Only as yourself, to someone you share a group with, once per habit per day |
 | `invite_code_attempts` | Nobody | Nobody (written by the server only) |
 
 Two details worth knowing, because both are easy to get wrong:

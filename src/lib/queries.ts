@@ -2,7 +2,17 @@ import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { addDays, toLocalDate } from './date';
-import type { CheckIn, Group, GroupMember, GroupPreview, Habit, Profile } from './types';
+import type {
+  CheckIn,
+  Group,
+  GroupMember,
+  GroupPreview,
+  Habit,
+  Nudge,
+  Profile,
+  Reaction,
+  ReactionEmoji,
+} from './types';
 
 /** Streaks need contiguous history; a year and a bit is far past any real one. */
 const HISTORY_DAYS = 400;
@@ -18,6 +28,9 @@ export const keys = {
   checkIns: ['check-ins'] as const,
   groups: ['groups'] as const,
   members: (groupId: string) => ['group-members', groupId] as const,
+  people: ['people'] as const,
+  reactions: ['reactions'] as const,
+  nudges: ['nudges'] as const,
 };
 
 // ---------------------------------------------------------------- profile
@@ -190,7 +203,7 @@ export function useCheckIns() {
     queryFn: async (): Promise<CheckIn[]> => {
       const { data, error } = await db()
         .from('check_ins')
-        .select('id, habit_id, user_id, local_date, note')
+        .select('id, habit_id, user_id, local_date, note, created_at')
         .gte('local_date', addDays(toLocalDate(), -HISTORY_DAYS))
         .order('local_date', { ascending: false });
       if (error) throw error;
@@ -243,6 +256,9 @@ export function useRealtimeCheckIns() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () =>
         qc.invalidateQueries({ queryKey: keys.habits }),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () =>
+        qc.invalidateQueries({ queryKey: keys.reactions }),
       )
       .subscribe();
 
@@ -303,6 +319,7 @@ export function useToggleCheckIn(userId: string | null) {
                 user_id: userId ?? '',
                 local_date: date,
                 note: null,
+                created_at: new Date().toISOString(),
               },
               ...old,
             ]
@@ -319,6 +336,144 @@ export function useToggleCheckIn(userId: string | null) {
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: keys.checkIns }),
+  });
+}
+
+// ---------------------------------------------------------------- people
+
+/**
+ * Everyone whose name might need rendering: yourself, plus anyone sharing a
+ * group with you. The policy decides that, so this needs no filter of its own.
+ */
+export function usePeople() {
+  return useQuery({
+    queryKey: keys.people,
+    queryFn: async (): Promise<Profile[]> => {
+      const { data, error } = await db()
+        .from('profiles')
+        .select('id, username, display_name, avatar_url, timezone');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function peopleById(people: Profile[] | undefined) {
+  return new Map((people ?? []).map((p) => [p.id, p]));
+}
+
+// ---------------------------------------------------------------- reactions
+
+export function useReactions() {
+  return useQuery({
+    queryKey: keys.reactions,
+    queryFn: async (): Promise<Reaction[]> => {
+      const { data, error } = await db()
+        .from('reactions')
+        .select('check_in_id, user_id, emoji');
+      if (error) throw error;
+      return (data ?? []) as Reaction[];
+    },
+  });
+}
+
+/** Reactions on a check-in, grouped by emoji, with whether you are in each. */
+export function reactionSummary(reactions: Reaction[] | undefined, userId: string | null) {
+  const byCheckIn = new Map<string, Map<ReactionEmoji, { count: number; mine: boolean }>>();
+  for (const r of reactions ?? []) {
+    let emojis = byCheckIn.get(r.check_in_id);
+    if (!emojis) byCheckIn.set(r.check_in_id, (emojis = new Map()));
+    const existing = emojis.get(r.emoji) ?? { count: 0, mine: false };
+    emojis.set(r.emoji, {
+      count: existing.count + 1,
+      mine: existing.mine || r.user_id === userId,
+    });
+  }
+  return byCheckIn;
+}
+
+export function useToggleReaction(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      checkInId,
+      emoji,
+      on,
+    }: {
+      checkInId: string;
+      emoji: ReactionEmoji;
+      on: boolean;
+    }) => {
+      if (on) {
+        const { error } = await db()
+          .from('reactions')
+          .upsert(
+            { check_in_id: checkInId, user_id: userId, emoji },
+            { onConflict: 'check_in_id,user_id,emoji', ignoreDuplicates: true },
+          );
+        if (error) throw error;
+      } else {
+        const { error } = await db()
+          .from('reactions')
+          .delete()
+          .eq('check_in_id', checkInId)
+          .eq('user_id', userId!)
+          .eq('emoji', emoji);
+        if (error) throw error;
+      }
+    },
+    // Optimistic, like the check-in circle: a reaction should feel instant.
+    onMutate: async ({ checkInId, emoji, on }) => {
+      await qc.cancelQueries({ queryKey: keys.reactions });
+      const previous = qc.getQueryData<Reaction[]>(keys.reactions);
+      qc.setQueryData<Reaction[]>(keys.reactions, (old = []) =>
+        on
+          ? [...old, { check_in_id: checkInId, user_id: userId ?? '', emoji }]
+          : old.filter(
+              (r) => !(r.check_in_id === checkInId && r.emoji === emoji && r.user_id === userId),
+            ),
+      );
+      return { previous };
+    },
+    onError: (_e, _v, context) => {
+      if (context?.previous) qc.setQueryData(keys.reactions, context.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.reactions }),
+  });
+}
+
+// ---------------------------------------------------------------- nudges
+
+export function useNudges() {
+  return useQuery({
+    queryKey: keys.nudges,
+    queryFn: async (): Promise<Nudge[]> => {
+      const { data, error } = await db()
+        .from('nudges')
+        .select('id, habit_id, from_user, to_user, nudge_day, created_at')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useSendNudge(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ habitId, toUser }: { habitId: string; toUser: string }) => {
+      const { error } = await db()
+        .from('nudges')
+        .insert({ habit_id: habitId, from_user: userId, to_user: toUser });
+      if (error) {
+        // The one-a-day index is the rate limit; say so in words.
+        if (error.code === '23505') {
+          throw new Error('You have already nudged them about this today.');
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.nudges }),
   });
 }
 
