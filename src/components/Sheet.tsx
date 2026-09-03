@@ -1,7 +1,7 @@
 import { Modal, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing, typography } from '@/theme/tokens';
+import { typography } from '@/theme/tokens';
 
 export type SheetAction = {
   label: string;
@@ -29,7 +29,7 @@ export function Sheet({
   const insets = useSafeAreaInsets();
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable
         style={styles.backdrop}
         onPress={onClose}
@@ -40,11 +40,7 @@ export function Sheet({
         <View
           style={[
             styles.sheet,
-            {
-              backgroundColor: colors.bgSurface,
-              borderColor: colors.borderDefault,
-              marginBottom: insets.bottom + spacing.page,
-            },
+            { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
           ]}
         >
           {title ? (
@@ -95,11 +91,13 @@ export function Sheet({
             {
               backgroundColor: colors.bgSurface,
               borderColor: colors.borderDefault,
-              marginBottom: insets.bottom + spacing.page,
+              marginBottom: insets.bottom + 10,
             },
           ]}
         >
-          <Text style={[typography.rowName, { color: colors.textSecondary }]}>Cancel</Text>
+          <Text style={[typography.rowName, styles.cancelLabel, { color: colors.textSecondary }]}>
+            Cancel
+          </Text>
         </Pressable>
       </View>
     </Modal>
@@ -115,14 +113,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
-  dock: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: spacing.page, gap: 8 },
-  sheet: { borderWidth: 1, borderRadius: radius.card, overflow: 'hidden' },
-  title: { paddingHorizontal: 14, paddingTop: 12, paddingBottom: 8 },
-  row: { paddingHorizontal: 14, paddingVertical: 14, gap: 2 },
+  dock: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: 12, gap: 8 },
+  sheet: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
+  title: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
+  row: { paddingHorizontal: 16, paddingVertical: 15, gap: 3 },
   cancel: {
     borderWidth: 1,
-    borderRadius: radius.card,
-    paddingVertical: 14,
+    borderRadius: 14,
+    paddingVertical: 16,
     alignItems: 'center',
   },
+  cancelLabel: { fontWeight: '600' },
 });
