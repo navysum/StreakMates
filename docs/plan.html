@@ -151,7 +151,7 @@
   .cap-d{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:3px}
 
   /* ---------- the device ---------- */
-  .phone{width:250px;height:508px;background:var(--bg-page);
+  .phone{width:250px;height:540px;background:var(--bg-page);
     border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;
     display:flex;flex-direction:column}
   .status{display:flex;justify-content:space-between;padding:9px 16px 4px;
@@ -250,6 +250,30 @@
   /* mark */
   .mark{width:40px;height:40px;border-radius:50%;border:3px solid var(--green);
     border-right-color:var(--green-faint);margin:0 auto}
+
+  /* ---------- leaderboard ---------- */
+  .lrow{display:grid;grid-template-columns:14px 18px 1fr auto;align-items:center;gap:9px;
+    min-height:46px;border-bottom:1px solid var(--border-default)}
+  .lrow:last-child{border-bottom:0}
+  .rank{font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text-muted);text-align:right}
+  .lrow.lead .rank{color:var(--green)}
+  .lmain{min-width:0;display:flex;flex-direction:column;gap:5px}
+  .lname{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bar{display:block;height:3px;border-radius:2px;background:var(--neutral-chart);overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--green)}
+  .bar i.low{background:var(--amber)}
+  .lend{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+  .lend b{font-family:var(--font-mono);font-size:12px;font-weight:600;font-variant-numeric:tabular-nums}
+  .chip{font-family:var(--font-mono);font-size:8px;font-weight:600;padding:1px 5px;border-radius:999px;
+    background:var(--bg-surface-muted);color:var(--text-muted)}
+  .chip.up{background:var(--green-soft);color:var(--green)}
+  .chip.down{background:var(--amber-soft);color:var(--amber)}
+  .srow{min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    border-bottom:1px solid var(--border-default)}
+  .srow:last-child{border-bottom:0}
+  .srow span{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted)}
+  .srow b{font-size:11px;font-weight:600;text-align:right}
 
   /* ---------- swatches ---------- */
   .swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-top:6px}
@@ -377,7 +401,7 @@
   <div class="wrap" style="padding-top:34px;padding-bottom:18px">
     <div class="sec-label">03 · Screens</div>
     <h2>What it looks like</h2>
-    <p class="sec-sub">Six screens is the whole app, drawn at true scale in the portal's own vocabulary. Swipe sideways.</p>
+    <p class="sec-sub">Eight screens is the whole app, drawn at true scale in the portal's own vocabulary. Swipe sideways.</p>
   </div>
   <div class="rail">
 
@@ -426,6 +450,7 @@
         <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody">
           <div><div class="ptitle">The Gym Rats</div><div class="peyebrow">4 members · code 7KQ2FM</div></div>
+          <div class="seg"><span class="on">Board</span><span>Leaderboard</span></div>
           <div class="card">
             <div class="card-h"><h4>Today's board</h4><span class="lnk">Week</span></div>
             <div class="brow head">
@@ -448,6 +473,56 @@
         <div class="nav"><a><i class="ico"></i>Today</a><a class="active"><i class="ico"></i>Groups</a><a><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
       </div>
       <figcaption><div class="cap-t">Group board</div><p class="cap-d">Habits down, people across. The amber rings are the product — that's the social pressure.</p></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+        <div class="pbody">
+          <div><div class="ptitle">The Gym Rats</div><div class="peyebrow">Week of 1 Sep · shared habits only</div></div>
+          <div class="seg"><span>Board</span><span class="on">Leaderboard</span></div>
+          <div class="stats">
+            <div class="stat"><span>Group streak</span><strong class="pos">9</strong></div>
+            <div class="stat"><span>Perfect days</span><strong>4</strong></div>
+            <div class="stat"><span>Group rate</span><strong>71%</strong></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h4>Consistency</h4><span class="lnk">This week</span></div>
+            <div class="lrow lead"><span class="rank">1</span><span class="av" style="background:#3f6248">C</span><span class="lmain"><span class="lname">Craig</span><span class="bar"><i style="width:92%"></i></span></span><span class="lend"><b>92%</b><span class="chip up">▲ 1</span></span></div>
+            <div class="lrow"><span class="rank">2</span><span class="av" style="background:#a46f2b">M</span><span class="lmain"><span class="lname">Maya</span><span class="bar"><i style="width:86%"></i></span></span><span class="lend"><b>86%</b><span class="chip">—</span></span></div>
+            <div class="lrow"><span class="rank">3</span><span class="av" style="background:#6c4f80">R</span><span class="lmain"><span class="lname">Rae</span><span class="bar"><i style="width:64%"></i></span></span><span class="lend"><b>64%</b><span class="chip up">▲ 24</span></span></div>
+            <div class="lrow"><span class="rank">4</span><span class="av" style="background:#3f5a80">S</span><span class="lmain"><span class="lname">Sam</span><span class="bar"><i class="low" style="width:38%"></i></span></span><span class="lend"><b>38%</b><span class="chip down">▼ 2</span></span></div>
+          </div>
+          <div class="grow"></div>
+        </div>
+        <div class="nav"><a><i class="ico"></i>Today</a><a class="active"><i class="ico"></i>Groups</a><a><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
+      </div>
+      <figcaption><div class="cap-t">Leaderboard</div><p class="cap-d">Ranked on consistency, not volume — so tracking eight habits doesn't beat tracking two. Private habits never count.</p></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+        <div class="pbody">
+          <div><div class="ptitle">Habit stats</div><div class="peyebrow">The Gym Rats · last 30 days</div></div>
+          <div class="card">
+            <div class="card-h"><h4>Group completion</h4><span class="lnk">30d</span></div>
+            <div class="lrow" style="grid-template-columns:1fr auto;min-height:40px"><span class="lmain"><span class="lname">Cook dinner</span><span class="bar"><i style="width:96%"></i></span></span><span class="lend"><b>96%</b><span class="chip up">Strongest</span></span></div>
+            <div class="lrow" style="grid-template-columns:1fr auto;min-height:40px"><span class="lmain"><span class="lname">Gym session</span><span class="bar"><i style="width:79%"></i></span></span><span class="lend"><b>79%</b></span></div>
+            <div class="lrow" style="grid-template-columns:1fr auto;min-height:40px"><span class="lmain"><span class="lname">5 km run</span><span class="bar"><i style="width:61%"></i></span></span><span class="lend"><b>61%</b></span></div>
+            <div class="lrow" style="grid-template-columns:1fr auto;min-height:40px"><span class="lmain"><span class="lname">In bed by 11</span><span class="bar"><i class="low" style="width:29%"></i></span></span><span class="lend"><b>29%</b><span class="chip down">Needs work</span></span></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h4>Standouts</h4></div>
+            <div class="srow"><span>Longest streak</span><b>Craig · 12 days</b></div>
+            <div class="srow"><span>Most improved</span><b>Rae · ▲ 24%</b></div>
+            <div class="srow"><span>Never missed</span><b>Cook dinner</b></div>
+          </div>
+          <div class="grow"></div>
+        </div>
+        <div class="nav"><a><i class="ico"></i>Today</a><a class="active"><i class="ico"></i>Groups</a><a><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
+      </div>
+      <figcaption><div class="cap-t">Habit stats</div><p class="cap-d">People get ranked; habits get diagnosed. One at 29% across everyone is a badly-set target, not four lazy people.</p></figcaption>
     </figure>
 
     <figure class="shot">
@@ -558,7 +633,7 @@
       <div class="tbl"><h4>profiles</h4><ul><li><b>id</b> uuid → auth user</li><li><b>display_name</b> text</li><li><b>avatar_url</b> text</li><li><b>timezone</b> text</li></ul><span class="n">Created automatically the first time someone signs in with Google.</span></div>
       <div class="tbl"><h4>groups</h4><ul><li><b>id</b> uuid</li><li><b>name</b> text</li><li><b>emoji</b> text</li><li><b>invite_code</b> unique</li><li><b>created_by</b> uuid</li></ul><span class="n">The invite code lives here and can be rotated by the owner.</span></div>
       <div class="tbl"><h4>group_members</h4><ul><li><b>group_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>role</b> owner|member</li><li><b>joined_at</b> timestamptz</li></ul><span class="n">Key is the pair, so nobody joins twice. This table decides who sees what.</span></div>
-      <div class="tbl"><h4>habits</h4><ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily|weekly|days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>archived_at</b> timestamptz</li></ul><span class="n">group_id null = private, set = shared. That column is the whole feature.</span></div>
+      <div class="tbl"><h4>habits</h4><ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily|weekly|days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>created_at</b> timestamptz</li><li><b>archived_at</b> timestamptz</li></ul><span class="n">group_id null = private, set = shared. That column is the whole feature.</span></div>
       <div class="tbl"><h4>check_ins</h4><ul><li><b>id</b> uuid</li><li><b>habit_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>local_date</b> date</li><li><b>note</b> text</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Unique on (habit, user, date). One tap per person per day, and safe to retry.</span></div>
       <div class="tbl"><h4>reactions</h4><ul><li><b>check_in_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>emoji</b> text</li></ul><span class="n">🔥 and 👏 on a friend's check-in. One of each per person.</span></div>
       <div class="tbl"><h4>nudges</h4><ul><li><b>habit_id</b> uuid</li><li><b>from_user</b> uuid</li><li><b>to_user</b> uuid</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Rate-limit to one per person per habit per day or friendships will suffer.</span></div>
@@ -616,7 +691,49 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-label">08 · Pitfalls</div>
+    <div class="sec-label">08 · Leaderboard</div>
+    <h2>Ranking the group without wrecking it</h2>
+    <p class="sec-sub">A leaderboard is the fastest way to make a habit app fun, and the fastest way to make people quit it. The difference is entirely in what you measure.</p>
+    <div class="stack">
+      <div class="note accent">
+        <span class="h">No new tables</span>
+        <p>Every figure on these two screens is derived from <code>check_ins</code> — the same rows the group board already reads. If the leaderboard needed a new table, the core model would be wrong.</p>
+      </div>
+
+      <h3 style="margin-top:6px">Rank consistency, not volume</h3>
+      <p>Counting check-ins rewards whoever tracks the most habits. Someone with two habits they never miss would sit below someone with eight they half-do. Rank on <strong>completed ÷ expected</strong> instead, as a percentage, and the board is fair no matter how many habits each person carries.</p>
+      <p>“Expected” is the only genuinely fiddly part. For each person and each shared habit, count the days in the window where all of these hold: the habit existed and wasn't archived, the person had already joined the group, and the day matches the habit's cadence. Habits with a weekly target aren't per-day at all — those are <code>completed ÷ (weeks × target)</code>. Getting this right is what stops someone who joined on Friday from appearing to have failed all week.</p>
+
+      <div class="note caution">
+        <span class="h">Privacy — non-negotiable</span>
+        <p>Only <strong>shared</strong> habits count toward any group figure. If private habits fed the percentage, the leaderboard would leak them: watch someone's score move on a day they logged nothing shared, and you've learned something they chose not to show you. The permission rules above already hide the rows; the maths has to respect them too.</p>
+      </div>
+
+      <h3>Make last place survivable</h3>
+      <p>Permanent last place is how people leave. Three things fix it, and all three are cheap:</p>
+      <ol class="steps" style="margin-top:10px">
+        <li><b>Rank a week, not all time.</b> Everyone starts level on Monday, so one bad stretch isn't a permanent identity.</li>
+        <li><b>Show most improved beside the ranking.</b> A second way to win, and the only one available to the person at the bottom. Rae is third on the board and the best story on the screen.</li>
+        <li><b>Put a collective number above the competitive one.</b> The group streak — consecutive days where everyone hit at least one shared habit — makes the top of the screen something you win together before the part where you beat each other.</li>
+      </ol>
+
+      <h3>Rank people, diagnose habits</h3>
+      <p>This is the line that keeps the feature kind. People get a rank and a percentage, and no one is ever labelled “worst”. Habits get judged bluntly, because a habit can't be offended and because the judgement is useful: <strong>a habit sitting at 29% across the whole group is a badly-set target, not four lazy people.</strong> That's the group's cue to move the time, lower the target, or drop it — so the “worst habit” tile should offer exactly those three buttons rather than just naming and shaming.</p>
+
+      <div class="note caution">
+        <span class="h">Guard rail — backfilling</span>
+        <p>If people can log any past date, the leaderboard is won by whoever backfills a month on Sunday night. But you can't simply ban late writes, because the offline queue legitimately sends yesterday's check-in today. The distinction is already in the table: <code>local_date</code> is the day it counts for, <code>created_at</code> is when it arrived. Let the offline queue write freely, and cap <em>manual</em> backdating at about three days with a check on the insert policy.</p>
+      </div>
+
+      <h3>Where to compute it</h3>
+      <p>Start on the phone. The group board already fetches this week's check-ins, so the weekly ranking is arithmetic on data you're holding — no new query, and it updates live with everything else. Move it to a <code>group_leaderboard(group_id, since)</code> database function when you want all-time figures or when a group gets big enough that pulling every row stops being sensible. Doing it in that order means the feature ships in Phase 4 and gets optimised only if it needs to be.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">09 · Pitfalls</div>
     <h2>Five things that will bite you</h2>
     <p class="sec-sub">Every one is cheap to handle now and expensive to retrofit.</p>
     <ul class="gotchas">
@@ -631,14 +748,14 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-label">09 · Roadmap</div>
+    <div class="sec-label">10 · Roadmap</div>
     <h2>Build order</h2>
     <p class="sec-sub">Each phase ends with something you can open on your own phone. Never build two at once.</p>
     <div class="phase"><span class="p">PHASE 0</span><span><span class="t">Skeleton</span><span class="d">Expo app running on your phone, Supabase project created, <code>theme.ts</code> ported and both fonts loading, tab navigation with four empty screens.</span><span class="s">Ends with: an app icon on your home screen.</span></span></div>
     <div class="phase"><span class="p">PHASE 1</span><span><span class="t">Login and private habits</span><span class="d">Google sign-in, profile row on first launch, create a habit, tap to check in, streak counted. No sharing yet.</span><span class="s">Ends with: a habit tracker you'd use alone.</span></span></div>
     <div class="phase"><span class="p">PHASE 2</span><span><span class="t">Groups and codes</span><span class="d">Create a group, generate the code, join by code, member list. Permission rules written and tested with two real accounts.</span><span class="s">Ends with: your friend's face in your app.</span></span></div>
     <div class="phase"><span class="p">PHASE 3</span><span><span class="t">Shared habits</span><span class="d">Group habits, the Shared tab, and the board grid. Live updates so a friend's tick appears without a refresh.</span><span class="s">Ends with: the actual product.</span></span></div>
-    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit. This is what turns a tool into something people open daily.</span><span class="s">Ends with: a reason to come back.</span></span></div>
+    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit, and the weekly leaderboard plus habit stats. This is what turns a tool into something people open daily.</span><span class="s">Ends with: a reason to come back.</span></span></div>
     <div class="phase"><span class="p">PHASE 5</span><span><span class="t">Reminders and polish</span><span class="d">Push notifications, offline queue, empty states, the heatmap, editing and archiving habits, account deletion.</span><span class="s">Ends with: something you can hand to a stranger.</span></span></div>
     <div class="phase"><span class="p">PHASE 6</span><span><span class="t">Ship it</span><span class="d">Sign in with Apple, privacy policy, store screenshots, both store listings, a TestFlight round with the group you built it for.</span><span class="s">Ends with: a link you can text people.</span></span></div>
   </div>
