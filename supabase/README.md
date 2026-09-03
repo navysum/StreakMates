@@ -24,8 +24,11 @@ people in, and tell the app where the project is.
    copy the whole file, and paste it into the editor.
 3. Press **Run**.
 4. Repeat with [`migrations/0002_realtime.sql`](./migrations/0002_realtime.sql),
-   which switches on the live updates the group board uses. Run the files in
-   order, and each one only once.
+   which switches on the live updates the group board uses.
+5. Repeat with [`migrations/0003_usernames.sql`](./migrations/0003_usernames.sql),
+   which adds the unique-username handle.
+
+   Run the files in order, and each one only once.
 
 You should see *Success. No rows returned*. That one file creates every table,
 every security rule, and the invite-code functions.
@@ -159,6 +162,7 @@ bypasses every policy. It is not used anywhere in this project.
 | Table | Who can read | Who can write |
 | --- | --- | --- |
 | `profiles` | You, plus anyone sharing a group with you | Only your own |
+| `profiles.username` | — | Unique across the whole app, enforced by an index |
 | `groups` | Members only | The owner |
 | `group_members` | Members of that group | Yourself to leave; the owner to remove |
 | `habits` | The owner, or members of its group | The owner; group habits by any member |

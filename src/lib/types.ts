@@ -3,6 +3,8 @@ export type HabitColor = 'green' | 'amber' | 'blue' | 'purple' | 'teal' | 'coral
 
 export type Profile = {
   id: string;
+  /** Unique across the whole app. Null only until someone has chosen one. */
+  username: string | null;
   display_name: string;
   avatar_url: string | null;
   timezone: string;
