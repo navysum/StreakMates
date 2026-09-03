@@ -172,6 +172,12 @@ export default function GroupScreen() {
           ...(isOwner
             ? [
                 {
+                  label: 'Group settings',
+                  hint: 'NAME AND ICON',
+                  onPress: () =>
+                    router.push({ pathname: '/group/settings', params: { id: group.id } }),
+                },
+                {
                   label: 'Change the invite code',
                   hint: 'THE OLD ONE STOPS WORKING',
                   onPress: () =>
