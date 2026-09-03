@@ -5,7 +5,9 @@ import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { ModalHeader } from '@/components/ModalHeader';
-import { useHabits, useReorderHabits, useSetArchived } from '@/lib/queries';
+import { useAuth } from '@/auth/AuthProvider';
+import { useGroups, useHabitOrder, useHabits, useReorderHabits, useSetArchived } from '@/lib/queries';
+import { reorder, sortHabits } from '@/lib/ordering';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing, typography } from '@/theme/tokens';
 import type { Habit } from '@/lib/types';
@@ -19,24 +21,44 @@ function cadenceLabel(h: Habit): string {
 
 export default function ManageScreen() {
   const { colors } = useTheme();
+  const { userId } = useAuth();
   const router = useRouter();
+
   const all = useHabits(true);
-  const reorder = useReorderHabits();
+  const groups = useGroups();
+  const order = useHabitOrder(userId);
+  const save = useReorderHabits(userId);
   const setArchived = useSetArchived();
   const [error, setError] = useState<string | null>(null);
 
+  const positions = order.data ?? new Map<string, number>();
   const active = useMemo(() => (all.data ?? []).filter((h) => !h.archived_at), [all.data]);
   const archived = useMemo(() => (all.data ?? []).filter((h) => h.archived_at), [all.data]);
 
-  function move(index: number, delta: number) {
-    const next = [...active];
-    const target = index + delta;
-    if (target < 0 || target >= next.length) return;
-    [next[index], next[target]] = [next[target], next[index]];
-    reorder.mutate(
-      next.map((h) => h.id),
-      { onError: (e) => setError(e instanceof Error ? e.message : 'Could not reorder.') },
+  /**
+   * One reorderable list per place habits actually appear: your private ones,
+   * then each group. They are numbered separately, so moving a private habit
+   * cannot disturb a group's list.
+   */
+  const lists = useMemo(() => {
+    const mine = sortHabits(active.filter((h) => !h.group_id), positions);
+    const byGroup = (groups.data ?? []).map((group) => ({
+      key: group.id,
+      title: group.emoji ? `${group.emoji}  ${group.name}` : group.name,
+      habits: sortHabits(active.filter((h) => h.group_id === group.id), positions),
+    }));
+    return [{ key: 'private', title: 'Private', habits: mine }, ...byGroup].filter(
+      (list) => list.habits.length > 0,
     );
+  }, [active, groups.data, positions]);
+
+  function move(habits: Habit[], index: number, delta: number) {
+    const ids = habits.map((h) => h.id);
+    const next = reorder(ids, index, index + delta);
+    if (next === ids) return;
+    save.mutate(next, {
+      onError: (e) => setError(e instanceof Error ? e.message : 'Could not reorder.'),
+    });
   }
 
   return (
@@ -49,88 +71,69 @@ export default function ManageScreen() {
           <ActivityIndicator style={styles.loader} color={colors.textMuted} />
         ) : (
           <>
-            <Card title="Active" action={`${active.length}`}>
-              {active.length === 0 ? (
+            {lists.length === 0 ? (
+              <Card>
                 <Text style={[typography.body, styles.none, { color: colors.textMuted }]}>
                   Nothing active. Add a habit from Today.
                 </Text>
-              ) : (
-                active.map((habit, i) => (
-                  <View
-                    key={habit.id}
-                    style={[
-                      styles.row,
-                      {
-                        borderBottomColor: colors.borderDefault,
-                        borderBottomWidth: i === active.length - 1 ? 0 : 1,
-                      },
-                    ]}
-                  >
-                    <View style={styles.arrows}>
+              </Card>
+            ) : (
+              lists.map((list) => (
+                <Card key={list.key} title={list.title} action={`${list.habits.length}`}>
+                  {list.habits.map((habit, i) => (
+                    <View
+                      key={habit.id}
+                      style={[
+                        styles.row,
+                        {
+                          borderBottomColor: colors.borderDefault,
+                          borderBottomWidth: i === list.habits.length - 1 ? 0 : 1,
+                        },
+                      ]}
+                    >
+                      <View style={styles.arrows}>
+                        <Arrow
+                          label={`Move ${habit.title} up`}
+                          glyph="▲"
+                          disabled={i === 0}
+                          onPress={() => move(list.habits, i, -1)}
+                        />
+                        <Arrow
+                          label={`Move ${habit.title} down`}
+                          glyph="▼"
+                          disabled={i === list.habits.length - 1}
+                          onPress={() => move(list.habits, i, 1)}
+                        />
+                      </View>
+
                       <Pressable
-                        onPress={() => move(i, -1)}
-                        disabled={i === 0}
-                        hitSlop={8}
+                        style={styles.name}
+                        onPress={() => router.push(`/habit/${habit.id}`)}
                         accessibilityRole="button"
-                        accessibilityLabel={`Move ${habit.title} up`}
                       >
                         <Text
-                          style={[
-                            typography.monoSmall,
-                            { color: i === 0 ? colors.borderStrong : colors.textMuted },
-                          ]}
+                          numberOfLines={1}
+                          style={[typography.rowName, { color: colors.textPrimary }]}
                         >
-                          ▲
+                          {habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
                         </Text>
                       </Pressable>
+
+                      <Pill label={cadenceLabel(habit)} />
+
                       <Pressable
-                        onPress={() => move(i, 1)}
-                        disabled={i === active.length - 1}
+                        onPress={() => setArchived.mutate({ id: habit.id, archived: true })}
                         hitSlop={8}
                         accessibilityRole="button"
-                        accessibilityLabel={`Move ${habit.title} down`}
+                        accessibilityLabel={`Archive ${habit.title}`}
                       >
-                        <Text
-                          style={[
-                            typography.monoSmall,
-                            {
-                              color:
-                                i === active.length - 1 ? colors.borderStrong : colors.textMuted,
-                            },
-                          ]}
-                        >
-                          ▼
-                        </Text>
+                        <Pill label="Archive" tone="warn" />
                       </Pressable>
                     </View>
-
-                    <Pressable
-                      style={styles.name}
-                      onPress={() => router.push(`/habit/${habit.id}`)}
-                      accessibilityRole="button"
-                    >
-                      <Text
-                        numberOfLines={1}
-                        style={[typography.rowName, { color: colors.textPrimary }]}
-                      >
-                        {habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
-                      </Text>
-                    </Pressable>
-
-                    <Pill label={cadenceLabel(habit)} />
-
-                    <Pressable
-                      onPress={() => setArchived.mutate({ id: habit.id, archived: true })}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Archive ${habit.title}`}
-                    >
-                      <Pill label="Archive" tone="warn" />
-                    </Pressable>
-                  </View>
-                ))
-              )}
-            </Card>
+                  ))}
+                </Card>
+              ))
+            )}
 
             {archived.length > 0 ? (
               <Card title="Archived" action={`${archived.length}`}>
@@ -164,6 +167,10 @@ export default function ManageScreen() {
               </Card>
             ) : null}
 
+            <Notice label="Your order, not theirs">
+              {'Each list is arranged separately and only for you. Moving a shared habit changes where it sits in your list — the rest of the group keep their own.'}
+            </Notice>
+
             <Notice label="Two different things">
               {'Archiving keeps every check-in and the streak record, and restores in one tap. Deleting destroys the history — it lives on the habit’s own screen, behind a confirmation.'}
             </Notice>
@@ -171,6 +178,29 @@ export default function ManageScreen() {
         )}
       </ScrollView>
     </View>
+  );
+}
+
+function Arrow({
+  label,
+  glyph,
+  disabled,
+  onPress,
+}: {
+  label: string;
+  glyph: string;
+  disabled: boolean;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <Pressable onPress={onPress} disabled={disabled} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
+      <Text
+        style={[typography.monoSmall, { color: disabled ? colors.borderStrong : colors.textMuted }]}
+      >
+        {glyph}
+      </Text>
+    </Pressable>
   );
 }
 
