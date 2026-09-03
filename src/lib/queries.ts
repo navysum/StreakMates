@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from './supabase';
 import { addDays, toLocalDate } from './date';
@@ -170,6 +171,47 @@ export function byHabit(checkIns: CheckIn[] | undefined, userId: string | null) 
     set.add(c.local_date);
   }
   return map;
+}
+
+/**
+ * Every completion as `habit|user|date`, for looking up any member's day on
+ * the group board rather than only your own.
+ */
+export function checkInIndex(checkIns: CheckIn[] | undefined) {
+  const set = new Set<string>();
+  for (const c of checkIns ?? []) set.add(`${c.habit_id}|${c.user_id}|${c.local_date}`);
+  return set;
+}
+
+export const doneKey = (habitId: string, userId: string, date: string) =>
+  `${habitId}|${userId}|${date}`;
+
+/**
+ * Keeps the board live: a friend's tick appears without a refresh.
+ *
+ * Row-level security applies to these events too, so nothing arrives that the
+ * viewer could not already have read.
+ */
+export function useRealtimeCheckIns() {
+  const qc = useQueryClient();
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('check-ins-and-habits')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'check_ins' }, () =>
+        qc.invalidateQueries({ queryKey: keys.checkIns }),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habits' }, () =>
+        qc.invalidateQueries({ queryKey: keys.habits }),
+      )
+      .subscribe();
+
+    return () => {
+      supabase?.removeChannel(channel);
+    };
+  }, [qc]);
 }
 
 /**

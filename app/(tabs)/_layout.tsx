@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon, type TabName } from '@/components/TabIcon';
+import { useRealtimeCheckIns } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
 import { typography } from '@/theme/tokens';
 
@@ -14,6 +15,9 @@ const TABS: { name: string; title: string; icon: TabName }[] = [
 export default function TabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+
+  // A friend's tick shows up without a refresh.
+  useRealtimeCheckIns();
 
   return (
     <Tabs

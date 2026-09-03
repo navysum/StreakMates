@@ -71,8 +71,8 @@ export default function GroupsScreen() {
         </Link>
       </View>
 
-      <Notice label="Coming in Phase 3">
-        {'Shared habits and the group board, where everyone’s check-ins sit side by side. Groups and codes work now so the people are in place first.'}
+      <Notice label="Shared habits">
+        {'Open a group to see its board and add habits the whole group checks in against. A shared habit is one habit, not a copy each — everyone ticks the same one.'}
       </Notice>
     </Screen>
   );

@@ -7,9 +7,9 @@ iOS and Android from one codebase — Expo (React Native) + TypeScript, with Sup
 auth and data.
 
 - **Full plan:** [`PLAN.md`](./PLAN.md) · rendered with screen mockups in [`docs/plan.html`](./docs/plan.html)
-- **Status:** Phases 0–2 complete — app shell and design system, Google sign-in, private
-  habits with check-ins and streaks, groups with invite codes. Shared habits and the group
-  board are Phase 3.
+- **Status:** Phases 0–3 complete — app shell and design system, Google sign-in, private
+  habits with check-ins and streaks, groups with invite codes, and shared habits with a live
+  group board. The leaderboard, activity feed and reactions are Phase 4.
 
 ---
 
@@ -84,13 +84,13 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 | | |
 | --- | --- |
-| `supabase/migrations/0001_init.sql` | Every table, security policy and invite-code function. See [`supabase/README.md`](./supabase/README.md) |
+| `supabase/migrations/` | `0001` every table, security policy and invite-code function; `0002` turns on live updates. See [`supabase/README.md`](./supabase/README.md) |
 | `app/_layout.tsx` | Fonts, splash, theme, data cache, and the redirect to sign-in when signed out |
 | `app/sign-in.tsx` | Continue with Google — doubles as the setup notice until Supabase is connected |
-| `app/(tabs)/` | Today, Groups, Activity, You |
+| `app/(tabs)/` | Today (Mine / Shared), Groups, Activity, You |
 | `app/habit/` | Create and edit a habit; archive, restore and delete live on the edit screen |
 | `app/manage.tsx` | Reorder, archive and restore in one place |
-| `app/group/` | Create a group, join by code, and the group's own screen with its code and members |
+| `app/group/` | Create a group, join by code, and the group screen: today's board, shared habits, members, invite code |
 | `src/lib/streak.ts` | Streak and weekly-progress maths — pure functions, covered by `npm test` |
 | `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
 | `src/theme/` | Design tokens and the light/dark provider |
@@ -98,6 +98,19 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 Before Supabase is connected the app still runs: the sign-in screen shows what to
 set up instead of a Google button.
+
+### How shared habits work
+
+A shared habit is **one** row with a `group_id`, and every member checks in against
+that same row. Nothing is copied per person — the `(habit, user, date)` key on
+`check_ins` does all the work.
+
+So the board is just a question: for today's date, who has a row and who hasn't. The
+empty amber rings are the point. It updates live over Supabase Realtime as people
+check in, and row-level security applies to those events too, so nothing arrives that
+the viewer could not already read.
+
+Making a private habit shared asks first — that can't be un-seen.
 
 ### How check-ins work
 
