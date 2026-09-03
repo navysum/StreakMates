@@ -4,8 +4,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
 <style>
   /* ============================================================
-     Tokens lifted verbatim from life-os-portal/src/styles/variables.css
-     so the app and the dashboard stay one system.
+     Palette and type borrowed from life-os-portal/src/styles/variables.css.
+     Copied once as a starting point — this app is otherwise standalone.
      ============================================================ */
   :root{
     --font-ui:"DM Sans",Arial,sans-serif;
@@ -251,6 +251,37 @@
   .mark{width:40px;height:40px;border-radius:50%;border:3px solid var(--green);
     border-right-color:var(--green-faint);margin:0 auto}
 
+  /* ---------- habit editor & management ---------- */
+  .field{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:44px;
+    border-bottom:1px solid var(--border-default)}
+  .field:last-child{border-bottom:0}
+  .field > span{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted);flex-shrink:0}
+  .field b{font-size:12px;font-weight:500;text-align:right}
+  .field b.ph{color:var(--text-muted);font-weight:400}
+  .caret{width:6px;height:6px;border-right:1.5px solid var(--text-muted);
+    border-bottom:1.5px solid var(--text-muted);transform:rotate(-45deg);flex-shrink:0}
+  .swrow{display:flex;gap:7px}
+  .swdot{width:16px;height:16px;border-radius:50%}
+  .swdot.on{box-shadow:0 0 0 2px var(--bg-surface),0 0 0 3px var(--text-primary)}
+  .days{display:flex;gap:4px;padding:9px 0}
+  .days b{flex:1;height:26px;display:grid;place-items:center;border:1px solid var(--border-default);
+    border-radius:var(--button-radius);font-family:var(--font-mono);font-size:9px;font-weight:600;
+    color:var(--text-muted)}
+  .days b.on{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+  .mrow{display:flex;align-items:center;gap:9px;min-height:40px;
+    border-bottom:1px solid var(--border-default)}
+  .mrow:last-child{border-bottom:0}
+  .grip{font-size:11px;color:var(--text-muted);letter-spacing:-1px;flex-shrink:0}
+  .mname{flex:1;min-width:0;font-size:12px;font-weight:500;overflow:hidden;
+    text-overflow:ellipsis;white-space:nowrap}
+  .mname.dim{color:var(--text-muted)}
+  .act{flex-shrink:0;font-family:var(--font-mono);font-size:8px;font-weight:600;
+    letter-spacing:.04em;text-transform:uppercase;padding:4px 7px;border-radius:var(--button-radius)}
+  .act.archive{background:var(--amber-soft);color:var(--amber)}
+  .act.del{background:var(--red-soft);color:var(--red)}
+  .act.restore{background:var(--green-soft);color:var(--green)}
+
   /* ---------- leaderboard ---------- */
   .lrow{display:grid;grid-template-columns:14px 18px 1fr auto;align-items:center;gap:9px;
     min-height:46px;border-bottom:1px solid var(--border-default)}
@@ -338,9 +369,9 @@
 
 <header class="mast">
   <div class="wrap">
-    <span class="kicker">Product + technical plan · v2 · LifeOS design system</span>
+    <span class="kicker">Product + technical plan · v3 · standalone app</span>
     <h1>Habits With Friends</h1>
-    <p class="lede">A habit tracker where the streak isn't only yours. Private habits stay private — the ones you keep flaking on go in front of four people who will notice. Built on the LifeOS palette, type and component vocabulary, so it reads as one system with the dashboard.</p>
+    <p class="lede">A habit tracker where the streak isn't only yours. Private habits stay private — the ones you keep flaking on go in front of four people who will notice. A standalone app that borrows its look — the palette, the type and the component vocabulary — from the LifeOS portal, because that look is already right.</p>
     <div class="pills">
       <span class="pill good">DM Sans + Cascadia Code</span>
       <span class="pill">Expo · React Native</span>
@@ -370,8 +401,8 @@
 <section>
   <div class="wrap">
     <div class="sec-label">02 · Design system</div>
-    <h2>Same system as the dashboard</h2>
-    <p class="sec-sub">Tokens taken straight from <code>life-os-portal/src/styles/variables.css</code> — not approximated.</p>
+    <h2>Borrowed from LifeOS</h2>
+    <p class="sec-sub">Palette and type taken exactly from <code>life-os-portal/src/styles/variables.css</code> — copied, not approximated, and not wired together.</p>
     <div class="stack">
       <div class="swatches">
         <div class="sw"><div class="chip" style="background:#3f6248"></div><div class="meta"><div class="nm">Green</div><div class="hx">#3f6248</div></div></div>
@@ -383,15 +414,19 @@
         <div class="sw"><div class="chip" style="background:#171717"></div><div class="meta"><div class="nm">Primary</div><div class="hx">#171717</div></div></div>
         <div class="sw"><div class="chip" style="background:#e4e4e1"></div><div class="meta"><div class="nm">Border</div><div class="hx">#e4e4e1</div></div></div>
       </div>
+      <div class="note">
+        <span class="h">Separate app, borrowed look</span>
+        <p>This shares <em>nothing</em> with LifeOS but its appearance — separate codebase, separate database, separate account, separate everything. Copy the token values in once and they are yours to change freely; there is no sync to maintain and no dependency to break.</p>
+      </div>
       <p>The rules the portal already follows, carried into the app unchanged: <strong>DM Sans</strong> for everything you read, <strong>Cascadia Code</strong> for every number, code and uppercase micro-label. Flat surfaces with a 1px border and an 8px radius — no shadows anywhere. Labels at 8px, 600 weight, uppercase, <code>0.06em</code> tracking. Numerals always <code>tabular-nums</code> so columns line up. Rows divided by hairlines rather than gaps.</p>
       <div class="note accent">
         <span class="h">Already solved for you</span>
         <p>The portal's <code>HabitsCard</code> settled the check-in circle: 18px, <strong>filled green when done, a 2px amber ring when not</strong>. That's the single most important control in the whole app, and it already exists in your system — the phone app inherits it rather than inventing one.</p>
       </div>
-      <p>Both fonts are variable TTFs sitting in <code>life-os-portal/fonts/</code>. Copy those files into the app and register them with <code>expo-font</code>; don't re-source them from Google Fonts, or the weights will drift apart over time.</p>
+      <p>Both fonts are variable TTFs sitting in <code>life-os-portal/fonts/</code>. Copy those two files into the app and register them with <code>expo-font</code> — that is the entire extent of the relationship between the two projects.</p>
       <div class="note caution">
         <span class="h">One porting job</span>
-        <p>React Native has no CSS custom properties. Port <code>variables.css</code> once into a typed <code>theme.ts</code> that exports the same token names, and pick light or dark from the device setting. Same names, same values, two syntaxes — that's what keeps the two codebases honestly in sync.</p>
+        <p>React Native has no CSS custom properties. Port <code>variables.css</code> once into a typed <code>theme.ts</code> that exports the same token names, and pick light or dark from the device setting. After that one copy, the file belongs to this app.</p>
       </div>
     </div>
   </div>
@@ -401,7 +436,7 @@
   <div class="wrap" style="padding-top:34px;padding-bottom:18px">
     <div class="sec-label">03 · Screens</div>
     <h2>What it looks like</h2>
-    <p class="sec-sub">Eight screens is the whole app, drawn at true scale in the portal's own vocabulary. Swipe sideways.</p>
+    <p class="sec-sub">Ten screens is the whole app, drawn at true scale in the portal's own vocabulary. Swipe sideways.</p>
   </div>
   <div class="rail">
 
@@ -431,7 +466,7 @@
           <div><div class="ptitle">Today</div><div class="peyebrow">Wed 3 Sep · 2 of 5 done</div></div>
           <div class="seg"><span class="on">Mine</span><span>Shared</span></div>
           <div class="card">
-            <div class="card-h"><h4>Private</h4><span class="lnk">Edit</span></div>
+            <div class="card-h"><h4>Private</h4><span class="lnk">+ Add habit</span></div>
             <div class="hrow"><span class="hinfo"><span class="hname">Morning run</span><span class="hstreak">5.2 KM · 12 DAY STREAK</span></span><span class="status-dot completed">✓</span></div>
             <div class="hrow"><span class="hinfo"><span class="hname">2 litres of water</span><span class="hstreak">31 DAY STREAK</span></span><span class="status-dot completed">✓</span></div>
             <div class="hrow"><span class="hinfo"><span class="hname">Read 20 pages</span><span class="hstreak">4 DAY STREAK</span></span><span class="status-dot incomplete"></span></div>
@@ -595,6 +630,55 @@
       <figcaption><div class="cap-t">Activity</div><p class="cap-d">Reactions are cheap to build and are the thing that makes people come back.</p></figcaption>
     </figure>
 
+    <figure class="shot">
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+        <div class="pbody">
+          <div><div class="ptitle">New habit</div><div class="peyebrow">Two taps from the Today screen</div></div>
+          <div class="card">
+            <div class="field"><span>Name</span><b>Morning run</b></div>
+            <div class="field"><span>Icon</span><b>🏃</b></div>
+            <div class="field"><span>Colour</span><span class="swrow"><i class="swdot on" style="background:#3f6248"></i><i class="swdot" style="background:#a46f2b"></i><i class="swdot" style="background:#3f5a80"></i><i class="swdot" style="background:#2f7266"></i><i class="swdot" style="background:#6c4f80"></i><i class="swdot" style="background:#a15547"></i></span></div>
+          </div>
+          <div class="card">
+            <div class="seg"><span class="on">Daily</span><span>Days</span><span>Weekly</span></div>
+            <div class="days"><b class="on">M</b><b class="on">T</b><b class="on">W</b><b class="on">T</b><b class="on">F</b><b class="on">S</b><b class="on">S</b></div>
+            <div class="field" style="border-top:1px solid var(--border-default)"><span>Remind me</span><b>07:00 <i class="caret"></i></b></div>
+          </div>
+          <div class="card">
+            <div class="card-h" style="margin-bottom:6px"><h4>Who sees it</h4></div>
+            <div class="seg"><span class="on">Private</span><span>The Gym Rats</span></div>
+          </div>
+          <div class="btn primary">Create habit</div>
+          <div class="grow"></div>
+        </div>
+      </div>
+      <figcaption><div class="cap-t">New habit</div><p class="cap-d">One sheet, sensible defaults, nothing required but a name. Private is preselected — sharing is a deliberate act.</p></figcaption>
+    </figure>
+
+    <figure class="shot">
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+        <div class="pbody">
+          <div><div class="ptitle">Manage habits</div><div class="peyebrow">Hold and drag to reorder</div></div>
+          <div class="card">
+            <div class="card-h"><h4>Active</h4><span class="lnk">+ Add habit</span></div>
+            <div class="mrow"><span class="grip">⣿</span><span class="mname">Morning run</span><span class="pill good">Daily</span></div>
+            <div class="mrow"><span class="grip">⣿</span><span class="mname">2 litres of water</span><span class="pill good">Daily</span></div>
+            <div class="mrow" style="background:var(--bg-surface-muted);margin:0 -14px;padding:0 14px"><span class="grip">⣿</span><span class="mname">Read 20 pages</span><span class="act archive">Archive</span><span class="act del">Delete</span></div>
+            <div class="mrow"><span class="grip">⣿</span><span class="mname">Practise guitar</span><span class="pill">M W F</span></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h4>Archived</h4><span class="lnk">2</span></div>
+            <div class="mrow" style="min-height:36px"><span class="mname dim">Cold showers</span><span class="act restore">Restore</span></div>
+            <div class="mrow" style="min-height:36px"><span class="mname dim">Duolingo</span><span class="act restore">Restore</span></div>
+          </div>
+          <div class="grow"></div>
+        </div>
+      </div>
+      <figcaption><div class="cap-t">Manage habits</div><p class="cap-d">Swipe any row for Archive and Delete. Archiving keeps the history and the streak; deleting is the only destructive act in the app.</p></figcaption>
+    </figure>
+
   </div>
 </div>
 
@@ -608,8 +692,8 @@
         <thead><tr><th>Piece</th><th>Choice</th><th>Why this one</th></tr></thead>
         <tbody>
           <tr><td class="k">App</td><td class="d">Expo (React Native) + TypeScript</td><td class="d">One codebase becomes both an iOS and an Android app. Expo builds the iOS binary in the cloud, so you don't need a Mac.</td></tr>
-          <tr><td class="k">Theme</td><td class="d">Ported <code>variables.css</code> → <code>theme.ts</code></td><td class="d">Same token names and values as the portal, so a colour change lands in both places.</td></tr>
-          <tr><td class="k">Fonts</td><td class="d">expo-font, TTFs from the portal</td><td class="d">DM Sans and Cascadia Code shipped in the bundle — identical rendering to the dashboard.</td></tr>
+          <tr><td class="k">Theme</td><td class="d">Ported <code>variables.css</code> → <code>theme.ts</code></td><td class="d">A one-time copy of the LifeOS tokens. No shared package, no coupling.</td></tr>
+          <tr><td class="k">Fonts</td><td class="d">expo-font, TTFs from the portal</td><td class="d">DM Sans and Cascadia Code shipped in the bundle, so rendering matches the look you liked.</td></tr>
           <tr><td class="k">Backend</td><td class="d">Supabase</td><td class="d">Hosted Postgres that also handles Google login, live updates and permissions. Replaces about four services.</td></tr>
           <tr><td class="k">Login</td><td class="d">Native Google Sign-In → <code>signInWithIdToken</code></td><td class="d">The native account-picker sheet instead of a browser bounce. Google returns a token; Supabase trades it for a session.</td></tr>
           <tr><td class="k">Data layer</td><td class="d">TanStack Query</td><td class="d">Caches every screen, retries failed writes, and makes a tap feel instant by updating before the server confirms.</td></tr>
@@ -633,7 +717,7 @@
       <div class="tbl"><h4>profiles</h4><ul><li><b>id</b> uuid → auth user</li><li><b>display_name</b> text</li><li><b>avatar_url</b> text</li><li><b>timezone</b> text</li></ul><span class="n">Created automatically the first time someone signs in with Google.</span></div>
       <div class="tbl"><h4>groups</h4><ul><li><b>id</b> uuid</li><li><b>name</b> text</li><li><b>emoji</b> text</li><li><b>invite_code</b> unique</li><li><b>created_by</b> uuid</li></ul><span class="n">The invite code lives here and can be rotated by the owner.</span></div>
       <div class="tbl"><h4>group_members</h4><ul><li><b>group_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>role</b> owner|member</li><li><b>joined_at</b> timestamptz</li></ul><span class="n">Key is the pair, so nobody joins twice. This table decides who sees what.</span></div>
-      <div class="tbl"><h4>habits</h4><ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily|weekly|days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>created_at</b> timestamptz</li><li><b>archived_at</b> timestamptz</li></ul><span class="n">group_id null = private, set = shared. That column is the whole feature.</span></div>
+      <div class="tbl"><h4>habits</h4><ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily|weekly|days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>sort_order</b> int</li><li><b>created_at</b> timestamptz</li><li><b>archived_at</b> timestamptz</li></ul><span class="n">group_id null = private, set = shared. That column is the whole feature.</span></div>
       <div class="tbl"><h4>check_ins</h4><ul><li><b>id</b> uuid</li><li><b>habit_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>local_date</b> date</li><li><b>note</b> text</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Unique on (habit, user, date). One tap per person per day, and safe to retry.</span></div>
       <div class="tbl"><h4>reactions</h4><ul><li><b>check_in_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>emoji</b> text</li></ul><span class="n">🔥 and 👏 on a friend's check-in. One of each per person.</span></div>
       <div class="tbl"><h4>nudges</h4><ul><li><b>habit_id</b> uuid</li><li><b>from_user</b> uuid</li><li><b>to_user</b> uuid</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Rate-limit to one per person per habit per day or friendships will suffer.</span></div>
@@ -733,7 +817,42 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-label">09 · Pitfalls</div>
+    <div class="sec-label">09 · Managing habits</div>
+    <h2>Adding and removing has to be effortless</h2>
+    <p class="sec-sub">People abandon habit trackers because editing them is a chore. Adding one should take two taps and nothing but a name.</p>
+    <div class="stack">
+      <h3 style="margin-top:0">Adding</h3>
+      <p><strong>+ Add habit</strong> sits in the header of every habit list, so it's never more than one tap from wherever you are. The sheet asks for a name and nothing else — icon defaults to a neutral dot, colour to the palette green, cadence to daily, reminder to off, visibility to <strong>Private</strong>. Every field below the name is optional, and every one has a default that produces a usable habit. Sharing is always a deliberate act, never the default.</p>
+
+      <h3>Removing — two different things</h3>
+      <p>Almost everyone who wants a habit “gone” means <em>stop showing it to me</em>, not <em>destroy the record</em>. So there are two actions and the safe one is prominent:</p>
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Action</th><th>What happens</th><th>Who can do it</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Archive</td><td class="d">Sets <code>archived_at</code>. Drops off Today, keeps every check-in, keeps the streak record, restorable in one tap.</td><td class="d">Owner; any member for a group habit</td></tr>
+            <tr><td class="k">Delete</td><td class="d">Removes the habit and every check-in against it. Not reversible.</td><td class="d">Owner only</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note caution">
+        <span class="h">Group habits need a stronger guard</span>
+        <p>Deleting a shared habit destroys <em>other people's</em> history, not just yours. So only the group owner can delete one, and the confirmation has to say what is actually being lost — “this deletes 312 check-ins from 4 people” — rather than a generic “are you sure?”. Any member can archive a group habit for the whole group; that's recoverable, so it doesn't need the same ceremony.</p>
+      </div>
+
+      <h3>The gestures</h3>
+      <p>Swipe a row for Archive and Delete. Hold and drag to reorder — which needs a <code>sort_order</code> column on <code>habits</code>, cheap to add now and annoying to retrofit once people have twenty habits in an order they care about. Tap a row anywhere else to open its detail, and edit in the same sheet used to create it, so there's only one form to build and one to learn.</p>
+      <div class="note accent">
+        <span class="h">Rule of thumb</span>
+        <p>Adding is one tap and no decisions. Removing is one swipe with a recoverable default. If either ever needs a trip into Settings, it's built wrong.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">10 · Pitfalls</div>
     <h2>Five things that will bite you</h2>
     <p class="sec-sub">Every one is cheap to handle now and expensive to retrofit.</p>
     <ul class="gotchas">
@@ -748,14 +867,59 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-label">10 · Roadmap</div>
+    <div class="sec-label">11 · Working without a laptop</div>
+    <h2>Building this from an iPad and an iPhone</h2>
+    <p class="sec-sub">Entirely possible, and not a compromised version of the job — the whole toolchain for this stack already runs in the cloud. There is one decision to make early.</p>
+    <div class="stack">
+      <div class="note accent">
+        <span class="h">The short version</span>
+        <p>You direct the work from Safari, the code is written and pushed for you in a cloud session, the app is built by Expo's cloud builders, and the result lands on your phone. No Mac is involved at any point — not for development, not for the iOS build, not for submitting to the App Store.</p>
+      </div>
+
+      <h3 style="margin-top:6px">Writing the code</h3>
+      <p>This session is already the answer. Claude Code runs at <strong>claude.ai/code</strong> in mobile Safari, works on the repository, commits and pushes without anything installed on your device. You describe what you want changed, review the pull request in GitHub's web interface, and the iPad never needs a terminal.</p>
+      <p>If you want to read or tweak files yourself, <strong>github.dev</strong> (press <code>.</code> on any GitHub repo) gives a full editor in Safari, and <strong>Working Copy</strong> is an excellent native git client for iPad if you prefer an app.</p>
+
+      <h3>Seeing it run on your phone</h3>
+      <p>This is the part with an actual decision in it, because of one Expo constraint: <strong>Expo Go</strong> — the free app that runs your project without building anything — can only run libraries Expo has bundled into it. Native Google Sign-In is not one of them. So you get a choice about when to leave Expo Go behind.</p>
+      <div class="tscroll">
+        <table>
+          <thead><tr><th>Route</th><th>What you get</th><th>Cost</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Expo Go</td><td class="d">Instant preview of Phases 0–3 on your own iPhone. Use Supabase's browser-based Google login for now and switch to the native sheet later — a few lines' difference.</td><td class="d">Free</td></tr>
+            <tr><td class="k">Development build</td><td class="d">Your own app on your home screen with every native module working, updated over the air whenever code is pushed. Needed eventually regardless.</td><td class="d">Apple Developer, $99/yr</td></tr>
+            <tr><td class="k">Android device</td><td class="d">Same development build, installed straight from a link.</td><td class="d">Free</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Recommendation:</strong> stay on Expo Go with browser-based login through Phase 3. It costs nothing, it needs no build step, and it gets you all the way to the group board — the point where the app is actually the product. Pay the $99 at Phase 4, when you want the native login sheet and push notifications anyway.</p>
+
+      <div class="note">
+        <span class="h">The loop, once you have a development build</span>
+        <p>Code is pushed, <code>eas update</code> publishes the new JavaScript to Expo's servers, and your phone picks it up next time you open the app — usually under a minute, over cellular, from anywhere. You are not tethered to a dev server on a machine at home, which is the thing that normally makes laptop-free development miserable.</p>
+      </div>
+
+      <h3>Shipping it</h3>
+      <p><strong>EAS Build</strong> compiles the iOS app on Expo's Macs and <strong>EAS Submit</strong> uploads it to App Store Connect, which is itself perfectly usable in Safari on an iPad. Store screenshots can be captured on the phone. The $99 Apple fee and the $25 Google fee are the only hard requirements, and neither of them is a computer.</p>
+
+      <div class="note caution">
+        <span class="h">The one genuine limitation</span>
+        <p>Debugging is harder without a desktop — no side-by-side simulator, no browser devtools. It's manageable if the work stays in small, verifiable steps, which the phase plan already enforces. If you get properly stuck on something visual, that's the moment a laptop earns its place; everything else here does not need one.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-label">12 · Roadmap</div>
     <h2>Build order</h2>
     <p class="sec-sub">Each phase ends with something you can open on your own phone. Never build two at once.</p>
-    <div class="phase"><span class="p">PHASE 0</span><span><span class="t">Skeleton</span><span class="d">Expo app running on your phone, Supabase project created, <code>theme.ts</code> ported and both fonts loading, tab navigation with four empty screens.</span><span class="s">Ends with: an app icon on your home screen.</span></span></div>
-    <div class="phase"><span class="p">PHASE 1</span><span><span class="t">Login and private habits</span><span class="d">Google sign-in, profile row on first launch, create a habit, tap to check in, streak counted. No sharing yet.</span><span class="s">Ends with: a habit tracker you'd use alone.</span></span></div>
+    <div class="phase"><span class="p">PHASE 0</span><span><span class="t">Skeleton</span><span class="d">Expo app running on your phone through Expo Go, Supabase project created, <code>theme.ts</code> ported and both fonts loading, tab navigation with four empty screens.</span><span class="s">Ends with: an app icon on your home screen.</span></span></div>
+    <div class="phase"><span class="p">PHASE 1</span><span><span class="t">Login and private habits</span><span class="d">Google sign-in (browser-based for now), profile row on first launch, add and archive habits, reorder them, tap to check in, streak counted. No sharing yet.</span><span class="s">Ends with: a habit tracker you'd use alone.</span></span></div>
     <div class="phase"><span class="p">PHASE 2</span><span><span class="t">Groups and codes</span><span class="d">Create a group, generate the code, join by code, member list. Permission rules written and tested with two real accounts.</span><span class="s">Ends with: your friend's face in your app.</span></span></div>
     <div class="phase"><span class="p">PHASE 3</span><span><span class="t">Shared habits</span><span class="d">Group habits, the Shared tab, and the board grid. Live updates so a friend's tick appears without a refresh.</span><span class="s">Ends with: the actual product.</span></span></div>
-    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit, and the weekly leaderboard plus habit stats. This is what turns a tool into something people open daily.</span><span class="s">Ends with: a reason to come back.</span></span></div>
+    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit, and the weekly leaderboard plus habit stats. First development build here, which brings the native Google sign-in sheet with it.</span><span class="s">Ends with: a reason to come back.</span></span></div>
     <div class="phase"><span class="p">PHASE 5</span><span><span class="t">Reminders and polish</span><span class="d">Push notifications, offline queue, empty states, the heatmap, editing and archiving habits, account deletion.</span><span class="s">Ends with: something you can hand to a stranger.</span></span></div>
     <div class="phase"><span class="p">PHASE 6</span><span><span class="t">Ship it</span><span class="d">Sign in with Apple, privacy policy, store screenshots, both store listings, a TestFlight round with the group you built it for.</span><span class="s">Ends with: a link you can text people.</span></span></div>
   </div>
