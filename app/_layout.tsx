@@ -24,7 +24,7 @@ const queryClient = new QueryClient({
 
 /** Sends people to sign-in when signed out, and away from it once signed in. */
 function AuthGate() {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const { loading, session, configured } = useAuth();
   const segments = useSegments();
   const router = useRouter();
@@ -39,21 +39,26 @@ function AuthGate() {
   }, [loading, session, configured, segments, router]);
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: colors.bgPage },
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="sign-in" />
-      <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="manage" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="group/new" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="group/join" options={{ presentation: 'modal' }} />
-      <Stack.Screen name="group/[id]" />
-    </Stack>
+    <>
+      {/* Follows the chosen theme, not the device's, so a forced light or dark
+          mode doesn't leave unreadable status-bar text. */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.bgPage },
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="habit/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="manage" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="group/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="group/join" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="group/[id]" />
+      </Stack>
+    </>
   );
 }
 
@@ -79,7 +84,6 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <StatusBar style="auto" />
             <AuthGate />
           </AuthProvider>
         </ThemeProvider>
