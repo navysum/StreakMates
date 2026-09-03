@@ -7,7 +7,9 @@ iOS and Android from one codebase — Expo (React Native) + TypeScript, with Sup
 auth and data.
 
 - **Full plan:** [`PLAN.md`](./PLAN.md) · rendered with screen mockups in [`docs/plan.html`](./docs/plan.html)
-- **Status:** Phase 0 complete — app shell, design system, fonts, four tabs.
+- **Status:** Phases 0–2 complete — app shell and design system, Google sign-in, private
+  habits with check-ins and streaks, groups with invite codes. Shared habits and the group
+  board are Phase 3.
 
 ---
 
@@ -78,21 +80,34 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 ---
 
-## What's in Phase 0
+## What's built
 
 | | |
 | --- | --- |
-| `app/_layout.tsx` | Loads the six fonts, holds the splash screen until they're ready, provides the theme |
-| `app/(tabs)/` | Today, Groups, Activity, You — the four tabs, with a nav bar built to the LifeOS spec |
-| `src/theme/tokens.ts` | The design tokens: palette (light + dark), type scale, spacing, radii |
-| `src/theme/ThemeProvider.tsx` | Follows the device's light/dark setting automatically |
-| `src/components/` | `Card`, `Screen`, `HabitRow`, `StatusDot`, `TabIcon`, `Placeholder` |
-| `src/lib/supabase.ts` | Client that stays `null` until `.env` is filled in, so the app runs without a backend |
+| `supabase/migrations/0001_init.sql` | Every table, security policy and invite-code function. See [`supabase/README.md`](./supabase/README.md) |
+| `app/_layout.tsx` | Fonts, splash, theme, data cache, and the redirect to sign-in when signed out |
+| `app/sign-in.tsx` | Continue with Google — doubles as the setup notice until Supabase is connected |
+| `app/(tabs)/` | Today, Groups, Activity, You |
+| `app/habit/` | Create and edit a habit; archive, restore and delete live on the edit screen |
+| `app/manage.tsx` | Reorder, archive and restore in one place |
+| `app/group/` | Create a group, join by code, and the group's own screen with its code and members |
+| `src/lib/streak.ts` | Streak and weekly-progress maths — pure functions, covered by `npm test` |
+| `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
+| `src/theme/` | Design tokens and the light/dark provider |
 | `assets/fonts/` | DM Sans and Cascadia Code, static instances + their OFL licences |
 
-The Today tab shows **sample habits**, clearly labelled as such. They exist so you can
-check on a real device that the fonts, colours, dark mode and the check-in circle all
-render correctly. Phase 1 replaces them with real data.
+Before Supabase is connected the app still runs: the sign-in screen shows what to
+set up instead of a Google button.
+
+### How check-ins work
+
+Tapping the circle writes locally first, so the tick is instant, then saves. The
+day is worked out **on the device** from your timezone and sent as a plain date —
+never derived from a timestamp on the server, or someone checking in at 11pm in
+Sydney lands on the wrong day.
+
+Streaks are computed on read from the check-in rows, never stored, so a check-in
+that arrives late can't leave a counter wrong.
 
 ### About the fonts
 
@@ -107,15 +122,9 @@ files — same design, one file per weight:
 
 ## Supabase
 
-Not needed yet — the app runs without it. When you create a project (Phase 1):
-
-```bash
-cp .env.example .env
-```
-
-Fill in the URL and anon key from your Supabase project's API settings. Both are safe to
-ship in the app bundle: the anon key only ever grants what your row-level security policies
-allow.
+Follow **[`supabase/README.md`](./supabase/README.md)** — it walks through creating the
+project, running the migration, wiring up Google sign-in and filling in `.env`, all from a
+browser. About twenty minutes, once.
 
 ---
 
@@ -125,5 +134,6 @@ allow.
 npm run tunnel      # dev server reachable from anywhere (use this one)
 npm start           # dev server, same network only
 npm run typecheck   # tsc --noEmit
+npm test            # streak and date logic
 npm run web         # run in a browser
 ```
