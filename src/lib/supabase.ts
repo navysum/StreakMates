@@ -18,6 +18,10 @@ export const supabase: SupabaseClient | null =
           persistSession: true,
           // There is no URL to read a session back from on native.
           detectSessionInUrl: false,
+          // The OAuth code is exchanged by hand in AuthProvider after the
+          // in-app browser redirects back, which needs PKCE rather than the
+          // implicit flow.
+          flowType: 'pkce',
         },
       })
     : null;

@@ -1,0 +1,72 @@
+import { useState } from 'react';
+import { ScrollView, View, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
+import { Field } from '@/components/Field';
+import { ModalHeader } from '@/components/ModalHeader';
+import { Notice } from '@/components/Notice';
+import { useCreateGroup } from '@/lib/queries';
+import { useTheme } from '@/theme/ThemeProvider';
+import { spacing } from '@/theme/tokens';
+
+export default function NewGroupScreen() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const create = useCreateGroup();
+  const [name, setName] = useState('');
+  const [emoji, setEmoji] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  async function onCreate() {
+    setError(null);
+    try {
+      const group = await create.mutateAsync({ name: name.trim(), emoji: emoji.trim() || null });
+      router.replace(`/group/${group.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not create the group.');
+    }
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+      <ModalHeader title="New group" eyebrow="You’ll be the owner" />
+      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+        <Card>
+          <Field
+            label="Name"
+            value={name}
+            onChangeText={setName}
+            placeholder="The Gym Rats"
+            autoFocus
+            maxLength={60}
+          />
+          <Field
+            label="Icon"
+            value={emoji}
+            onChangeText={setEmoji}
+            placeholder="Optional"
+            maxLength={4}
+            last
+          />
+        </Card>
+
+        <Button
+          label="Create group"
+          variant="primary"
+          busy={create.isPending}
+          disabled={!name.trim()}
+          onPress={onCreate}
+        />
+
+        {error ? <Notice label="Could not create" tone="bad">{error}</Notice> : null}
+
+        <Notice label="What happens next">
+          {'A six-character invite code is generated for you. Share it and anyone with it can join. As owner you can change the code later if it leaks.'}
+        </Notice>
+      </ScrollView>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({ body: { padding: spacing.page, gap: spacing.card } });
