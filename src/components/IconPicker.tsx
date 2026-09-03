@@ -18,12 +18,21 @@ export const HABIT_ICONS = [
   '😴', '🌙', '☀️', '🧹', '💰', '📵', '🚭', '🍺', '🙏', '📓',
 ] as const;
 
+/** Icons that suit a group rather than a single habit. */
+export const GROUP_ICONS = [
+  '💪', '🏃', '🧘', '📚', '🎸', '🍳', '💰', '🧠', '🌱', '☕',
+  '🔥', '⭐', '🏆', '🎯', '🚀', '⚡', '👑', '🥇', '🧗', '🎧',
+  '🐺', '🦁', '🐝', '🦊', '🌊', '⛰️', '🌙', '☀️', '🪴', '🫡',
+] as const;
+
 export function IconPicker({
   value,
   onChange,
+  icons = HABIT_ICONS,
 }: {
   value: string;
   onChange: (emoji: string) => void;
+  icons?: readonly string[];
 }) {
   const { colors } = useTheme();
 
@@ -45,7 +54,7 @@ export function IconPicker({
         <Text style={[typography.monoSmall, { color: colors.textMuted }]}>NONE</Text>
       </Pressable>
 
-      {HABIT_ICONS.map((icon) => {
+      {icons.map((icon) => {
         const on = value === icon;
         return (
           <Pressable

@@ -358,6 +358,26 @@ export function useJoinGroup() {
   });
 }
 
+/** Renaming and re-iconing a group. The policy allows owners only. */
+export function useUpdateGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      emoji,
+    }: {
+      id: string;
+      name: string;
+      emoji: string | null;
+    }) => {
+      const { error } = await db().from('groups').update({ name, emoji }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.groups }),
+  });
+}
+
 export function useLeaveGroup(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({

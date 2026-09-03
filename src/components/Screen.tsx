@@ -24,12 +24,35 @@ export function Screen({ title, eyebrow, onMenu, menuLabel = 'More', children }:
         { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
       ]}
     >
-      <View style={styles.head}>
-        <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
-        {eyebrow ? (
-          <Text style={[typography.label, styles.eyebrow, { color: colors.textMuted }]}>{eyebrow}</Text>
+      <View style={styles.headRow}>
+        <View style={styles.head}>
+          <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
+          {eyebrow ? (
+            <Text style={[typography.label, styles.eyebrow, { color: colors.textMuted }]}>
+              {eyebrow}
+            </Text>
+          ) : null}
+        </View>
+
+        {onMenu ? (
+          <Pressable
+            onPress={onMenu}
+            hitSlop={14}
+            accessibilityRole="button"
+            accessibilityLabel={menuLabel}
+            style={({ pressed }) => [
+              styles.menu,
+              { borderColor: colors.borderStrong },
+              pressed && { backgroundColor: colors.bgHover },
+            ]}
+          >
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.pip, { backgroundColor: colors.textSecondary }]} />
+            ))}
+          </Pressable>
         ) : null}
       </View>
+
       {children}
     </ScrollView>
   );
@@ -40,19 +63,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     gap: spacing.card,
   },
-  headRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  headRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
   head: { gap: 3, flex: 1, minWidth: 0 },
   eyebrow: { marginTop: 1 },
   menu: {
-    width: 34,
-    height: 30,
+    width: 38,
+    height: 32,
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3,
+    gap: 3.5,
     marginTop: 2,
   },
-  pip: { width: 3, height: 3, borderRadius: 1.5 },
+  pip: { width: 3.5, height: 3.5, borderRadius: 2 },
 });
