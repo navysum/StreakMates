@@ -88,7 +88,10 @@ Cost: Supabase free tier to start ($25/mo Pro later), Apple $99/yr, Google Play 
 3. **Group board** — habits down, members across, a grid of filled/empty circles.
 4. **Habit detail** — streak, 30-day rate, heatmap, notes.
 5. **Join a group** — six-character code entry with a live group preview, or create one.
-6. **Activity** — check-ins, streak milestones, joins; emoji reactions and nudges.
+6. **Leaderboard** — group streak, perfect days, members ranked by consistency with
+   week-over-week deltas.
+7. **Habit stats** — per-habit group completion, strongest / needs work, standouts.
+8. **Activity** — check-ins, streak milestones, joins; emoji reactions and nudges.
 
 ## 5. Schema
 
@@ -97,7 +100,8 @@ profiles       id(uuid, = auth user) · display_name · avatar_url · timezone
 groups         id · name · emoji · invite_code(unique) · created_by · created_at
 group_members  group_id · user_id · role(owner|member) · joined_at   [PK: group_id,user_id]
 habits         id · owner_id · group_id(nullable) · title · emoji · colour
-               · cadence(daily|weekly|days) · target_days int[] · reminder_at · archived_at
+               · cadence(daily|weekly|days) · target_days int[] · reminder_at
+               · created_at · archived_at
 check_ins      id · habit_id · user_id · local_date · note · created_at
                [UNIQUE: habit_id, user_id, local_date]
 reactions      check_in_id · user_id · emoji                [PK: all three]
@@ -136,7 +140,63 @@ helper function (`is_group_member(gid uuid)`) and call that from every policy.
 Private habits have no group and no policy grants anyone else access. Warn clearly
 before converting a private habit to shared — it cannot be un-seen.
 
-## 8. Known pitfalls
+## 8. Leaderboard and habit stats
+
+Every figure here is derived from `check_ins` — **no new tables**. If the leaderboard needed
+one, the core model would be wrong.
+
+### Rank consistency, not volume
+
+Counting check-ins rewards whoever tracks the most habits. Rank on **completed ÷ expected**
+as a percentage instead.
+
+`expected` = for each (member, shared habit), the days in the window where all hold:
+- the habit existed and was not archived (`habits.created_at`, `habits.archived_at`)
+- the member had already joined (`group_members.joined_at`)
+- the day matches the cadence
+
+Weekly-target habits are not per-day: `completed ÷ (weeks × target)`.
+
+### Only shared habits count
+
+Non-negotiable. If private habits fed the percentage, the leaderboard would leak them — a
+score moving on a day someone logged nothing shared reveals private activity. The RLS rules
+hide the rows; the maths must respect them too.
+
+### Make last place survivable
+
+- **Rank a week, not all time.** Everyone starts level on Monday.
+- **Show most improved beside the ranking** — the only way to win available to the person at
+  the bottom.
+- **Put a collective number above the competitive one.** Group streak = consecutive days
+  where every member hit at least one shared habit.
+
+### Rank people, diagnose habits
+
+People get a rank and a percentage and are never labelled "worst". Habits get judged
+bluntly, because the judgement is actionable: a habit at 29% across the whole group is a
+badly-set target, not four lazy people. The "needs work" tile should offer *move the time*,
+*lower the target*, *drop it* — not just name it.
+
+Screens: **Leaderboard** (group streak / perfect days / group rate, then ranked members with
+consistency bars and week-over-week deltas) and **Habit stats** (per-habit group completion,
+strongest, needs work, longest streak, most improved, never missed).
+
+### Guard rail — backfilling
+
+Unrestricted past-dating means the leaderboard is won by whoever backfills a month on Sunday
+night. But late writes can't simply be banned — the offline queue legitimately sends
+yesterday's check-in today. The distinction is already in the table: `local_date` is the day
+it counts for, `created_at` is when it arrived. Let the offline queue write freely; cap
+*manual* backdating at ~3 days in the insert policy.
+
+### Where to compute it
+
+Start on the client — the group board already holds this week's check-ins, so the weekly
+ranking is arithmetic on data in hand and updates live for free. Move to a
+`group_leaderboard(group_id, since)` RPC for all-time figures or once groups get large.
+
+## 9. Known pitfalls
 
 - **Timezones.** Compute `local_date` on the device from the user's timezone; never
   derive the day from a UTC timestamp server-side.
@@ -147,7 +207,7 @@ before converting a private habit to shared — it cannot be un-seen.
 - **Nudge limits.** One per person, per habit, per day, plus a global off switch.
 - **Leaving a group.** Decide up front whether history is removed or retained-but-hidden.
 
-## 9. Build order
+## 10. Build order
 
 | Phase | Scope | Done when |
 | --- | --- | --- |
@@ -155,7 +215,7 @@ before converting a private habit to shared — it cannot be un-seen.
 | 1 | Google login, profiles, private habits, check-ins, streaks | Usable solo tracker |
 | 2 | Groups, invite codes, membership, RLS policies | A friend appears in your app |
 | 3 | Shared habits, Shared tab, group board, realtime | The actual product |
-| 4 | Activity feed, reactions, nudges | A reason to open it daily |
+| 4 | Activity feed, reactions, nudges, weekly leaderboard, habit stats | A reason to open it daily |
 | 5 | Push reminders, offline queue, edit/archive, account deletion | Handable to a stranger |
 | 6 | Sign in with Apple, privacy policy, store listings, TestFlight | A link you can text people |
 
