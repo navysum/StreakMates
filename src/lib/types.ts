@@ -32,6 +32,26 @@ export type CheckIn = {
   user_id: string;
   local_date: string;
   note: string | null;
+  /** When it arrived, as opposed to the day it counts for. Orders the feed. */
+  created_at: string;
+};
+
+export const REACTIONS = ['🔥', '👏', '💪', '🙌', '😂'] as const;
+export type ReactionEmoji = (typeof REACTIONS)[number];
+
+export type Reaction = {
+  check_in_id: string;
+  user_id: string;
+  emoji: ReactionEmoji;
+};
+
+export type Nudge = {
+  id: string;
+  habit_id: string;
+  from_user: string;
+  to_user: string;
+  nudge_day: string;
+  created_at: string;
 };
 
 export type Group = {
