@@ -18,7 +18,7 @@ completely separate product: separate codebase, database, account and data.
 
 The group board is simply: for today's date, who has a check-in row and who doesn't.
 
-## 2. Design system — inherited from LifeOS
+## 2. Design system — borrowed from LifeOS
 
 The app is **not** styled from scratch. It copies the palette and type already running in
 `navysum/life-os-portal`, because that look is already right.
