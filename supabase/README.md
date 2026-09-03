@@ -40,14 +40,19 @@ the other.
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com) and
    create a project (any name).
-2. **APIs & Services** → **OAuth consent screen**. Choose **External**, fill in
-   an app name, your email as both support and developer contact, and save.
-3. While that consent screen is in **Testing** mode, only accounts you list can
-   sign in. Add your own Google account under **Test users** — miss this and
-   sign-in fails with "app is blocked", which looks like a bug but isn't.
-4. **Credentials** → **Create credentials** → **OAuth client ID** →
+2. **APIs & Services** → **OAuth consent screen** (newer consoles call this
+   **Google Auth Platform**). Choose **External**.
+3. Fill in the **Branding** page — app name, user support email, developer
+   contact email — and save. Until this is complete the console shows *"Your
+   app's OAuth configuration is incomplete"* and blocks everything else, so do
+   it before going further.
+4. Go to **Audience**. While publishing status is **Testing**, only accounts
+   you list can sign in, so add your own Google account under **Test users**.
+   Miss this and sign-in fails with "app is blocked" — which looks like a bug
+   in the app, but isn't.
+5. **Credentials** → **Create credentials** → **OAuth client ID** →
    application type **Web application**.
-5. Under **Authorised redirect URIs**, add exactly this, with your own project
+6. Under **Authorised redirect URIs**, add exactly this, with your own project
    reference in place of `<project-ref>`:
 
    ```
@@ -57,7 +62,7 @@ the other.
    Your project ref is the string in your Supabase project URL — Supabase shows
    the whole callback URL on the Google provider page in the next step, so you
    can copy it from there rather than assembling it by hand.
-6. Save, then copy the **Client ID** and **Client secret**.
+7. Save, then copy the **Client ID** and **Client secret**.
 
 ### 3b. Tell Supabase about them
 
@@ -84,18 +89,38 @@ build. Both are development conveniences; tighten them before the app ships.
 
 ## 4. Point the app at the project
 
-1. Supabase → **Project Settings** → **API**.
-2. Copy the **Project URL** and the **anon public** key.
-3. In the Codespace terminal:
+1. In the Codespace terminal, **once**:
 
    ```bash
    cp .env.example .env
    ```
 
-4. Open `.env` and fill both values in.
-5. **Restart the dev server** (`Ctrl+C`, then `npm run tunnel`). Environment
-   variables are read when the bundle is built, so a running server won't pick
-   up a new `.env`.
+   Running that again later overwrites whatever you filled in, so do it before
+   you edit, not after.
+2. Supabase → **Project Settings** → **API**. Copy the **Project URL** and the
+   **anon public** key into `.env`, and save the file.
+3. **Restart the dev server** (`Ctrl+C`, then `npm run tunnel`). Environment
+   variables are read when the bundle is built, so a running server will not
+   pick up a new `.env`.
+
+> **The Project URL is not the address in your browser.** The page you are
+> looking at is `https://supabase.com/dashboard/project/<project-ref>` — that is
+> the dashboard, and the app cannot talk to it. What you want looks like:
+>
+> ```
+> https://<project-ref>.supabase.co
+> ```
+>
+> Same `<project-ref>`, different shape. If you have the dashboard URL in front
+> of you, take the reference out of it and rebuild it in that form.
+
+Your finished `.env` should look like this — one short `https://…supabase.co`
+address, and a long key beginning `eyJ`:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://abcdefghijklmnop.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
 Open the app and the sign-in screen should now offer **Continue with Google**
 instead of the setup notice.
