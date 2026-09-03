@@ -29,6 +29,8 @@ people in, and tell the app where the project is.
    which adds the unique-username handle.
 6. Repeat with [`migrations/0004_social.sql`](./migrations/0004_social.sql),
    which adds reactions and nudges.
+7. Repeat with [`migrations/0005_account_deletion.sql`](./migrations/0005_account_deletion.sql),
+   which adds the account-deletion function Apple requires.
 
    Run the files in order, and each one only once.
 

@@ -1,13 +1,15 @@
-import { Pressable, View, Text, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { Alert, Pressable, View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
+import { Sheet } from '@/components/Sheet';
 import { Segmented } from '@/components/Segmented';
 import { useAuth } from '@/auth/AuthProvider';
 import { handle } from '@/lib/identity';
-import { useProfile } from '@/lib/queries';
+import { useDeleteAccount, useGroups, useHabits, useProfile } from '@/lib/queries';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { typography } from '@/theme/tokens';
 
@@ -16,9 +18,47 @@ export default function YouScreen() {
   const { userId, session, signOut } = useAuth();
   const profile = useProfile(userId);
   const router = useRouter();
+  const habits = useHabits(true);
+  const groups = useGroups();
+  const remove = useDeleteAccount();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  function confirmDelete() {
+    const owned = (groups.data ?? []).length;
+    const count = (habits.data ?? []).length;
+    Alert.alert(
+      'Delete your account?',
+      `This removes your profile, your ${count} habit${count === 1 ? '' : 's'} and every check-in you have made. ` +
+        (owned > 0
+          ? 'Shared habits you created are handed to another member so their history survives, and groups you own pass to the longest-standing member. '
+          : '') +
+        'It cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete everything',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await remove.mutateAsync();
+              await signOut();
+            } catch (e) {
+              setError(e instanceof Error ? e.message : 'Could not delete the account.');
+            }
+          },
+        },
+      ],
+    );
+  }
 
   return (
-    <Screen title="You" eyebrow={handle(profile.data)}>
+    <Screen
+      title="You"
+      eyebrow={handle(profile.data)}
+      onMenu={() => setMenuOpen(true)}
+      menuLabel="Account options"
+    >
       <Card title="Appearance">
         <View style={styles.stack}>
           <Segmented<ThemeMode>
@@ -63,9 +103,22 @@ export default function YouScreen() {
 
       <Button label="Sign out" onPress={() => signOut()} />
 
-      <Notice label="Coming later">
-        {'Reminder times land in Phase 5, and account deletion ships before the app does.'}
-      </Notice>
+      {error ? <Notice label="Could not delete" tone="bad">{error}</Notice> : null}
+
+      <Sheet
+        visible={menuOpen}
+        title="Account options"
+        onClose={() => setMenuOpen(false)}
+        actions={[
+          { label: 'Sign out', hint: 'YOUR DATA STAYS', onPress: () => signOut() },
+          {
+            label: 'Delete account',
+            tone: 'danger' as const,
+            hint: 'PERMANENT',
+            onPress: confirmDelete,
+          },
+        ]}
+      />
     </Screen>
   );
 }
