@@ -295,16 +295,20 @@ solve.
 mapping in the app, so it can be edited on a phone — the `habit_links` table
 from §10, plus a "Linked to Obsidian" badge on a habit.
 
-### Whether to build it
+### Decided: not building it
 
-Not yet. It is a second product — a published plugin, a review process, an
-update cadence, and support for vault layouts you have never seen. The single-
-user bridge is worth having now because it is yours; a plugin is worth building
-when someone other than you asks for it.
+**No plugin.** The app's users are three friends, and two of them have never
+used Obsidian. Building a configurable vault mapper, publishing a plugin and
+supporting layouts nobody has seen would be a second product serving nobody.
 
-What matters today is only that it stays *possible*, and it does: the merge and
-the state format know nothing about LifeOS, Supabase's own auth already supports
-a plugin signing in properly, and `habit_links` is an additive migration.
+So the sync stays what it is: **a personal bridge, for one person who happens to
+run a server.** It is not a feature of the app, it is not mentioned in the app,
+and no user ever encounters it.
+
+What matters is only that it stays *possible* if that changes, and it does at no
+cost: the merge and the state format never knew about LifeOS, Supabase's auth
+already supports a plugin signing in properly, and `habit_links` would be an
+additive migration.
 
 ## 12. Before switching it on
 
