@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { Button } from './Button';
 import { Card } from './Card';
+import { Choice } from './Choice';
 import { Field, FieldRow } from './Field';
 import { Segmented } from './Segmented';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -18,6 +19,8 @@ export type HabitFormValue = {
   cadence: Cadence;
   target_days: number[];
   target_per_week: number;
+  /** null = private. A group id makes it shared with that group. */
+  group_id: string | null;
 };
 
 export const emptyHabit: HabitFormValue = {
@@ -27,6 +30,8 @@ export const emptyHabit: HabitFormValue = {
   cadence: 'daily',
   target_days: [1, 2, 3, 4, 5, 6, 7],
   target_per_week: 3,
+  // Private by default. Sharing is always a deliberate act.
+  group_id: null,
 };
 
 type Props = {
@@ -35,13 +40,25 @@ type Props = {
   busy?: boolean;
   onSubmit: (value: HabitFormValue) => void;
   footer?: React.ReactNode;
+  /** Groups this habit could be shared with. */
+  groups?: { id: string; name: string; emoji: string | null }[];
+  /** Locks visibility — used when adding straight into a group. */
+  lockVisibility?: boolean;
 };
 
 /**
  * One form for creating and editing, so there is only one to build and one to
  * learn. Only the name is required — everything else has a working default.
  */
-export function HabitForm({ initial, submitLabel, busy, onSubmit, footer }: Props) {
+export function HabitForm({
+  initial,
+  submitLabel,
+  busy,
+  onSubmit,
+  footer,
+  groups = [],
+  lockVisibility,
+}: Props) {
   const { colors } = useTheme();
   const [value, setValue] = useState<HabitFormValue>(initial ?? emptyHabit);
 
@@ -160,6 +177,23 @@ export function HabitForm({ initial, submitLabel, busy, onSubmit, footer }: Prop
           </Text>
         </View>
       </Card>
+
+      {!lockVisibility && groups.length > 0 ? (
+        <Card title="Who sees it">
+          <Choice
+            value={value.group_id}
+            onChange={(g) => set('group_id', g)}
+            options={[
+              { value: null, label: 'Private', hint: 'ONLY YOU' },
+              ...groups.map((g) => ({
+                value: g.id as string | null,
+                label: g.emoji ? `${g.emoji}  ${g.name}` : g.name,
+                hint: 'EVERYONE IN THE GROUP CHECKS IN',
+              })),
+            ]}
+          />
+        </Card>
+      ) : null}
 
       <Button
         label={submitLabel}

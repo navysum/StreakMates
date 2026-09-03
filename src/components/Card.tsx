@@ -1,16 +1,18 @@
-import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
+import { Pressable, View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, spacing, typography } from '@/theme/tokens';
 
 type Props = {
   title?: string;
   action?: string;
+  /** Makes the action a real control. Without it the label is plain text. */
+  onAction?: () => void;
   style?: ViewStyle;
   children?: React.ReactNode;
 };
 
 /** The portal's flat panel: 1px border, 8px radius, no shadow. */
-export function Card({ title, action, style, children }: Props) {
+export function Card({ title, action, onAction, style, children }: Props) {
   const { colors } = useTheme();
   return (
     <View
@@ -24,7 +26,13 @@ export function Card({ title, action, style, children }: Props) {
         <View style={styles.header}>
           <Text style={[typography.cardTitle, { color: colors.textPrimary }]}>{title}</Text>
           {action ? (
-            <Text style={[typography.tabLabel, { color: colors.textMuted }]}>{action}</Text>
+            onAction ? (
+              <Pressable onPress={onAction} hitSlop={10} accessibilityRole="button">
+                <Text style={[typography.tabLabel, { color: colors.green }]}>{action}</Text>
+              </Pressable>
+            ) : (
+              <Text style={[typography.tabLabel, { color: colors.textMuted }]}>{action}</Text>
+            )
           ) : null}
         </View>
       ) : null}
