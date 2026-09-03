@@ -29,11 +29,49 @@ export function useProfile(userId: string | null) {
     queryFn: async (): Promise<Profile | null> => {
       const { data, error } = await db()
         .from('profiles')
-        .select('id, display_name, avatar_url, timezone')
+        .select('id, username, display_name, avatar_url, timezone')
         .eq('id', userId!)
         .maybeSingle();
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+/** Yes or no, without exposing who holds it. */
+export function useUsernameAvailable() {
+  return useMutation({
+    mutationFn: async (username: string): Promise<boolean> => {
+      const { data, error } = await db().rpc('username_available', { p_username: username });
+      if (error) throw error;
+      return data as boolean;
+    },
+  });
+}
+
+export function useSetUsername(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (username: string) => {
+      const { error } = await db()
+        .from('profiles')
+        .update({ username: username.trim() })
+        .eq('id', userId!);
+      if (error) {
+        // Two people can pick the same free name in the same moment; the
+        // unique index is what decides, and this is how it says so.
+        if (error.code === '23505') throw new Error('That username is already taken.');
+        if (error.code === '23514') {
+          throw new Error(
+            'Usernames are 3–20 characters, start with a letter, and use only letters, numbers and underscores.',
+          );
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.profile });
+      qc.invalidateQueries({ queryKey: ['group-members'] });
     },
   });
 }
@@ -307,7 +345,7 @@ export function useGroupMembers(groupId: string | undefined) {
     queryFn: async (): Promise<GroupMember[]> => {
       const { data, error } = await db()
         .from('group_members')
-        .select('group_id, user_id, role, joined_at, profile:profiles(id, display_name, avatar_url, timezone)')
+        .select('group_id, user_id, role, joined_at, profile:profiles(id, username, display_name, avatar_url, timezone)')
         .eq('group_id', groupId!)
         .order('joined_at', { ascending: true });
       if (error) throw error;

@@ -20,6 +20,7 @@ import {
   useRotateInviteCode,
 } from '@/lib/queries';
 import { formatToday, toLocalDate } from '@/lib/date';
+import { handle, initial } from '@/lib/identity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing, typography } from '@/theme/tokens';
 
@@ -149,12 +150,10 @@ export default function GroupScreen() {
                 { backgroundColor: member.role === 'owner' ? colors.green : colors.blue },
               ]}
             >
-              <Text style={styles.initial}>
-                {(member.profile?.display_name ?? '?').slice(0, 1).toUpperCase()}
-              </Text>
+              <Text style={styles.initial}>{initial(member.profile)}</Text>
             </View>
             <Text numberOfLines={1} style={[typography.rowName, styles.name, { color: colors.textPrimary }]}>
-              {member.profile?.display_name ?? 'Someone'}
+              {handle(member.profile)}
               {member.user_id === userId ? ' (you)' : ''}
             </Text>
             {member.role === 'owner' ? <Pill label="Owner" tone="good" /> : null}
