@@ -93,7 +93,7 @@ $99/year Apple Developer account) becomes worth paying for. See
 | `app/group/` | Create a group, join by code, and the group screen: today's board, shared habits, members, invite code |
 | `src/lib/streak.ts` | Streak and weekly-progress maths — pure functions, covered by `npm test` |
 | `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
-| `src/theme/` | Design tokens and the light/dark provider |
+| `src/theme/` | Design tokens, and the theme provider with System / Light / Dark, remembered between launches |
 | `assets/fonts/` | DM Sans and Cascadia Code, static instances + their OFL licences |
 
 Before Supabase is connected the app still runs: the sign-in screen shows what to
