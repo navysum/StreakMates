@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon, type TabName } from '@/components/TabIcon';
@@ -58,19 +59,19 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // MobileNav.css: 72px, 9px labels, active green, hairline top border.
-        tabBarActiveTintColor: colors.green,
+        // 49pt of bar above the home indicator is the iOS standard.
+        tabBarActiveTintColor: colors.textPrimary,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarStyle: {
-          height: 72 + insets.bottom,
-          paddingTop: 7,
-          paddingBottom: insets.bottom + 7,
+          height: 56 + insets.bottom,
+          paddingTop: 8,
+          paddingBottom: insets.bottom + 6,
           backgroundColor: colors.bgSurface,
           borderTopColor: colors.borderDefault,
-          borderTopWidth: 1,
+          borderTopWidth: StyleSheet.hairlineWidth,
           elevation: 0,
         },
-        tabBarLabelStyle: { ...typography.tabLabel, marginTop: 4 },
+        tabBarLabelStyle: { ...typography.tabLabel, marginTop: 3 },
         tabBarItemStyle: { gap: 0 },
       }}
     >

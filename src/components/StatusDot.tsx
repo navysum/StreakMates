@@ -2,36 +2,52 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { font } from '@/theme/tokens';
 
+type Props = {
+  complete: boolean;
+  /** 'sm' for the read-only group grid, where the cells are tight. */
+  size?: 'sm' | 'md';
+};
+
 /**
- * The check-in control, from the portal's HabitsCard.css:
- * 18px, filled green when complete, a 2px amber ring when not.
+ * The check-in control.
+ *
+ * Complete is a filled green circle with a tick. Incomplete is a neutral ring
+ * rather than a coloured one: a colour on every unfinished row makes the whole
+ * list shout, and then colour stops carrying any meaning. Green is reserved
+ * for the thing that actually happened.
  */
-export function StatusDot({ complete }: { complete: boolean }) {
+export function StatusDot({ complete, size = 'md' }: Props) {
   const { colors } = useTheme();
+  const d = size === 'sm' ? 20 : 26;
+  const box = { width: d, height: d, borderRadius: d / 2 };
 
   if (complete) {
     return (
-      <View style={[styles.dot, { backgroundColor: colors.green }]}>
-        <Text style={styles.tick}>✓</Text>
+      <View style={[styles.dot, box, { backgroundColor: colors.green }]}>
+        <Text style={[styles.tick, { fontSize: size === 'sm' ? 10 : 13 }]}>✓</Text>
       </View>
     );
   }
-  return <View style={[styles.dot, styles.ring, { borderColor: colors.amber }]} />;
+
+  return (
+    <View
+      style={[
+        styles.dot,
+        box,
+        styles.ring,
+        { borderColor: colors.borderStrong, backgroundColor: colors.bgSurfaceMuted },
+      ]}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ring: { borderWidth: 2, backgroundColor: 'transparent' },
+  dot: { alignItems: 'center', justifyContent: 'center' },
+  ring: { borderWidth: 2 },
   tick: {
     color: '#ffffff',
-    fontFamily: font.monoSemibold,
-    fontSize: 10,
-    lineHeight: 13,
+    fontFamily: font.bold,
+    includeFontPadding: false,
+    textAlign: 'center',
   },
 });

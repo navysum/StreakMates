@@ -1,6 +1,6 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { font, space, typography } from '@/theme/tokens';
 
 type Option<T> = { value: T; label: string; hint?: string };
 
@@ -29,12 +29,13 @@ export function Choice<T extends string | null>({
             onPress={() => onChange(opt.value)}
             accessibilityRole="radio"
             accessibilityState={{ selected: on }}
-            style={[
+            style={({ pressed }) => [
               styles.row,
               {
                 borderBottomColor: colors.borderDefault,
                 borderBottomWidth: i === options.length - 1 ? 0 : 1,
               },
+              pressed && styles.pressed,
             ]}
           >
             <View style={styles.text}>
@@ -42,7 +43,7 @@ export function Choice<T extends string | null>({
                 {opt.label}
               </Text>
               {opt.hint ? (
-                <Text style={[typography.monoSmall, { color: colors.textMuted }]}>{opt.hint}</Text>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>{opt.hint}</Text>
               ) : null}
             </View>
             <View
@@ -64,20 +65,28 @@ export function Choice<T extends string | null>({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 44,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.md,
+    paddingVertical: space.sm,
   },
   text: { flex: 1, minWidth: 0, gap: 1 },
   dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tick: { color: '#fff', fontFamily: 'CascadiaCode-SemiBold', fontSize: 10, lineHeight: 13 },
+  tick: {
+    color: '#ffffff',
+    fontFamily: font.bold,
+    fontSize: 12,
+    includeFontPadding: false,
+    textAlign: 'center',
+  },
+  pressed: { opacity: 0.6 },
 });

@@ -1,7 +1,7 @@
 import { Modal, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { elevation, radius, space, typography } from '@/theme/tokens';
 
 export type SheetAction = {
   label: string;
@@ -25,7 +25,7 @@ export function Sheet({
   actions: SheetAction[];
   onClose: () => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -40,6 +40,7 @@ export function Sheet({
         <View
           style={[
             styles.sheet,
+            elevation[scheme],
             { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
           ]}
         >
@@ -75,7 +76,7 @@ export function Sheet({
                 {action.label}
               </Text>
               {action.hint ? (
-                <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
                   {action.hint}
                 </Text>
               ) : null}
@@ -86,18 +87,17 @@ export function Sheet({
         <Pressable
           onPress={onClose}
           accessibilityRole="button"
-          style={[
+          style={({ pressed }) => [
             styles.cancel,
+            elevation[scheme],
             {
-              backgroundColor: colors.bgSurface,
+              backgroundColor: pressed ? colors.bgHover : colors.bgSurface,
               borderColor: colors.borderDefault,
-              marginBottom: insets.bottom + 10,
+              marginBottom: insets.bottom + space.md,
             },
           ]}
         >
-          <Text style={[typography.rowName, styles.cancelLabel, { color: colors.textSecondary }]}>
-            Cancel
-          </Text>
+          <Text style={[typography.action, { color: colors.textPrimary }]}>Cancel</Text>
         </Pressable>
       </View>
     </Modal>
@@ -111,17 +111,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-  dock: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: 12, gap: 8 },
-  sheet: { borderWidth: 1, borderRadius: 14, overflow: 'hidden' },
-  title: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10 },
-  row: { paddingHorizontal: 16, paddingVertical: 15, gap: 3 },
+  dock: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: space.md, gap: space.sm },
+  sheet: { borderWidth: 1, borderRadius: radius.card, overflow: 'hidden' },
+  title: { paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space.md },
+  row: { paddingHorizontal: space.xl, paddingVertical: space.lg, gap: 2, minHeight: 56 },
   cancel: {
     borderWidth: 1,
-    borderRadius: 14,
-    paddingVertical: 16,
+    borderRadius: radius.card,
+    paddingVertical: space.lg + 2,
     alignItems: 'center',
   },
-  cancelLabel: { fontWeight: '600' },
 });

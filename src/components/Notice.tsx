@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography } from '@/theme/tokens';
+import { radius, space, typography } from '@/theme/tokens';
 
 type Props = { label?: string; children: string; tone?: 'muted' | 'good' | 'warn' | 'bad' };
 
@@ -16,12 +16,11 @@ export function Notice({ label, children, tone = 'muted' }: Props) {
   return (
     <View style={[styles.box, { backgroundColor: map.bg }]}>
       {label ? <Text style={[typography.label, { color: map.fg }]}>{label}</Text> : null}
-      <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>{children}</Text>
+      <Text style={[typography.body, { color: colors.textSecondary }]}>{children}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  box: { padding: 14, borderRadius: radius.card, gap: 6 },
-  body: { lineHeight: 17 },
+  box: { padding: space.lg, borderRadius: radius.card, gap: space.xs + 2 },
 });
