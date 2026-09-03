@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { Card } from './Card';
 import { Choice } from './Choice';
 import { Field, FieldRow } from './Field';
+import { IconPicker } from './IconPicker';
 import { Segmented } from './Segmented';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, spacing, typography } from '@/theme/tokens';
@@ -87,13 +88,6 @@ export function HabitForm({
           maxLength={80}
           returnKeyType="done"
         />
-        <Field
-          label="Icon"
-          value={value.emoji}
-          onChangeText={(t) => set('emoji', t)}
-          placeholder="Optional"
-          maxLength={4}
-        />
         <FieldRow label="Colour" last>
           {COLORS.map((c) => (
             <Pressable
@@ -114,6 +108,10 @@ export function HabitForm({
             />
           ))}
         </FieldRow>
+      </Card>
+
+      <Card title="Icon">
+        <IconPicker value={value.emoji} onChange={(e) => set('emoji', e)} />
       </Card>
 
       <Card title="Schedule">

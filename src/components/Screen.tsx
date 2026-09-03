@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, StyleSheet } from 'react-native';
+import { Pressable, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing, typography } from '@/theme/tokens';
@@ -6,10 +6,13 @@ import { spacing, typography } from '@/theme/tokens';
 type Props = {
   title: string;
   eyebrow?: string;
+  /** Opens a menu for actions that shouldn't sit in the page body. */
+  onMenu?: () => void;
+  menuLabel?: string;
   children?: React.ReactNode;
 };
 
-export function Screen({ title, eyebrow, children }: Props) {
+export function Screen({ title, eyebrow, onMenu, menuLabel = 'More', children }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -37,6 +40,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.page,
     gap: spacing.card,
   },
-  head: { gap: 3 },
+  headRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 },
+  head: { gap: 3, flex: 1, minWidth: 0 },
   eyebrow: { marginTop: 1 },
+  menu: {
+    width: 34,
+    height: 30,
+    borderWidth: 1,
+    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  pip: { width: 3, height: 3, borderRadius: 1.5 },
 });
