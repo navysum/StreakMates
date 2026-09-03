@@ -50,16 +50,18 @@ the other.
    | --- | --- |
    | App name | Anything — it's what people see on the Google consent screen |
    | User support email | Your own address |
-   | Authorised domain 1 | `supabase.co` |
+   | Authorised domain 1 | `<project-ref>.supabase.co` — your full project host |
    | Developer contact email | Your own address again |
 
    Everything else on that page (logo, home page, privacy policy, terms) is
    optional while the app is in Testing.
 
-   > **Authorised domain is `supabase.co`, not your project host.** Google wants
-   > the registrable domain and rejects a subdomain, so
-   > `xxxxxxxx.supabase.co` will not be accepted. The short form still covers
-   > your project.
+   > **The authorised domain is the full project host, not `supabase.co`.**
+   > That looks wrong — Google normally wants the registrable domain — but
+   > Supabase has `supabase.co` on the Public Suffix List so that every project
+   > is isolated from every other one. That makes `supabase.co` a *public*
+   > suffix, and your project host the top private domain beneath it. Entering
+   > the short form gets you *"Invalid domain: must be a top private domain"*.
 4. Go to **Audience**. While publishing status is **Testing**, only accounts
    you list can sign in, so add your own Google account under **Test users**.
    Miss this and sign-in fails with "app is blocked" — which looks like a bug
