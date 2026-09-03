@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Notice';
 import { useAuth } from '@/auth/AuthProvider';
+import { configError } from '@/lib/supabase';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing, typography } from '@/theme/tokens';
 
@@ -53,8 +54,9 @@ export default function SignInScreen() {
           </Text>
         </>
       ) : (
-        <Notice label="Setup needed" tone="warn">
-          {'No Supabase project is connected yet. Create one, run supabase/migrations/0001_init.sql in its SQL editor, then copy .env.example to .env with your project URL and anon key and restart the dev server. Full steps are in supabase/README.md.'}
+        <Notice label={configError ? 'Check your .env' : 'Setup needed'} tone="warn">
+          {configError ??
+            'No Supabase project is connected yet. Create one, run supabase/migrations/0001_init.sql in its SQL editor, then copy .env.example to .env with your project URL and anon key and restart the dev server. Full steps are in supabase/README.md.'}
         </Notice>
       )}
     </ScrollView>
