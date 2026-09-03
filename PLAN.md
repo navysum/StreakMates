@@ -5,6 +5,8 @@ front of a small group of friends who can see, react and nudge.
 
 A rendered version of this plan (with screen mockups) lives in `docs/plan.html`.
 
+The app inherits its visual system from `navysum/life-os-portal` — see section 2.
+
 ## 1. The core idea
 
 - A **private habit** is a row in `habits` owned by you, with `group_id` null.
@@ -15,11 +17,61 @@ A rendered version of this plan (with screen mockups) lives in `docs/plan.html`.
 
 The group board is simply: for today's date, who has a check-in row and who doesn't.
 
-## 2. Stack
+## 2. Design system — inherited from LifeOS
+
+The app is **not** styled from scratch. It reuses the design system already running in
+`navysum/life-os-portal`, so the phone app and the dashboard read as one product.
+
+Source of truth: `life-os-portal/src/styles/variables.css`.
+
+**Typography**
+- `--font-ui` = **DM Sans** (variable) — everything you read.
+- `--font-mono` = **Cascadia Code** (variable) — every number, code and uppercase micro-label,
+  always with `tabular-nums`.
+- Both TTFs live in `life-os-portal/fonts/`. Copy those files and register them with
+  `expo-font`. Do not re-source them from Google Fonts, or weights will drift apart.
+
+**Palette** (light / dark)
+
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--palette-background` | `#ffffff` | `#000000` |
+| `--palette-primary` (text) | `#171717` | `#f2f2ee` |
+| `--text-secondary` | `#737373` | `#a9aaa6` |
+| `--text-muted` | `#949494` | `#777a76` |
+| `--bg-surface` | `#ffffff` | `#101110` |
+| `--bg-surface-muted` | `#f5f5f3` | `#252725` |
+| `--border-default` | `#e4e4e1` | `#292b29` |
+| `--green` (primary action) | `#3f6248` | `#7e9b7a` |
+| `--amber` (pending / warn) | `#a46f2b` | `#c39552` |
+| `--blue` | `#3f5a80` | `#7691bc` |
+| `--purple` | `#6c4f80` | `#a189b3` |
+| `--teal` | `#2f7266` | `#6ba597` |
+| `--coral` | `#a15547` | `#c48f7c` |
+
+**Layout and component rules** (as the portal already applies them)
+- Flat surfaces: 1px `--border-default`, `--card-radius` 8px, `--button-radius` 6px, **no shadows**.
+- Spacing tokens: `--page-padding` 32px, `--section-gap` 20px, `--card-gap` 14px.
+- Micro-labels: 8px, weight 600, uppercase, `0.06em` tracking, `--text-muted`.
+- Rows are separated by hairline bottom borders, not gaps; `:last-child` drops the border.
+- Pills: `999px` radius, soft tint background with matching foreground, mono 8px uppercase.
+- Bottom nav (from `MobileNav.css`): 72px min-height, 19px icons, 9px labels, active state `--green`.
+
+**The check-in circle is already designed.** `HabitsCard.css` defines it: 18px, filled
+`--green` when complete, a 2px `--amber` ring when not. That is the single most important
+control in the app and it is inherited, not invented.
+
+**Porting note.** React Native has no CSS custom properties. Port `variables.css` once into a
+typed `theme.ts` exporting the same token names, selecting light or dark from the device
+setting. Same names, same values, two syntaxes.
+
+## 3. Stack
 
 | Piece | Choice | Why |
 | --- | --- | --- |
 | App | Expo (React Native) + TypeScript | One codebase for iOS and Android; cloud builds mean no Mac required |
+| Theme | Ported `variables.css` → `theme.ts` | Same token names and values as the portal, so a colour change lands in both |
+| Fonts | `expo-font` with the portal's TTFs | DM Sans and Cascadia Code bundled — identical rendering to the dashboard |
 | Backend | Supabase | Hosted Postgres + Google auth + realtime + row-level security in one service |
 | Login | Native Google Sign-In → `supabase.auth.signInWithIdToken` | Native account picker instead of a browser bounce |
 | Data layer | TanStack Query | Caching, optimistic check-ins, automatic retry |
@@ -29,7 +81,7 @@ The group board is simply: for today's date, who has a check-in row and who does
 
 Cost: Supabase free tier to start ($25/mo Pro later), Apple $99/yr, Google Play $25 once.
 
-## 3. Screens
+## 4. Screens
 
 1. **Sign in** — Continue with Google, Continue with Apple.
 2. **Today** — segmented Mine / Shared; habit cards with a tap-to-check circle and streak.
@@ -38,7 +90,7 @@ Cost: Supabase free tier to start ($25/mo Pro later), Apple $99/yr, Google Play 
 5. **Join a group** — six-character code entry with a live group preview, or create one.
 6. **Activity** — check-ins, streak milestones, joins; emoji reactions and nudges.
 
-## 4. Schema
+## 5. Schema
 
 ```
 profiles       id(uuid, = auth user) · display_name · avatar_url · timezone
@@ -55,7 +107,7 @@ nudges         id · habit_id · from_user · to_user · created_at
 **Streaks are computed on read, never stored.** A stored counter drifts as soon as a
 check-in arrives late from an offline device. Denormalise only if a screen gets slow.
 
-## 5. Invite codes
+## 6. Invite codes
 
 1. Creating a group generates a 6-character code from an alphabet excluding `0 O 1 I`.
 2. Sharing uses the native share sheet plus a deep link that pre-fills the code.
@@ -66,7 +118,7 @@ check-in arrives late from an offline device. Denormalise only if a screen gets 
    codes can't be scraped.
 5. Rate-limit the function (~10 attempts/hour/user) or the code space is brute-forceable.
 
-## 6. Row-level security
+## 7. Row-level security
 
 | Table | Read | Write |
 | --- | --- | --- |
@@ -84,7 +136,7 @@ helper function (`is_group_member(gid uuid)`) and call that from every policy.
 Private habits have no group and no policy grants anyone else access. Warn clearly
 before converting a private habit to shared — it cannot be un-seen.
 
-## 7. Known pitfalls
+## 8. Known pitfalls
 
 - **Timezones.** Compute `local_date` on the device from the user's timezone; never
   derive the day from a UTC timestamp server-side.
@@ -95,11 +147,11 @@ before converting a private habit to shared — it cannot be un-seen.
 - **Nudge limits.** One per person, per habit, per day, plus a global off switch.
 - **Leaving a group.** Decide up front whether history is removed or retained-but-hidden.
 
-## 8. Build order
+## 9. Build order
 
 | Phase | Scope | Done when |
 | --- | --- | --- |
-| 0 | Expo app + Supabase project + tab shell | App icon on your home screen |
+| 0 | Expo app + Supabase project + `theme.ts` + fonts + tab shell | App icon on your home screen |
 | 1 | Google login, profiles, private habits, check-ins, streaks | Usable solo tracker |
 | 2 | Groups, invite codes, membership, RLS policies | A friend appears in your app |
 | 3 | Shared habits, Shared tab, group board, realtime | The actual product |

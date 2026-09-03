@@ -1,380 +1,523 @@
 <title>Habits With Friends</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
 <style>
+  /* ============================================================
+     Tokens lifted verbatim from life-os-portal/src/styles/variables.css
+     so the app and the dashboard stay one system.
+     ============================================================ */
   :root{
-    --ground:#EDF0EB;
-    --surface:#FFFFFF;
-    --surface-2:#F5F7F3;
-    --ink:#14201C;
-    --muted:#65756D;
-    --line:#D6DCD4;
-    --accent:#17624A;
-    --accent-soft:#DDEBE3;
-    --streak:#C07A0E;
-    --streak-soft:#F6E9CE;
-    --frame:#20302B;
-    --screen:#FFFFFF;
-    --dot-off:#DFE5DC;
-    --display:"Bricolage Grotesque","Helvetica Neue",Arial,sans-serif;
-    --body:"Source Serif 4",Georgia,"Times New Roman",serif;
-    --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
-    --maxw:37rem;
+    --font-ui:"DM Sans",Arial,sans-serif;
+    --font-mono:"Cascadia Code","Cascadia Mono",Consolas,ui-monospace,monospace;
+
+    --palette-background:#ffffff;
+    --palette-primary:#171717;
+    --palette-secondary:#737373;
+    --palette-green:#3f6248;
+    --palette-amber:#a46f2b;
+    --palette-blue:#3f5a80;
+    --palette-purple:#6c4f80;
+    --palette-teal:#2f7266;
+    --palette-coral:#a15547;
+
+    --bg-page:var(--palette-background);
+    --bg-sidebar:#fafafa;
+    --bg-surface:#ffffff;
+    --bg-surface-muted:#f5f5f3;
+    --bg-hover:#f1f2ef;
+
+    --text-primary:var(--palette-primary);
+    --text-secondary:var(--palette-secondary);
+    --text-muted:#949494;
+
+    --border-default:#e4e4e1;
+    --border-strong:#ccccca;
+
+    --green:var(--palette-green);   --green-soft:#edf2ed;
+    --amber:var(--palette-amber);   --amber-soft:#faf1e5;
+    --blue:var(--palette-blue);     --blue-soft:#e9eef5;
+    --purple:var(--palette-purple); --purple-soft:#efeaf2;
+    --teal:var(--palette-teal);     --teal-soft:#e8f1ee;
+    --coral:var(--palette-coral);   --coral-soft:#f5eae7;
+    --red:#955c55;                  --red-soft:#f6ecea;
+
+    --green-muted:#c9d5cb;
+    --green-faint:#dde5de;
+    --neutral-chart:#ecefeb;
+
+    --page-padding:32px;
+    --section-gap:20px;
+    --card-gap:14px;
+    --card-radius:8px;
+    --button-radius:6px;
+    --transition-fast:150ms ease;
   }
   @media (prefers-color-scheme: dark){
     :root:not([data-theme="light"]){
-      --ground:#0E1512;--surface:#18211E;--surface-2:#141C19;--ink:#E7EEEA;--muted:#93A49B;
-      --line:#2A3833;--accent:#5CC79B;--accent-soft:#1C3831;--streak:#E5B25C;--streak-soft:#3A2F17;
-      --frame:#000000;--screen:#161E1B;--dot-off:#2C3A34;
+      --palette-background:#000000;
+      --palette-primary:#f2f2ee;
+      --palette-secondary:#252725;
+      --palette-green:#7e9b7a;
+      --palette-amber:#c39552;
+      --palette-blue:#7691bc;
+      --palette-purple:#a189b3;
+      --palette-teal:#6ba597;
+      --palette-coral:#c48f7c;
+      --bg-sidebar:#0d0e0d; --bg-surface:#101110; --bg-surface-muted:#252725; --bg-hover:#1c1e1c;
+      --text-secondary:#a9aaa6; --text-muted:#777a76;
+      --border-default:#292b29; --border-strong:#414441;
+      --green-soft:#1d261e; --amber-soft:#2b2318; --blue-soft:#1c2430;
+      --purple-soft:#241f28; --teal-soft:#1a2622; --coral-soft:#2a2119;
+      --red:#bb7770; --red-soft:#2c1c1b;
+      --green-muted:#364139; --green-faint:#2b332d; --neutral-chart:#303330;
     }
   }
   :root[data-theme="dark"]{
-    --ground:#0E1512;--surface:#18211E;--surface-2:#141C19;--ink:#E7EEEA;--muted:#93A49B;
-    --line:#2A3833;--accent:#5CC79B;--accent-soft:#1C3831;--streak:#E5B25C;--streak-soft:#3A2F17;
-    --frame:#000000;--screen:#161E1B;--dot-off:#2C3A34;
+    --palette-background:#000000;
+    --palette-primary:#f2f2ee;
+    --palette-secondary:#252725;
+    --palette-green:#7e9b7a;
+    --palette-amber:#c39552;
+    --palette-blue:#7691bc;
+    --palette-purple:#a189b3;
+    --palette-teal:#6ba597;
+    --palette-coral:#c48f7c;
+    --bg-sidebar:#0d0e0d; --bg-surface:#101110; --bg-surface-muted:#252725; --bg-hover:#1c1e1c;
+    --text-secondary:#a9aaa6; --text-muted:#777a76;
+    --border-default:#292b29; --border-strong:#414441;
+    --green-soft:#1d261e; --amber-soft:#2b2318; --blue-soft:#1c2430;
+    --purple-soft:#241f28; --teal-soft:#1a2622; --coral-soft:#2a2119;
+    --red:#bb7770; --red-soft:#2c1c1b;
+    --green-muted:#364139; --green-faint:#2b332d; --neutral-chart:#303330;
   }
 
   *{box-sizing:border-box}
-  body{background:var(--ground);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.62;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
-  h1,h2,h3,h4{font-family:var(--display);text-wrap:balance;margin:0}
+  body{margin:0;background:var(--bg-page);color:var(--text-primary);
+    font-family:var(--font-ui);font-size:15px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  .wrap{max-width:720px;margin:0 auto;padding:0 var(--page-padding)}
+  h1,h2,h3{margin:0;font-weight:700;text-wrap:balance;letter-spacing:-.01em}
   p{margin:0}
-  a{color:var(--accent)}
+  a{color:var(--green)}
+  .mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
 
   /* ---------- masthead ---------- */
-  .mast{padding:64px 0 40px}
-  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-  .mast h1{font-size:clamp(2.4rem,7vw,3.5rem);line-height:1.02;font-weight:800;letter-spacing:-.025em;margin:14px 0 16px}
-  .mast .lede{font-size:1.22rem;color:var(--muted);max-width:32rem}
-  .facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
-  .fact{font-family:var(--mono);font-size:11.5px;padding:5px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);background:var(--surface)}
+  .mast{padding:56px 0 28px;border-bottom:1px solid var(--border-default)}
+  .kicker{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted)}
+  .mast h1{font-size:clamp(1.9rem,5.5vw,2.6rem);line-height:1.1;margin:12px 0 14px}
+  .mast .lede{font-size:1.05rem;color:var(--text-secondary);max-width:34rem}
+  .pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:22px}
+  .pill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
+    background:var(--bg-surface-muted);color:var(--text-secondary);
+    font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  .pill.good{background:var(--green-soft);color:var(--green)}
+  .pill.warn{background:var(--amber-soft);color:var(--amber)}
 
   /* ---------- sections ---------- */
-  section{padding:44px 0}
-  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
-  .sec-num{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600}
-  h2{font-size:1.72rem;font-weight:700;letter-spacing:-.018em}
-  .sec-sub{color:var(--muted);margin:6px 0 26px;font-size:1.02rem}
-  section > .wrap > p + p,
-  section > .wrap > p + .callout,
-  section > .wrap > .callout + p{margin-top:16px}
-  h3{font-size:1.06rem;font-weight:700;margin:30px 0 8px;letter-spacing:-.005em}
-  .rule{height:1px;background:var(--line);border:0;margin:0}
+  section{padding:34px 0;border-bottom:1px solid var(--border-default)}
+  section:last-of-type{border-bottom:0}
+  .sec-label{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+  h2{font-size:1.32rem}
+  .sec-sub{color:var(--text-secondary);margin:6px 0 22px;font-size:.96rem}
+  h3{font-size:.95rem;margin:26px 0 6px}
+  .stack{display:flex;flex-direction:column;gap:14px}
 
-  /* ---------- callout ---------- */
-  .callout{background:var(--accent-soft);border-radius:4px 14px 14px 4px;border-left:3px solid var(--accent);padding:18px 20px}
-  .callout .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
-  .callout p{font-size:1.02rem}
-  code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);border:1px solid var(--line);padding:1px 5px;border-radius:4px}
-  .callout code{background:transparent;border-color:transparent;padding:0;font-weight:600}
+  /* ---------- note panel ---------- */
+  .note{padding:18px;background:var(--bg-surface-muted);border:1px solid var(--border-default);
+    border-radius:var(--card-radius)}
+  .note.accent{background:var(--green-soft);border-color:var(--green-faint)}
+  .note.caution{background:var(--amber-soft);border-color:var(--amber-soft)}
+  .note .h{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted);display:block;margin-bottom:7px}
+  .note.accent .h{color:var(--green)}
+  .note.caution .h{color:var(--amber)}
+  .note p{font-size:.96rem}
+  code{font-family:var(--font-mono);font-size:.85em;background:var(--bg-surface-muted);
+    border:1px solid var(--border-default);padding:1px 5px;border-radius:4px}
+  .note code{background:transparent;border-color:transparent;padding:0;font-weight:600}
 
   /* ---------- phone gallery ---------- */
-  .gallery{background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .rail{display:flex;gap:26px;overflow-x:auto;padding:6px 22px 30px;scroll-snap-type:x proximity}
-  .rail::-webkit-scrollbar{height:8px}
-  .rail::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
-  .shot{scroll-snap-align:center;flex:0 0 auto;width:252px}
-  .shot figcaption{margin-top:12px}
-  .shot .cap-t{font-family:var(--display);font-weight:700;font-size:.94rem}
-  .shot .cap-d{font-size:.86rem;color:var(--muted);line-height:1.45}
+  .gallery{background:var(--bg-sidebar);border-bottom:1px solid var(--border-default)}
+  .rail{display:flex;gap:var(--card-gap);overflow-x:auto;padding:4px var(--page-padding) 30px;
+    scroll-snap-type:x proximity}
+  .rail::-webkit-scrollbar{height:6px}
+  .rail::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:999px}
+  .shot{scroll-snap-align:center;flex:0 0 auto;width:250px}
+  .shot figcaption{margin-top:10px}
+  .cap-t{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .cap-d{font-size:11px;color:var(--text-secondary);line-height:1.5;margin-top:3px}
 
-  .phone{width:252px;height:512px;background:var(--screen);border:7px solid var(--frame);border-radius:34px;overflow:hidden;display:flex;flex-direction:column;font-family:var(--display);box-shadow:0 14px 28px rgba(20,32,28,.13)}
-  .status{display:flex;justify-content:space-between;align-items:center;padding:9px 16px 3px;font-size:9.5px;font-family:var(--mono);color:var(--muted)}
-  .pbody{flex:1;padding:8px 14px 0;overflow:hidden;display:flex;flex-direction:column;gap:10px}
-  .ptitle{font-size:1.32rem;font-weight:800;letter-spacing:-.02em}
-  .psub{font-size:10.5px;color:var(--muted);font-family:var(--mono)}
-  .seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:2.5px;gap:2.5px}
-  .seg span{flex:1;text-align:center;font-size:11px;font-weight:600;padding:5px 0;border-radius:6.5px;color:var(--muted)}
-  .seg span.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,32,28,.1)}
+  /* ---------- the device ---------- */
+  .phone{width:250px;height:508px;background:var(--bg-page);
+    border:1px solid var(--border-strong);border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .status{display:flex;justify-content:space-between;padding:9px 16px 4px;
+    font-family:var(--font-mono);font-size:8px;color:var(--text-muted)}
+  .pbody{flex:1;padding:6px 14px 0;overflow:hidden;display:flex;flex-direction:column;gap:12px}
+  .ptitle{font-size:19px;font-weight:700;letter-spacing:-.01em}
+  .peyebrow{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted);margin-top:3px}
+  .grow{flex:1}
 
-  .hcard{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:11px 12px}
-  .hcard .emo{font-size:17px;width:24px;text-align:center}
-  .hcard .txt{flex:1;min-width:0}
-  .hcard .nm{font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hcard .mt{font-size:10px;color:var(--muted);font-family:var(--mono);margin-top:1px}
-  .tick{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:grid;place-items:center;font-size:12px;color:transparent}
-  .tick.done{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
-  .hcard.done{border-color:var(--accent);background:var(--accent-soft)}
-  .flame{color:var(--streak);font-weight:700}
+  /* segmented control */
+  .seg{display:flex;border:1px solid var(--border-default);border-radius:var(--button-radius);overflow:hidden}
+  .seg span{flex:1;text-align:center;font-size:10px;font-weight:600;padding:6px 0;
+    color:var(--text-muted);background:var(--bg-surface)}
+  .seg span + span{border-left:1px solid var(--border-default)}
+  .seg span.on{background:var(--green-soft);color:var(--green)}
 
-  .board{background:var(--surface);border:1px solid var(--line);border-radius:13px;padding:11px}
-  .brow{display:grid;grid-template-columns:1fr repeat(4,20px);align-items:center;gap:7px;padding:6px 0}
-  .brow + .brow{border-top:1px solid var(--line)}
-  .brow .lbl{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .brow.head .lbl{font-size:9.5px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:400}
-  .av{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:8.5px;font-weight:700;color:#fff;font-family:var(--mono)}
-  .dot{width:20px;height:20px;border-radius:50%;background:var(--dot-off);display:grid;place-items:center;font-size:10px;color:transparent}
-  .dot.on{background:var(--accent);color:#fff;font-weight:700}
+  /* habit rows — the portal's HabitsCard vocabulary */
+  .card{padding:14px;background:var(--bg-surface);border:1px solid var(--border-default);
+    border-radius:var(--card-radius)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+  .card-h h4{margin:0;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+  .card-h .lnk{font-size:9px;color:var(--text-muted);font-weight:500}
+  .hrow{min-height:44px;display:flex;align-items:center;gap:10px;
+    border-bottom:1px solid var(--border-default)}
+  .hrow:last-child{border-bottom:0}
+  .hinfo{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+  .hname{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hstreak{font-family:var(--font-mono);font-size:8px;color:var(--text-muted)}
+  .hstreak.warn{color:var(--amber)}
+  /* the check circle, exactly as HabitsCard.css defines it */
+  .status-dot{width:18px;height:18px;flex-shrink:0;display:grid;place-items:center;border-radius:50%;
+    font-family:var(--font-mono);font-size:10px;font-weight:700}
+  .status-dot.completed{background:var(--green);color:#fff}
+  .status-dot.incomplete{border:2px solid var(--amber);background:transparent}
 
-  .stat{display:flex;gap:10px}
-  .stat div{flex:1;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:9px 10px}
-  .stat .n{font-size:1.42rem;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-  .stat .l{font-size:9px;font-family:var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.09em}
-  .heat{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
-  .heat i{aspect-ratio:1;border-radius:3px;background:var(--dot-off)}
-  .heat i.on{background:var(--accent)}
-  .heat i.half{background:var(--accent);opacity:.42}
+  /* group board */
+  .brow{display:grid;grid-template-columns:1fr repeat(4,18px);align-items:center;gap:8px;
+    min-height:38px;border-bottom:1px solid var(--border-default)}
+  .brow:last-child{border-bottom:0}
+  .brow .lbl{font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .brow.head{min-height:26px}
+  .brow.head .lbl{font-family:var(--font-mono);font-size:8px;font-weight:600;letter-spacing:.06em;
+    text-transform:uppercase;color:var(--text-muted)}
+  .av{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;
+    font-family:var(--font-mono);font-size:8px;font-weight:600;color:#fff}
 
-  .codeboxes{display:flex;gap:6px;justify-content:center;margin:4px 0}
-  .codeboxes b{width:32px;height:42px;border:1.5px solid var(--line);border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-size:17px;font-weight:600}
-  .codeboxes b.filled{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-  .btn{background:var(--accent);color:#fff;text-align:center;padding:11px;border-radius:10px;font-size:12.5px;font-weight:700}
-  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
-  .btn.dark{background:var(--ink);color:var(--ground)}
-  .or{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:9.5px;font-family:var(--mono)}
-  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+  /* stat tiles */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .stat{padding:10px;background:var(--bg-surface);border:1px solid var(--border-default);
+    border-radius:var(--card-radius);display:flex;flex-direction:column}
+  .stat span{font-size:8px;font-weight:600;text-transform:uppercase;color:var(--text-muted)}
+  .stat strong{margin-top:2px;font-family:var(--font-mono);font-size:17px;font-weight:600;
+    font-variant-numeric:tabular-nums}
+  .stat strong.pos{color:var(--green)}
 
-  .feed{display:flex;gap:9px;padding:9px 0}
-  .feed + .feed{border-top:1px solid var(--line)}
-  .feed .txt{flex:1;font-size:11.5px;line-height:1.42}
-  .feed .when{font-size:9px;font-family:var(--mono);color:var(--muted);margin-top:2px}
-  .rx{display:inline-flex;gap:3px;align-items:center;border:1px solid var(--line);border-radius:99px;padding:1.5px 7px;font-size:10px;margin-top:5px;background:var(--surface)}
+  /* heatmap */
+  .heat{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
+  .heat i{aspect-ratio:1;border-radius:2px;background:var(--neutral-chart)}
+  .heat i.on{background:var(--green)}
+  .heat i.mid{background:var(--green-muted)}
 
-  .mark{width:44px;height:44px;border-radius:50%;border:4px solid var(--accent);border-right-color:var(--dot-off);margin:0 auto}
-  .nav{display:flex;border-top:1px solid var(--line);padding:8px 0 12px;margin-top:auto;background:var(--surface)}
-  .nav span{flex:1;text-align:center;font-size:8.5px;font-family:var(--mono);color:var(--muted)}
-  .nav span.on{color:var(--accent);font-weight:600}
-  .spacer{flex:1}
+  /* code entry */
+  .codebox{display:flex;gap:5px;justify-content:center}
+  .codebox b{width:32px;height:40px;border:1px solid var(--border-default);
+    border-radius:var(--button-radius);display:grid;place-items:center;
+    font-family:var(--font-mono);font-size:16px;font-weight:600;background:var(--bg-surface)}
+  .codebox b.filled{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+  .btn{min-height:34px;display:flex;align-items:center;justify-content:center;
+    border:1px solid var(--border-default);border-radius:var(--button-radius);
+    background:var(--bg-surface);color:var(--text-secondary);font-size:10px;font-weight:600}
+  .btn.primary{border-color:var(--green);background:var(--green-soft);color:var(--green)}
+  .divider{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);
+    font-size:8px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--border-default)}
+  .fineprint{font-family:var(--font-mono);font-size:8px;line-height:1.6;color:var(--text-muted);
+    text-align:center}
 
-  /* ---------- schema ---------- */
-  .tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;margin-top:8px}
-  .tbl{background:var(--surface);border:1px solid var(--line);border-radius:11px;overflow:hidden}
-  .tbl h4{font-family:var(--mono);font-size:11.5px;font-weight:600;padding:9px 12px;background:var(--surface-2);border-bottom:1px solid var(--line);letter-spacing:.02em}
-  .tbl ul{list-style:none;margin:0;padding:7px 12px 10px;font-family:var(--mono);font-size:11px;line-height:1.75;color:var(--muted)}
-  .tbl li b{color:var(--ink);font-weight:600}
-  .tbl .note{display:block;font-family:var(--body);font-size:12px;padding:0 12px 11px;color:var(--muted);line-height:1.4}
+  /* activity */
+  .frow{display:flex;gap:9px;padding:10px 0;border-bottom:1px solid var(--border-default)}
+  .frow:last-child{border-bottom:0}
+  .ftxt{flex:1;font-size:11px;line-height:1.45;min-width:0}
+  .fwhen{display:block;font-family:var(--font-mono);font-size:8px;color:var(--text-muted);margin-top:2px}
+  .rx{display:inline-flex;gap:3px;padding:2px 6px;border-radius:999px;
+    border:1px solid var(--border-default);font-family:var(--font-mono);font-size:8px;margin-top:4px}
 
-  /* ---------- steps ---------- */
-  ol.steps{list-style:none;counter-reset:s;margin:8px 0 0;padding:0}
-  ol.steps li{counter-increment:s;position:relative;padding:0 0 20px 40px}
-  ol.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;display:grid;place-items:center}
-  ol.steps li::after{content:"";position:absolute;left:11.5px;top:29px;bottom:2px;width:1px;background:var(--line)}
-  ol.steps li:last-child{padding-bottom:0}
-  ol.steps li:last-child::after{display:none}
-  ol.steps b{font-family:var(--display);font-size:.98rem}
+  /* bottom nav — MobileNav.css: 72px, 9px labels, active green */
+  .nav{min-height:52px;display:grid;grid-template-columns:repeat(4,1fr);
+    border-top:1px solid var(--border-default);background:var(--bg-surface);margin-top:auto;padding:6px 0}
+  .nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    font-size:9px;font-weight:500;color:var(--text-muted);text-decoration:none}
+  .nav a.active{color:var(--green)}
+  .nav .ico{width:15px;height:15px;border-radius:3px;background:currentColor;opacity:.65}
+  .nav a.active .ico{opacity:1}
 
-  /* ---------- plain lists ---------- */
-  .gotchas{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:18px}
-  .gotchas li{padding-left:16px;border-left:2px solid var(--streak)}
-  .gotchas b{font-family:var(--display);display:block;font-size:1rem}
+  /* mark */
+  .mark{width:40px;height:40px;border-radius:50%;border:3px solid var(--green);
+    border-right-color:var(--green-faint);margin:0 auto}
+
+  /* ---------- swatches ---------- */
+  .swatches{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-top:6px}
+  .sw{border:1px solid var(--border-default);border-radius:var(--card-radius);overflow:hidden;
+    background:var(--bg-surface)}
+  .sw .chip{height:38px}
+  .sw .meta{padding:7px 9px}
+  .sw .nm{font-size:9px;font-weight:600}
+  .sw .hx{font-family:var(--font-mono);font-size:8px;color:var(--text-muted);text-transform:uppercase}
 
   /* ---------- tables ---------- */
-  .scroller{overflow-x:auto;margin-top:10px;border:1px solid var(--line);border-radius:11px;background:var(--surface)}
-  table{border-collapse:collapse;width:100%;font-size:14px;min-width:420px}
-  th,td{text-align:left;padding:10px 13px;border-bottom:1px solid var(--line);vertical-align:top}
-  th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:400;background:var(--surface-2)}
+  .tscroll{overflow-x:auto;margin-top:10px}
+  table{width:100%;min-width:460px;border-collapse:collapse}
+  th{padding:0 10px 8px 0;color:var(--text-muted);font-size:8px;font-weight:600;
+    letter-spacing:.06em;text-align:left;text-transform:uppercase;
+    border-bottom:1px solid var(--border-default);white-space:nowrap}
+  td{padding:10px 10px 10px 0;font-size:13px;border-bottom:1px solid var(--border-default);
+    vertical-align:top}
   tr:last-child td{border-bottom:0}
-  td:first-child{font-family:var(--display);font-weight:700;white-space:nowrap}
-  td.small{color:var(--muted);font-size:13.5px}
+  td.k{font-weight:600;white-space:nowrap}
+  td.d{color:var(--text-secondary)}
+
+  /* ---------- schema ---------- */
+  .tables{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:var(--card-gap)}
+  .tbl{background:var(--bg-surface);border:1px solid var(--border-default);
+    border-radius:var(--card-radius);overflow:hidden}
+  .tbl h4{margin:0;padding:9px 12px;font-family:var(--font-mono);font-size:10px;font-weight:600;
+    background:var(--bg-surface-muted);border-bottom:1px solid var(--border-default)}
+  .tbl ul{margin:0;padding:8px 12px;list-style:none;font-family:var(--font-mono);font-size:10px;
+    line-height:1.8;color:var(--text-muted)}
+  .tbl li b{color:var(--text-primary);font-weight:600}
+  .tbl .n{display:block;padding:0 12px 11px;font-size:11px;color:var(--text-secondary);line-height:1.45}
+
+  /* ---------- steps ---------- */
+  ol.steps{list-style:none;counter-reset:s;margin:6px 0 0;padding:0}
+  ol.steps li{counter-increment:s;position:relative;padding:0 0 18px 34px}
+  ol.steps li::before{content:counter(s);position:absolute;left:0;top:2px;width:20px;height:20px;
+    border-radius:50%;background:var(--green-soft);color:var(--green);border:1px solid var(--green-faint);
+    font-family:var(--font-mono);font-size:9px;font-weight:600;display:grid;place-items:center}
+  ol.steps li::after{content:"";position:absolute;left:10px;top:25px;bottom:0;width:1px;
+    background:var(--border-default)}
+  ol.steps li:last-child{padding-bottom:0}
+  ol.steps li:last-child::after{display:none}
+  ol.steps b{font-weight:600}
+
+  .gotchas{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column;gap:16px}
+  .gotchas li{padding-left:14px;border-left:2px solid var(--amber)}
+  .gotchas b{display:block;font-weight:700;font-size:.96rem}
 
   /* ---------- phases ---------- */
-  .phase{display:grid;grid-template-columns:64px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
-  .phase:last-of-type{border-bottom:0}
-  .phase .p{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:600;padding-top:3px}
-  .phase .t{font-family:var(--display);font-weight:700;font-size:1rem}
-  .phase .d{color:var(--muted);font-size:.95rem;line-height:1.5}
-  .phase .ship{font-family:var(--mono);font-size:10.5px;color:var(--streak);margin-top:5px;display:block}
+  .phase{display:grid;grid-template-columns:70px 1fr;gap:14px;padding:14px 0;
+    border-bottom:1px solid var(--border-default)}
+  .phase:last-child{border-bottom:0}
+  .phase .p{font-family:var(--font-mono);font-size:9px;font-weight:600;color:var(--green);padding-top:3px}
+  .phase .t{font-weight:700;font-size:.95rem}
+  .phase .d{color:var(--text-secondary);font-size:.9rem;line-height:1.5}
+  .phase .s{display:block;margin-top:4px;font-family:var(--font-mono);font-size:9px;color:var(--amber)}
 
-  footer{padding:40px 0 64px;color:var(--muted);font-size:.9rem}
-  @media (max-width:520px){ body{font-size:16px} .mast{padding:44px 0 30px} }
+  footer{padding:30px 0 56px;color:var(--text-secondary);font-size:.9rem}
+  @media (max-width:650px){:root{--page-padding:20px} .stats{grid-template-columns:repeat(3,1fr)}}
 </style>
 
 <header class="mast">
   <div class="wrap">
-    <span class="eyebrow">Product + technical plan · v1</span>
-    <h1>Habits With&nbsp;Friends</h1>
-    <p class="lede">A habit tracker where the streak isn't only yours. Keep your private habits private — and put the ones you keep flaking on in front of four people who will notice.</p>
-    <div class="facts">
-      <span class="fact">Expo · React Native</span>
-      <span class="fact">Supabase · Postgres</span>
-      <span class="fact">iOS + Android, one codebase</span>
-      <span class="fact">6 phases</span>
+    <span class="kicker">Product + technical plan · v2 · LifeOS design system</span>
+    <h1>Habits With Friends</h1>
+    <p class="lede">A habit tracker where the streak isn't only yours. Private habits stay private — the ones you keep flaking on go in front of four people who will notice. Built on the LifeOS palette, type and component vocabulary, so it reads as one system with the dashboard.</p>
+    <div class="pills">
+      <span class="pill good">DM Sans + Cascadia Code</span>
+      <span class="pill">Expo · React Native</span>
+      <span class="pill">Supabase · Postgres</span>
+      <span class="pill warn">6 phases</span>
     </div>
   </div>
 </header>
 
-<hr class="rule">
+<section>
+  <div class="wrap">
+    <div class="sec-label">01 · Core model</div>
+    <h2>The one idea to get right</h2>
+    <p class="sec-sub">Everything else in this document falls out of this single decision.</p>
+    <div class="stack">
+      <p>Most habit trackers give each person their own private list. Yours has two kinds of habit, and the difference is one nullable column.</p>
+      <div class="note accent">
+        <span class="h">The core model</span>
+        <p>A <strong>private habit</strong> is a row owned by you with no group. A <strong>shared habit</strong> is <em>one row</em> owned by a group — and every member checks in against that same row. Nothing is copied per person. A table of check-ins keyed by <code>(habit, person, date)</code> does all the work.</p>
+      </div>
+      <p>That's why “The Gym Rats go to the gym 4× a week” can be one thing you all look at, rather than five separate habits that happen to share a name. When Maya taps her circle, she inserts a row for herself against the group's habit. The group board is just: for today's date, who has a row and who doesn't.</p>
+      <p>Once you see check-ins as <em>facts about a person on a day</em> rather than as state stored on the habit, the streak maths, the group board, the activity feed and the offline behaviour all get easy.</p>
+    </div>
+  </div>
+</section>
 
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">01</span><h2>The one idea to get right</h2></div>
-    <p class="sec-sub">Everything else in this document falls out of this single decision.</p>
-    <p>Most habit trackers give each person their own private list. Yours has two kinds of habit, and the difference is one nullable column:</p>
-    <div class="callout" style="margin-top:16px">
-      <span class="k">The core model</span>
-      <p>A <strong>private habit</strong> is a row owned by you with no group. A <strong>shared habit</strong> is <em>one row</em> owned by a group — and every member checks in against that same row. Nothing gets copied per person. A table of check-ins keyed by <code>(habit, person, date)</code> does all the work.</p>
+    <div class="sec-label">02 · Design system</div>
+    <h2>Same system as the dashboard</h2>
+    <p class="sec-sub">Tokens taken straight from <code>life-os-portal/src/styles/variables.css</code> — not approximated.</p>
+    <div class="stack">
+      <div class="swatches">
+        <div class="sw"><div class="chip" style="background:#3f6248"></div><div class="meta"><div class="nm">Green</div><div class="hx">#3f6248</div></div></div>
+        <div class="sw"><div class="chip" style="background:#a46f2b"></div><div class="meta"><div class="nm">Amber</div><div class="hx">#a46f2b</div></div></div>
+        <div class="sw"><div class="chip" style="background:#3f5a80"></div><div class="meta"><div class="nm">Blue</div><div class="hx">#3f5a80</div></div></div>
+        <div class="sw"><div class="chip" style="background:#2f7266"></div><div class="meta"><div class="nm">Teal</div><div class="hx">#2f7266</div></div></div>
+        <div class="sw"><div class="chip" style="background:#6c4f80"></div><div class="meta"><div class="nm">Purple</div><div class="hx">#6c4f80</div></div></div>
+        <div class="sw"><div class="chip" style="background:#a15547"></div><div class="meta"><div class="nm">Coral</div><div class="hx">#a15547</div></div></div>
+        <div class="sw"><div class="chip" style="background:#171717"></div><div class="meta"><div class="nm">Primary</div><div class="hx">#171717</div></div></div>
+        <div class="sw"><div class="chip" style="background:#e4e4e1"></div><div class="meta"><div class="nm">Border</div><div class="hx">#e4e4e1</div></div></div>
+      </div>
+      <p>The rules the portal already follows, carried into the app unchanged: <strong>DM Sans</strong> for everything you read, <strong>Cascadia Code</strong> for every number, code and uppercase micro-label. Flat surfaces with a 1px border and an 8px radius — no shadows anywhere. Labels at 8px, 600 weight, uppercase, <code>0.06em</code> tracking. Numerals always <code>tabular-nums</code> so columns line up. Rows divided by hairlines rather than gaps.</p>
+      <div class="note accent">
+        <span class="h">Already solved for you</span>
+        <p>The portal's <code>HabitsCard</code> settled the check-in circle: 18px, <strong>filled green when done, a 2px amber ring when not</strong>. That's the single most important control in the whole app, and it already exists in your system — the phone app inherits it rather than inventing one.</p>
+      </div>
+      <p>Both fonts are variable TTFs sitting in <code>life-os-portal/fonts/</code>. Copy those files into the app and register them with <code>expo-font</code>; don't re-source them from Google Fonts, or the weights will drift apart over time.</p>
+      <div class="note caution">
+        <span class="h">One porting job</span>
+        <p>React Native has no CSS custom properties. Port <code>variables.css</code> once into a typed <code>theme.ts</code> that exports the same token names, and pick light or dark from the device setting. Same names, same values, two syntaxes — that's what keeps the two codebases honestly in sync.</p>
+      </div>
     </div>
-    <p style="margin-top:16px">That's why "The Gym Rats go to the gym 4× a week" can be one thing you all look at, rather than five separate habits that happen to share a name. When Maya taps her circle, she inserts a row for herself against the group's habit. The group board is just: for today's date, who has a row and who doesn't.</p>
-    <p>Once you see check-ins as <em>facts about a person on a day</em> rather than as state stored on the habit, the streak maths, the group board, the activity feed and the offline behaviour all get easy.</p>
   </div>
 </section>
 
 <div class="gallery">
-  <div class="wrap" style="padding-top:38px;padding-bottom:20px">
-    <div class="sec-head"><span class="sec-num">02</span><h2>What it looks like</h2></div>
-    <p class="sec-sub">Six screens is the whole app. Swipe the row sideways.</p>
+  <div class="wrap" style="padding-top:34px;padding-bottom:18px">
+    <div class="sec-label">03 · Screens</div>
+    <h2>What it looks like</h2>
+    <p class="sec-sub">Six screens is the whole app, drawn at true scale in the portal's own vocabulary. Swipe sideways.</p>
   </div>
   <div class="rail">
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
-        <div class="pbody" style="justify-content:center;gap:16px;padding-bottom:24px">
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
+        <div class="pbody" style="justify-content:center;gap:18px;padding-bottom:30px">
           <div class="mark"></div>
           <div style="text-align:center">
-            <div class="ptitle">Habits With Friends</div>
-            <p style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45">Streaks are easier<br>with witnesses.</p>
+            <div class="ptitle">Habits</div>
+            <p style="font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.5">Streaks are easier<br>with witnesses.</p>
           </div>
-          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
-            <div class="btn ghost">Continue with Google</div>
-            <div class="btn dark">Continue with Apple</div>
+          <div style="display:flex;flex-direction:column;gap:7px;margin-top:6px">
+            <div class="btn primary">Continue with Google</div>
+            <div class="btn">Continue with Apple</div>
           </div>
-          <p style="font-size:9px;color:var(--muted);text-align:center;font-family:var(--mono);line-height:1.5">We store your name, avatar<br>and email. Nothing else.</p>
+          <p class="fineprint">Name, avatar and email.<br>Nothing else.</p>
         </div>
       </div>
-      <figcaption>
-        <div class="cap-t">Sign in</div>
-        <p class="cap-d">Google is the ask; Apple has to be there too, or the App Store rejects you.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Sign in</div><p class="cap-d">Google is the ask; Apple has to be there too, or the App Store rejects you.</p></figcaption>
     </figure>
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody">
-          <div>
-            <div class="ptitle">Today</div>
-            <div class="psub">WED 3 SEP · 2 OF 5 DONE</div>
-          </div>
+          <div><div class="ptitle">Today</div><div class="peyebrow">Wed 3 Sep · 2 of 5 done</div></div>
           <div class="seg"><span class="on">Mine</span><span>Shared</span></div>
-          <div class="hcard done"><span class="emo">🏃</span><span class="txt"><span class="nm">Morning run</span><span class="mt">5.2 km · <span class="flame">12 day streak</span></span></span><span class="tick done">✓</span></div>
-          <div class="hcard done"><span class="emo">💧</span><span class="txt"><span class="nm">2 litres of water</span><span class="mt"><span class="flame">31 day streak</span></span></span><span class="tick done">✓</span></div>
-          <div class="hcard"><span class="emo">📖</span><span class="txt"><span class="nm">Read 20 pages</span><span class="mt">4 day streak</span></span><span class="tick">✓</span></div>
-          <div class="hcard"><span class="emo">🌙</span><span class="txt"><span class="nm">No phone after 10pm</span><span class="mt">Missed yesterday</span></span><span class="tick">✓</span></div>
-          <div class="hcard"><span class="emo">🎸</span><span class="txt"><span class="nm">Practise guitar</span><span class="mt">Mon · Wed · Fri</span></span><span class="tick">✓</span></div>
-          <div class="spacer"></div>
+          <div class="card">
+            <div class="card-h"><h4>Private</h4><span class="lnk">Edit</span></div>
+            <div class="hrow"><span class="hinfo"><span class="hname">Morning run</span><span class="hstreak">5.2 KM · 12 DAY STREAK</span></span><span class="status-dot completed">✓</span></div>
+            <div class="hrow"><span class="hinfo"><span class="hname">2 litres of water</span><span class="hstreak">31 DAY STREAK</span></span><span class="status-dot completed">✓</span></div>
+            <div class="hrow"><span class="hinfo"><span class="hname">Read 20 pages</span><span class="hstreak">4 DAY STREAK</span></span><span class="status-dot incomplete"></span></div>
+            <div class="hrow"><span class="hinfo"><span class="hname">No phone after 10pm</span><span class="hstreak warn">MISSED YESTERDAY</span></span><span class="status-dot incomplete"></span></div>
+            <div class="hrow"><span class="hinfo"><span class="hname">Practise guitar</span><span class="hstreak">MON · WED · FRI</span></span><span class="status-dot incomplete"></span></div>
+          </div>
+          <div class="grow"></div>
         </div>
-        <div class="nav"><span class="on">Today</span><span>Groups</span><span>Activity</span><span>You</span></div>
+        <div class="nav"><a class="active"><i class="ico"></i>Today</a><a><i class="ico"></i>Groups</a><a><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
       </div>
-      <figcaption>
-        <div class="cap-t">Today</div>
-        <p class="cap-d">One tap on the circle is the entire core interaction. Everything else is optional depth.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Today</div><p class="cap-d">One tap on the circle is the whole core interaction. Same circle as the dashboard card.</p></figcaption>
     </figure>
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody">
-          <div>
-            <div class="ptitle">The Gym Rats 💪</div>
-            <div class="psub">4 MEMBERS · CODE 7KQ2FM</div>
-          </div>
-          <div class="board">
+          <div><div class="ptitle">The Gym Rats</div><div class="peyebrow">4 members · code 7KQ2FM</div></div>
+          <div class="card">
+            <div class="card-h"><h4>Today's board</h4><span class="lnk">Week</span></div>
             <div class="brow head">
-              <span class="lbl">Today</span>
-              <span class="av" style="background:#17624A">C</span>
-              <span class="av" style="background:#C07A0E">M</span>
-              <span class="av" style="background:#3C6E8F">S</span>
-              <span class="av" style="background:#8A4B6B">R</span>
+              <span class="lbl">Habit</span>
+              <span class="av" style="background:#3f6248">C</span>
+              <span class="av" style="background:#a46f2b">M</span>
+              <span class="av" style="background:#3f5a80">S</span>
+              <span class="av" style="background:#6c4f80">R</span>
             </div>
-            <div class="brow"><span class="lbl">🏋️ Gym session</span><span class="dot on">✓</span><span class="dot on">✓</span><span class="dot"></span><span class="dot on">✓</span></div>
-            <div class="brow"><span class="lbl">🏃 5 km run</span><span class="dot on">✓</span><span class="dot"></span><span class="dot"></span><span class="dot on">✓</span></div>
-            <div class="brow"><span class="lbl">🥗 Cook dinner</span><span class="dot on">✓</span><span class="dot on">✓</span><span class="dot on">✓</span><span class="dot on">✓</span></div>
-            <div class="brow"><span class="lbl">😴 In bed by 11</span><span class="dot"></span><span class="dot on">✓</span><span class="dot"></span><span class="dot"></span></div>
+            <div class="brow"><span class="lbl">Gym session</span><span class="status-dot completed">✓</span><span class="status-dot completed">✓</span><span class="status-dot incomplete"></span><span class="status-dot completed">✓</span></div>
+            <div class="brow"><span class="lbl">5 km run</span><span class="status-dot completed">✓</span><span class="status-dot incomplete"></span><span class="status-dot incomplete"></span><span class="status-dot completed">✓</span></div>
+            <div class="brow"><span class="lbl">Cook dinner</span><span class="status-dot completed">✓</span><span class="status-dot completed">✓</span><span class="status-dot completed">✓</span><span class="status-dot completed">✓</span></div>
+            <div class="brow"><span class="lbl">In bed by 11</span><span class="status-dot incomplete"></span><span class="status-dot completed">✓</span><span class="status-dot incomplete"></span><span class="status-dot incomplete"></span></div>
           </div>
-          <div class="hcard"><span class="emo">👋</span><span class="txt"><span class="nm">Sam hasn't checked in</span><span class="mt">Last seen Monday</span></span><span style="font-size:10px;font-weight:700;color:var(--accent)">Nudge</span></div>
-          <div class="spacer"></div>
+          <div class="card">
+            <div class="hrow" style="min-height:38px"><span class="hinfo"><span class="hname">Sam hasn't checked in</span><span class="hstreak warn">LAST SEEN MONDAY</span></span><span class="pill warn">Nudge</span></div>
+          </div>
+          <div class="grow"></div>
         </div>
-        <div class="nav"><span>Today</span><span class="on">Groups</span><span>Activity</span><span>You</span></div>
+        <div class="nav"><a><i class="ico"></i>Today</a><a class="active"><i class="ico"></i>Groups</a><a><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
       </div>
-      <figcaption>
-        <div class="cap-t">Group board</div>
-        <p class="cap-d">Habits down, people across. The empty circles are the product — that's the social pressure.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Group board</div><p class="cap-d">Habits down, people across. The amber rings are the product — that's the social pressure.</p></figcaption>
     </figure>
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody">
-          <div>
-            <div class="ptitle">Morning run 🏃</div>
-            <div class="psub">PRIVATE · EVERY DAY · 7:00 REMINDER</div>
+          <div><div class="ptitle">Morning run</div><div class="peyebrow">Private · daily · 07:00 reminder</div></div>
+          <div class="stats">
+            <div class="stat"><span>Streak</span><strong class="pos">12</strong></div>
+            <div class="stat"><span>Last 30</span><strong>84%</strong></div>
+            <div class="stat"><span>Total</span><strong>41</strong></div>
           </div>
-          <div class="stat">
-            <div><div class="n">12</div><div class="l">Day streak</div></div>
-            <div><div class="n">84%</div><div class="l">Last 30</div></div>
-            <div><div class="n">41</div><div class="l">Total</div></div>
-          </div>
-          <div>
-            <div class="psub" style="margin-bottom:6px">LAST 40 DAYS</div>
+          <div class="card">
+            <div class="card-h"><h4>Last 40 days</h4></div>
             <div class="heat">
-              <i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="half"></i><i class="on"></i><i></i><i class="on"></i>
-              <i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="half"></i><i class="on"></i>
+              <i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="mid"></i><i class="on"></i><i></i><i class="on"></i>
+              <i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="mid"></i><i class="on"></i>
               <i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
               <i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
             </div>
           </div>
-          <div>
-            <div class="psub" style="margin-bottom:4px">NOTES</div>
-            <div class="feed"><span class="txt">“5.2 km. Felt awful, went anyway.”<span class="when">TODAY</span></span></div>
-            <div class="feed"><span class="txt">“Rained. Treadmill counts.”<span class="when">MON</span></span></div>
+          <div class="card">
+            <div class="card-h"><h4>Notes</h4></div>
+            <div class="hrow" style="min-height:34px"><span class="hinfo"><span class="hname" style="font-weight:400">“5.2 km. Felt awful, went anyway.”</span><span class="hstreak">TODAY</span></span></div>
+            <div class="hrow" style="min-height:34px"><span class="hinfo"><span class="hname" style="font-weight:400">“Rained. Treadmill counts.”</span><span class="hstreak">MON</span></span></div>
           </div>
-          <div class="spacer"></div>
+          <div class="grow"></div>
         </div>
       </div>
-      <figcaption>
-        <div class="cap-t">Habit detail</div>
-        <p class="cap-d">Streaks and the heatmap are computed from check-in rows, never stored.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Habit detail</div><p class="cap-d">Stat tiles and the heatmap use the portal's mono numerals and chart tints.</p></figcaption>
     </figure>
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody" style="gap:14px">
-          <div style="margin-top:20px">
+          <div style="margin-top:16px">
             <div class="ptitle">Join a group</div>
-            <p style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.45">Ask a friend for their group's six-character code.</p>
+            <p style="font-size:11px;color:var(--text-secondary);margin-top:5px;line-height:1.5">Ask a friend for their group's six-character code.</p>
           </div>
-          <div class="codeboxes">
-            <b class="filled">7</b><b class="filled">K</b><b class="filled">Q</b><b class="filled">2</b><b class="filled">F</b><b>&nbsp;</b>
+          <div class="codebox"><b class="filled">7</b><b class="filled">K</b><b class="filled">Q</b><b class="filled">2</b><b class="filled">F</b><b>&nbsp;</b></div>
+          <div class="card">
+            <div class="hrow" style="min-height:38px"><span class="hinfo"><span class="hname">The Gym Rats</span><span class="hstreak">CRAIG, MAYA, SAM +1</span></span><span class="pill good">Found</span></div>
           </div>
-          <div class="hcard done" style="justify-content:center"><span class="emo">💪</span><span class="txt"><span class="nm">The Gym Rats</span><span class="mt">Craig, Maya, Sam +1</span></span></div>
-          <div class="btn">Join group</div>
-          <div class="or">or</div>
-          <div class="btn ghost">Create a new group</div>
-          <p style="font-size:9px;color:var(--muted);text-align:center;font-family:var(--mono);line-height:1.5;margin-top:auto;padding-bottom:14px">Codes skip 0, O, 1 and I<br>so nobody mistypes them.</p>
+          <div class="btn primary">Join group</div>
+          <div class="divider">or</div>
+          <div class="btn">Create a new group</div>
+          <div class="grow"></div>
+          <p class="fineprint" style="padding-bottom:14px">Codes skip 0, O, 1 and I<br>so nobody mistypes them.</p>
         </div>
       </div>
-      <figcaption>
-        <div class="cap-t">Join by code</div>
-        <p class="cap-d">The group preview appears live as the fifth character lands — before they commit.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Join by code</div><p class="cap-d">The group preview resolves live as the fifth character lands — before they commit.</p></figcaption>
     </figure>
 
     <figure class="shot">
       <div class="phone">
-        <div class="status"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+        <div class="status"><span>9:41</span><span>LTE 100%</span></div>
         <div class="pbody">
-          <div>
-            <div class="ptitle">Activity</div>
-            <div class="psub">THE GYM RATS</div>
+          <div><div class="ptitle">Activity</div><div class="peyebrow">The Gym Rats</div></div>
+          <div class="card">
+            <div class="frow"><span class="av" style="background:#a46f2b">M</span><span class="ftxt"><b>Maya</b> checked in <b>Gym session</b><br>“leg day, send help”<span class="fwhen">2 MIN AGO</span><span class="rx">🔥 3</span> <span class="rx">💪 1</span></span></div>
+            <div class="frow"><span class="av" style="background:#3f6248">C</span><span class="ftxt"><b>Craig</b> hit a <b>12-day streak</b> on <b>5 km run</b><span class="fwhen">1 HR AGO</span><span class="rx">👏 2</span></span></div>
+            <div class="frow"><span class="av" style="background:#6c4f80">R</span><span class="ftxt"><b>Rae</b> nudged <b>Sam</b> about <b>In bed by 11</b><span class="fwhen">YESTERDAY</span></span></div>
+            <div class="frow"><span class="av" style="background:#3f5a80">S</span><span class="ftxt"><b>Sam</b> joined the group<span class="fwhen">SAT</span><span class="rx">👋 4</span></span></div>
           </div>
-          <div class="feed"><span class="av" style="background:#C07A0E">M</span><span class="txt"><b>Maya</b> checked in <b>Gym session</b><br>“leg day, send help”<span class="when">2 MIN AGO</span><br><span class="rx">🔥 3</span> <span class="rx">💪 1</span></span></div>
-          <div class="feed"><span class="av" style="background:#17624A">C</span><span class="txt"><b>Craig</b> hit a <span class="flame">12-day streak</span> on <b>5 km run</b><span class="when">1 HR AGO</span><br><span class="rx">👏 2</span></span></div>
-          <div class="feed"><span class="av" style="background:#8A4B6B">R</span><span class="txt"><b>Rae</b> nudged <b>Sam</b> about <b>In bed by 11</b><span class="when">YESTERDAY</span></span></div>
-          <div class="feed"><span class="av" style="background:#3C6E8F">S</span><span class="txt"><b>Sam</b> joined the group<span class="when">SAT</span><br><span class="rx">👋 4</span></span></div>
-          <div class="spacer"></div>
+          <div class="grow"></div>
         </div>
-        <div class="nav"><span>Today</span><span>Groups</span><span class="on">Activity</span><span>You</span></div>
+        <div class="nav"><a><i class="ico"></i>Today</a><a><i class="ico"></i>Groups</a><a class="active"><i class="ico"></i>Activity</a><a><i class="ico"></i>You</a></div>
       </div>
-      <figcaption>
-        <div class="cap-t">Activity</div>
-        <p class="cap-d">Reactions are cheap to build and are the thing that makes people come back.</p>
-      </figcaption>
+      <figcaption><div class="cap-t">Activity</div><p class="cap-d">Reactions are cheap to build and are the thing that makes people come back.</p></figcaption>
     </figure>
 
   </div>
@@ -382,159 +525,127 @@
 
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">03</span><h2>The stack, and why each piece</h2></div>
+    <div class="sec-label">04 · Stack</div>
+    <h2>What it's built on, and why</h2>
     <p class="sec-sub">Chosen so one person can ship both stores without a backend team.</p>
-    <div class="scroller">
+    <div class="tscroll">
       <table>
         <thead><tr><th>Piece</th><th>Choice</th><th>Why this one</th></tr></thead>
         <tbody>
-          <tr><td>App</td><td class="small">Expo (React Native) + TypeScript</td><td class="small">One codebase becomes both an iOS and an Android app. Expo's build service compiles the iOS binary in the cloud, so you don't need a Mac.</td></tr>
-          <tr><td>Backend</td><td class="small">Supabase</td><td class="small">A hosted Postgres database that also handles Google login, live updates, and permissions. Replaces roughly four separate services.</td></tr>
-          <tr><td>Login</td><td class="small">Native Google Sign-In → <code>signInWithIdToken</code></td><td class="small">Gives the native account-picker sheet instead of bouncing out to a browser. Google hands back a token; Supabase trades it for a session.</td></tr>
-          <tr><td>Data layer</td><td class="small">TanStack Query</td><td class="small">Caches every screen, retries failed writes, and makes a tap feel instant by updating the UI before the server confirms.</td></tr>
-          <tr><td>Live updates</td><td class="small">Supabase Realtime</td><td class="small">The group board updates the moment a friend checks in, with no refresh button.</td></tr>
-          <tr><td>Notifications</td><td class="small">Expo Notifications + scheduled Edge Function</td><td class="small">Habit reminders, plus “Maya just checked in” pushes to the rest of the group.</td></tr>
-          <tr><td>Shipping</td><td class="small">EAS Build &amp; Submit</td><td class="small">Builds and uploads to both stores from one command.</td></tr>
+          <tr><td class="k">App</td><td class="d">Expo (React Native) + TypeScript</td><td class="d">One codebase becomes both an iOS and an Android app. Expo builds the iOS binary in the cloud, so you don't need a Mac.</td></tr>
+          <tr><td class="k">Theme</td><td class="d">Ported <code>variables.css</code> → <code>theme.ts</code></td><td class="d">Same token names and values as the portal, so a colour change lands in both places.</td></tr>
+          <tr><td class="k">Fonts</td><td class="d">expo-font, TTFs from the portal</td><td class="d">DM Sans and Cascadia Code shipped in the bundle — identical rendering to the dashboard.</td></tr>
+          <tr><td class="k">Backend</td><td class="d">Supabase</td><td class="d">Hosted Postgres that also handles Google login, live updates and permissions. Replaces about four services.</td></tr>
+          <tr><td class="k">Login</td><td class="d">Native Google Sign-In → <code>signInWithIdToken</code></td><td class="d">The native account-picker sheet instead of a browser bounce. Google returns a token; Supabase trades it for a session.</td></tr>
+          <tr><td class="k">Data layer</td><td class="d">TanStack Query</td><td class="d">Caches every screen, retries failed writes, and makes a tap feel instant by updating before the server confirms.</td></tr>
+          <tr><td class="k">Live updates</td><td class="d">Supabase Realtime</td><td class="d">The group board updates the moment a friend checks in, with no refresh button.</td></tr>
+          <tr><td class="k">Notifications</td><td class="d">Expo Notifications + scheduled Edge Function</td><td class="d">Habit reminders, plus “Maya just checked in” pushes to the group.</td></tr>
+          <tr><td class="k">Shipping</td><td class="d">EAS Build &amp; Submit</td><td class="d">Builds and uploads to both stores from one command.</td></tr>
         </tbody>
       </table>
     </div>
     <h3>What it costs to run</h3>
-    <p>Supabase's free tier comfortably carries the first few hundred users; Pro is $25/month when you outgrow it. Apple charges $99/year to have an app in the store, Google $25 once, forever. Expo's build tier is free at low volume. Call it $99 to launch and near-nothing to operate until it works.</p>
+    <p>Supabase's free tier comfortably carries the first few hundred users; Pro is $25/month when you outgrow it. Apple charges $99/year to keep an app in the store, Google $25 once. Expo's build tier is free at low volume. Call it $99 to launch and near-nothing to operate until it works.</p>
   </div>
 </section>
 
-<hr class="rule">
-
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">04</span><h2>How the data is shaped</h2></div>
+    <div class="sec-label">05 · Schema</div>
+    <h2>How the data is shaped</h2>
     <p class="sec-sub">Seven tables. If you understand these, you understand the app.</p>
     <div class="tables">
-      <div class="tbl">
-        <h4>profiles</h4>
-        <ul><li><b>id</b> uuid → auth user</li><li><b>display_name</b> text</li><li><b>avatar_url</b> text</li><li><b>timezone</b> text</li></ul>
-        <span class="note">Created automatically the first time someone signs in with Google.</span>
-      </div>
-      <div class="tbl">
-        <h4>groups</h4>
-        <ul><li><b>id</b> uuid</li><li><b>name</b> text</li><li><b>emoji</b> text</li><li><b>invite_code</b> text · unique</li><li><b>created_by</b> uuid</li></ul>
-        <span class="note">The invite code lives here and can be rotated by the owner.</span>
-      </div>
-      <div class="tbl">
-        <h4>group_members</h4>
-        <ul><li><b>group_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>role</b> owner | member</li><li><b>joined_at</b> timestamptz</li></ul>
-        <span class="note">Key is the pair, so nobody joins twice. This table decides who sees what.</span>
-      </div>
-      <div class="tbl">
-        <h4>habits</h4>
-        <ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> uuid · nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily | weekly | days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>archived_at</b> timestamptz</li></ul>
-        <span class="note">group_id null = private. group_id set = shared. That column is the whole feature.</span>
-      </div>
-      <div class="tbl">
-        <h4>check_ins</h4>
-        <ul><li><b>id</b> uuid</li><li><b>habit_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>local_date</b> date</li><li><b>note</b> text</li><li><b>created_at</b> timestamptz</li></ul>
-        <span class="note">Unique on (habit, user, date). One tap per person per day, and safe to retry.</span>
-      </div>
-      <div class="tbl">
-        <h4>reactions</h4>
-        <ul><li><b>check_in_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>emoji</b> text</li></ul>
-        <span class="note">🔥 and 👏 on a friend's check-in. One of each per person.</span>
-      </div>
-      <div class="tbl">
-        <h4>nudges</h4>
-        <ul><li><b>habit_id</b> uuid</li><li><b>from_user / to_user</b> uuid</li><li><b>created_at</b> timestamptz</li></ul>
-        <span class="note">Rate-limit to one per person per habit per day or friendships will suffer.</span>
-      </div>
+      <div class="tbl"><h4>profiles</h4><ul><li><b>id</b> uuid → auth user</li><li><b>display_name</b> text</li><li><b>avatar_url</b> text</li><li><b>timezone</b> text</li></ul><span class="n">Created automatically the first time someone signs in with Google.</span></div>
+      <div class="tbl"><h4>groups</h4><ul><li><b>id</b> uuid</li><li><b>name</b> text</li><li><b>emoji</b> text</li><li><b>invite_code</b> unique</li><li><b>created_by</b> uuid</li></ul><span class="n">The invite code lives here and can be rotated by the owner.</span></div>
+      <div class="tbl"><h4>group_members</h4><ul><li><b>group_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>role</b> owner|member</li><li><b>joined_at</b> timestamptz</li></ul><span class="n">Key is the pair, so nobody joins twice. This table decides who sees what.</span></div>
+      <div class="tbl"><h4>habits</h4><ul><li><b>id</b> uuid</li><li><b>owner_id</b> uuid</li><li><b>group_id</b> nullable</li><li><b>title, emoji, colour</b></li><li><b>cadence</b> daily|weekly|days</li><li><b>target_days</b> int[]</li><li><b>reminder_at</b> time</li><li><b>archived_at</b> timestamptz</li></ul><span class="n">group_id null = private, set = shared. That column is the whole feature.</span></div>
+      <div class="tbl"><h4>check_ins</h4><ul><li><b>id</b> uuid</li><li><b>habit_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>local_date</b> date</li><li><b>note</b> text</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Unique on (habit, user, date). One tap per person per day, and safe to retry.</span></div>
+      <div class="tbl"><h4>reactions</h4><ul><li><b>check_in_id</b> uuid</li><li><b>user_id</b> uuid</li><li><b>emoji</b> text</li></ul><span class="n">🔥 and 👏 on a friend's check-in. One of each per person.</span></div>
+      <div class="tbl"><h4>nudges</h4><ul><li><b>habit_id</b> uuid</li><li><b>from_user</b> uuid</li><li><b>to_user</b> uuid</li><li><b>created_at</b> timestamptz</li></ul><span class="n">Rate-limit to one per person per habit per day or friendships will suffer.</span></div>
     </div>
     <h3>Streaks are calculated, not stored</h3>
     <p>Resist the urge to keep a <code>streak</code> number on the habit. A stored counter drifts the moment a check-in arrives late from an offline phone. Read the last N check-in dates and count backwards — it's fast for years of data, and it is always correct. Denormalise later only if a real screen gets slow.</p>
   </div>
 </section>
 
-<hr class="rule">
-
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">05</span><h2>How the invite code works</h2></div>
-    <p class="sec-sub">Six characters, and one small piece of server-side care that stops them being guessable at scale.</p>
+    <div class="sec-label">06 · Invites</div>
+    <h2>How the invite code works</h2>
+    <p class="sec-sub">Six characters, and one piece of server-side care that stops them being guessable at scale.</p>
     <ol class="steps">
-      <li><b>Someone creates a group.</b> The database generates a six-character code from an alphabet with no 0, O, 1 or I in it — about a billion combinations, none of which get misread over a pub table.</li>
-      <li><b>They share it.</b> The phone's normal share sheet sends “Join The Gym Rats on Habits: <code>7KQ2FM</code>”, plus a deep link that pre-fills the code if the app is installed.</li>
+      <li><b>Someone creates a group.</b> The database generates a six-character code from an alphabet with no 0, O, 1 or I in it — about a billion combinations, none of which get misread across a pub table.</li>
+      <li><b>They share it.</b> The phone's share sheet sends “Join The Gym Rats: <code>7KQ2FM</code>”, plus a deep link that pre-fills the code if the app is installed.</li>
       <li><b>A friend types the code.</b> The app doesn't search the groups table — it calls one database function, <code>join_group_with_code</code>.</li>
-      <li><b>That function runs with elevated rights</b> and does three things: find the group, insert the membership, return the group. Because it's the only door in, ordinary users never get read access to the full groups table, so nobody can scrape codes.</li>
-      <li><b>They're in.</b> Every shared habit in that group appears in their Shared tab immediately, and the whole group sees “Sam joined” in Activity.</li>
+      <li><b>That function runs with elevated rights</b> and does three things: find the group, insert the membership, return the group. Because it's the only door in, ordinary users never get read access to the groups table, so nobody can scrape codes.</li>
+      <li><b>They're in.</b> Every shared habit appears in their Shared tab immediately, and the group sees “Sam joined” in Activity.</li>
     </ol>
-    <div class="callout" style="margin-top:22px">
-      <span class="k">Guard rail</span>
-      <p>Rate-limit that function per user — something like ten attempts an hour. Without it, a billion combinations is only a few days of brute force for a determined stranger. With it, it's forever.</p>
+    <div class="note caution" style="margin-top:20px">
+      <span class="h">Guard rail</span>
+      <p>Rate-limit that function per user — around ten attempts an hour. Without it, a billion combinations is only a few days of brute force for a determined stranger. With it, it's forever.</p>
     </div>
   </div>
 </section>
 
-<hr class="rule">
-
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">06</span><h2>Who can see what</h2></div>
+    <div class="sec-label">07 · Permissions</div>
+    <h2>Who can see what</h2>
     <p class="sec-sub">The part most people get wrong, and the part that matters most when the app holds “No phone after 10pm”.</p>
-    <p>Postgres can enforce visibility rules in the database itself, so the phone app is never trusted to filter anything. Even someone poking at the API directly gets back only their own rows. The rules read almost like English:</p>
-    <div class="scroller">
+    <p>Postgres can enforce visibility in the database itself, so the phone app is never trusted to filter anything. Even someone poking the API directly gets back only their own rows.</p>
+    <div class="tscroll">
       <table>
         <thead><tr><th>Table</th><th>Who can read</th><th>Who can write</th></tr></thead>
         <tbody>
-          <tr><td>profiles</td><td class="small">You, plus anyone sharing a group with you</td><td class="small">Only your own</td></tr>
-          <tr><td>groups</td><td class="small">Members only</td><td class="small">The owner</td></tr>
-          <tr><td>group_members</td><td class="small">Members of that group</td><td class="small">Yourself, to leave; the owner, to remove</td></tr>
-          <tr><td>habits</td><td class="small">The owner, or members of its group</td><td class="small">The owner; group habits, any member</td></tr>
-          <tr><td>check_ins</td><td class="small">Anyone who can see the habit</td><td class="small">Only rows where the user is you</td></tr>
-          <tr><td>reactions / nudges</td><td class="small">Group members</td><td class="small">Only as yourself</td></tr>
+          <tr><td class="k">profiles</td><td class="d">You, plus anyone sharing a group with you</td><td class="d">Only your own</td></tr>
+          <tr><td class="k">groups</td><td class="d">Members only</td><td class="d">The owner</td></tr>
+          <tr><td class="k">group_members</td><td class="d">Members of that group</td><td class="d">Yourself, to leave; the owner, to remove</td></tr>
+          <tr><td class="k">habits</td><td class="d">The owner, or members of its group</td><td class="d">The owner; group habits, any member</td></tr>
+          <tr><td class="k">check_ins</td><td class="d">Anyone who can see the habit</td><td class="d">Only rows where the user is you</td></tr>
+          <tr><td class="k">reactions / nudges</td><td class="d">Group members</td><td class="d">Only as yourself</td></tr>
         </tbody>
       </table>
     </div>
-    <div class="callout" style="margin-top:22px">
-      <span class="k">The trap everybody hits</span>
+    <div class="note caution" style="margin-top:20px">
+      <span class="h">The trap everybody hits</span>
       <p>Writing “you can read group_members if you're in group_members” makes Postgres check the rule to check the rule, forever, and every query dies with an infinite-recursion error. Fix it before you write a single policy: put the membership check in a small helper function marked <code>security definer</code>, and call that from every policy instead. One function, no recursion, and the rules stay one line each.</p>
     </div>
-    <p style="margin-top:16px">Private means private. A private habit has no group, and no policy anywhere grants another human read access to it. Make the private/shared choice explicit when a habit is created, and warn clearly before making an existing private habit shared — that action can't be un-seen.</p>
+    <p style="margin-top:14px">Private means private. A private habit has no group, and no policy anywhere grants another human read access to it. Make the choice explicit when a habit is created, and warn clearly before making an existing private habit shared — that can't be un-seen.</p>
   </div>
 </section>
 
-<hr class="rule">
-
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">07</span><h2>Five things that will bite you</h2></div>
-    <p class="sec-sub">Every one of these is cheap to handle now and expensive to retrofit.</p>
+    <div class="sec-label">08 · Pitfalls</div>
+    <h2>Five things that will bite you</h2>
+    <p class="sec-sub">Every one is cheap to handle now and expensive to retrofit.</p>
     <ul class="gotchas">
-      <li><b>“Today” is not a server concept.</b> Someone checking in at 11pm in Sydney and someone at 8am in London must land on their own dates. Work out the date on the phone from the user's timezone, send it as <code>local_date</code>, and never let the server derive the day from a timestamp.</li>
-      <li><b>The App Store will reject Google-only login.</b> If you offer a third-party sign-in, Apple requires an equally private alternative. Sign in with Apple satisfies it and takes an afternoon. Build it before your first submission, not after your first rejection.</li>
-      <li><b>Taps happen underground and on planes.</b> Write the check-in to local storage first, show the tick immediately, and queue the upload. The unique key on <code>(habit, user, date)</code> means a retry that arrives twice is harmless — the second one just does nothing.</li>
-      <li><b>Nudges become harassment fast.</b> One nudge per person, per habit, per day, and a switch in settings to turn them off entirely. Social pressure is the feature; being pestered is how the app gets deleted.</li>
-      <li><b>Leaving a group is a data question.</b> Decide now: does Sam's history vanish from the board when he leaves, or stay as a record? Keeping the rows but hiding the person is usually right, and it's much harder to add once people have left.</li>
+      <li><b>“Today” is not a server concept.</b> Someone checking in at 11pm in Sydney and someone at 8am in London must land on their own dates. Work the date out on the phone from the user's timezone, send it as <code>local_date</code>, and never let the server derive the day from a timestamp.</li>
+      <li><b>The App Store will reject Google-only login.</b> Offering a third-party sign-in obliges you to offer an equally private alternative. Sign in with Apple satisfies it and takes an afternoon. Build it before your first submission, not after your first rejection.</li>
+      <li><b>Taps happen underground and on planes.</b> Write the check-in locally, show the filled green circle immediately, and queue the upload. The unique key on <code>(habit, user, date)</code> means a retry that arrives twice is harmless.</li>
+      <li><b>Nudges become harassment fast.</b> One per person, per habit, per day, and a switch in settings to turn them off. Social pressure is the feature; being pestered is how the app gets deleted.</li>
+      <li><b>Leaving a group is a data question.</b> Decide now whether Sam's history vanishes from the board or stays as a record. Keeping the rows but hiding the person is usually right, and it's much harder to add once people have left.</li>
     </ul>
   </div>
 </section>
 
-<hr class="rule">
-
 <section>
   <div class="wrap">
-    <div class="sec-head"><span class="sec-num">08</span><h2>Build order</h2></div>
-    <p class="sec-sub">Each phase ends with something you can open on your own phone. Never build two of these at once.</p>
-    <div class="phase"><span class="p">PHASE 0</span><span><span class="t">Skeleton</span><span class="d">Expo app running on your phone, Supabase project created, tab navigation with four empty screens.</span><span class="ship">Ends with: an app icon on your home screen.</span></span></div>
-    <div class="phase"><span class="p">PHASE 1</span><span><span class="t">Login and private habits</span><span class="d">Google sign-in, profile row created on first launch, create a habit, tap to check in, streak counted. No sharing at all yet.</span><span class="ship">Ends with: a habit tracker you'd actually use alone.</span></span></div>
-    <div class="phase"><span class="p">PHASE 2</span><span><span class="t">Groups and codes</span><span class="d">Create a group, generate the code, join by code, member list. Permission rules written and tested with two real accounts.</span><span class="ship">Ends with: your friend's face in your app.</span></span></div>
-    <div class="phase"><span class="p">PHASE 3</span><span><span class="t">Shared habits</span><span class="d">Group habits, the Shared tab, and the group board grid. Live updates so a friend's tick appears without a refresh.</span><span class="ship">Ends with: the actual product.</span></span></div>
-    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit. This is what turns a tool into something people open daily.</span><span class="ship">Ends with: a reason to come back.</span></span></div>
-    <div class="phase"><span class="p">PHASE 5</span><span><span class="t">Reminders and polish</span><span class="d">Push notifications, offline queue, empty states, the heatmap, editing and archiving habits, account deletion.</span><span class="ship">Ends with: something you can hand to a stranger.</span></span></div>
-    <div class="phase"><span class="p">PHASE 6</span><span><span class="t">Ship it</span><span class="d">Sign in with Apple, privacy policy, store screenshots, App Store and Play Store listings, TestFlight round with the group you built it for.</span><span class="ship">Ends with: a link you can text people.</span></span></div>
+    <div class="sec-label">09 · Roadmap</div>
+    <h2>Build order</h2>
+    <p class="sec-sub">Each phase ends with something you can open on your own phone. Never build two at once.</p>
+    <div class="phase"><span class="p">PHASE 0</span><span><span class="t">Skeleton</span><span class="d">Expo app running on your phone, Supabase project created, <code>theme.ts</code> ported and both fonts loading, tab navigation with four empty screens.</span><span class="s">Ends with: an app icon on your home screen.</span></span></div>
+    <div class="phase"><span class="p">PHASE 1</span><span><span class="t">Login and private habits</span><span class="d">Google sign-in, profile row on first launch, create a habit, tap to check in, streak counted. No sharing yet.</span><span class="s">Ends with: a habit tracker you'd use alone.</span></span></div>
+    <div class="phase"><span class="p">PHASE 2</span><span><span class="t">Groups and codes</span><span class="d">Create a group, generate the code, join by code, member list. Permission rules written and tested with two real accounts.</span><span class="s">Ends with: your friend's face in your app.</span></span></div>
+    <div class="phase"><span class="p">PHASE 3</span><span><span class="t">Shared habits</span><span class="d">Group habits, the Shared tab, and the board grid. Live updates so a friend's tick appears without a refresh.</span><span class="s">Ends with: the actual product.</span></span></div>
+    <div class="phase"><span class="p">PHASE 4</span><span><span class="t">The social layer</span><span class="d">Activity feed, emoji reactions, nudges with their rate limit. This is what turns a tool into something people open daily.</span><span class="s">Ends with: a reason to come back.</span></span></div>
+    <div class="phase"><span class="p">PHASE 5</span><span><span class="t">Reminders and polish</span><span class="d">Push notifications, offline queue, empty states, the heatmap, editing and archiving habits, account deletion.</span><span class="s">Ends with: something you can hand to a stranger.</span></span></div>
+    <div class="phase"><span class="p">PHASE 6</span><span><span class="t">Ship it</span><span class="d">Sign in with Apple, privacy policy, store screenshots, both store listings, a TestFlight round with the group you built it for.</span><span class="s">Ends with: a link you can text people.</span></span></div>
   </div>
 </section>
 
-<hr class="rule">
-
 <footer>
   <div class="wrap">
-    <p>Phases 0–3 are the real build; everything after is finishing. If you only get one thing from this plan, take the shape of <code>check_ins</code> — one row per person, per habit, per day — and the rest follows.</p>
+    <p>Phases 0–3 are the real build; everything after is finishing. If you take one thing from this plan, take the shape of <code>check_ins</code> — one row per person, per habit, per day — and the rest follows.</p>
   </div>
 </footer>
