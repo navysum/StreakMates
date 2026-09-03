@@ -3,27 +3,43 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
 import { useAuth } from '@/auth/AuthProvider';
 import { useProfile } from '@/lib/queries';
-import { useTheme } from '@/theme/ThemeProvider';
+import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { typography } from '@/theme/tokens';
 
 export default function YouScreen() {
-  const { colors } = useTheme();
+  const { colors, mode, setMode, scheme } = useTheme();
   const { userId, session, signOut } = useAuth();
   const profile = useProfile(userId);
 
   return (
     <Screen title="You" eyebrow={profile.data?.display_name ?? session?.user.email ?? ''}>
+      <Card title="Appearance">
+        <View style={styles.stack}>
+          <Segmented<ThemeMode>
+            value={mode}
+            onChange={setMode}
+            options={[
+              { value: 'system', label: 'System' },
+              { value: 'light', label: 'Light' },
+              { value: 'dark', label: 'Dark' },
+            ]}
+          />
+          <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
+            {mode === 'system'
+              ? `FOLLOWING YOUR DEVICE · CURRENTLY ${scheme.toUpperCase()}`
+              : `ALWAYS ${mode.toUpperCase()}`}
+          </Text>
+        </View>
+      </Card>
+
       <Card title="Account">
         <Row label="Name" value={profile.data?.display_name ?? '—'} />
         <Row label="Email" value={session?.user.email ?? '—'} />
         <Row label="Timezone" value={profile.data?.timezone ?? '—'} last />
       </Card>
-
-      <Notice label="Appearance">
-        {'The app follows your device’s light or dark setting. Switch your device theme and this changes with it.'}
-      </Notice>
 
       <Button label="Sign out" onPress={() => signOut()} />
 
@@ -52,6 +68,7 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
 }
 
 const styles = StyleSheet.create({
+  stack: { gap: 9 },
   row: {
     minHeight: 42,
     flexDirection: 'row',
