@@ -7,6 +7,7 @@ iOS and Android from one codebase — Expo (React Native) + TypeScript, with Sup
 auth and data.
 
 - **Full plan:** [`PLAN.md`](./PLAN.md) · rendered with screen mockups in [`docs/plan.html`](./docs/plan.html)
+- **LifeOS sync (proposed, not built):** [`docs/lifeos-sync.md`](./docs/lifeos-sync.md)
 - **Status:** Phases 0–3 complete — app shell and design system, Google sign-in, private
   habits with check-ins and streaks, groups with invite codes, and shared habits with a live
   group board. The leaderboard, activity feed and reactions are Phase 4.
