@@ -44,12 +44,26 @@ npm install        # first run only
 npm run tunnel     # starts the dev server with a public URL
 ```
 
-`npm run tunnel` prints a QR code and an `exp://…` link. On the phone:
+`npm run tunnel` prints a QR code and an `exp://…` link. To open it:
 
-- **iPhone** — open the Camera app, point it at the QR code, tap the banner.
-- **Android** — open Expo Go and scan the QR from inside the app.
+- **Scanning from another device** — iPhone: point the Camera app at the QR code and tap
+  the banner. Android: scan it from inside Expo Go.
+- **Same device as the Codespace** (an iPad running both) — copy the URL from the `Metro:`
+  line, paste it into a new Safari tab, and tap **Open** when it offers Expo Go.
+
+Expo Go's own *"Development servers"* list only finds servers on your local Wi-Fi. A tunnel
+is not local, so it will never appear there — open the link directly instead.
 
 The app opens in Expo Go. Save a file in the Codespace and the phone reloads by itself.
+
+> **Sign the CLI in first.** If the `Metro:` URL says `-anonymous-` and Expo Go is signed
+> in to an account, Expo Go refuses to open the project. Run `npx expo login` in the
+> Codespace, restart the tunnel, and use the new URL — it will carry your username instead
+> of `anonymous`. (Signing *out* of Expo Go works too, but the CLI needs to be signed in
+> for EAS builds later anyway.)
+>
+> The tunnel URL changes every time you restart `npm run tunnel`. Always copy the current
+> `Metro:` line rather than reusing an old link.
 
 > `--tunnel` matters: it routes through Expo's servers so your phone and the Codespace
 > don't need to be on the same network. Plain `npm start` only works on one Wi-Fi.
