@@ -10,9 +10,11 @@ import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { Sheet } from '@/components/Sheet';
 import { useAuth } from '@/auth/AuthProvider';
+import { sortHabits } from '@/lib/ordering';
 import {
   checkInIndex,
   useCheckIns,
+  useHabitOrder,
   useGroupMembers,
   useGroups,
   useHabits,
@@ -34,6 +36,7 @@ export default function GroupScreen() {
   const members = useGroupMembers(id);
   const habits = useHabits();
   const checkIns = useCheckIns();
+  const order = useHabitOrder(userId);
   const leave = useLeaveGroup(userId);
   const rotate = useRotateInviteCode();
 
@@ -47,8 +50,8 @@ export default function GroupScreen() {
   const isOwner = list.some((m) => m.user_id === userId && m.role === 'owner');
 
   const groupHabits = useMemo(
-    () => (habits.data ?? []).filter((h) => h.group_id === id),
-    [habits.data, id],
+    () => sortHabits((habits.data ?? []).filter((h) => h.group_id === id), order.data ?? new Map()),
+    [habits.data, id, order.data],
   );
   const done = useMemo(() => checkInIndex(checkIns.data), [checkIns.data]);
 

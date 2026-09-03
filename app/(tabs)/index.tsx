@@ -7,7 +7,15 @@ import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
 import { useAuth } from '@/auth/AuthProvider';
-import { byHabit, useCheckIns, useGroups, useHabits, useToggleCheckIn } from '@/lib/queries';
+import {
+  byHabit,
+  useCheckIns,
+  useGroups,
+  useHabitOrder,
+  useHabits,
+  useToggleCheckIn,
+} from '@/lib/queries';
+import { sortHabits } from '@/lib/ordering';
 import { formatToday, toLocalDate } from '@/lib/date';
 import { describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -24,10 +32,16 @@ export default function TodayScreen() {
   const habitsQuery = useHabits();
   const checkInsQuery = useCheckIns();
   const groupsQuery = useGroups();
+  const order = useHabitOrder(userId);
   const toggle = useToggleCheckIn(userId);
 
   const all = habitsQuery.data ?? [];
-  const mine = useMemo(() => all.filter((h) => !h.group_id), [all]);
+  const positions = order.data ?? new Map<string, number>();
+  // Each list is arranged separately, and only for you.
+  const mine = useMemo(
+    () => sortHabits(all.filter((h) => !h.group_id), positions),
+    [all, positions],
+  );
   const shared = useMemo(() => all.filter((h) => h.group_id), [all]);
   const completed = useMemo(() => byHabit(checkInsQuery.data, userId), [checkInsQuery.data, userId]);
 
@@ -45,8 +59,9 @@ export default function TodayScreen() {
       list.push(h);
       map.set(h.group_id!, list);
     }
+    for (const [id, list] of map) map.set(id, sortHabits(list, positions));
     return map;
-  }, [shared]);
+  }, [shared, positions]);
 
   function row(habit: Habit, last: boolean) {
     const dates = completed.get(habit.id) ?? new Set<string>();
