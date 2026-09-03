@@ -84,6 +84,7 @@ function AuthGate() {
         <Stack.Screen name="group/join" options={{ presentation: 'modal' }} />
         <Stack.Screen name="group/settings" options={{ presentation: 'modal' }} />
         <Stack.Screen name="group/[id]" />
+        <Stack.Screen name="group/leaderboard" />
       </Stack>
     </>
   );
