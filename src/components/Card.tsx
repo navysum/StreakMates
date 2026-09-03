@@ -9,7 +9,7 @@ type Props = {
   action?: string;
   /** Makes the action a real control. Without it the label is plain text. */
   onAction?: () => void;
-  /** Removes the inner padding, for a card that is only a list of rows. */
+  /** Tightens the gap under the header, for a card that is only a list of rows. */
   flush?: boolean;
   style?: ViewStyle;
   children?: React.ReactNode;
