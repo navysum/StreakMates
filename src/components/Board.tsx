@@ -1,5 +1,6 @@
 import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { StatusDot } from './StatusDot';
+import { initial } from '@/lib/identity';
 import { useTheme } from '@/theme/ThemeProvider';
 import { typography } from '@/theme/tokens';
 import { doneKey } from '@/lib/queries';
@@ -43,9 +44,7 @@ export function Board({ habits, members, done, date }: Props) {
                 { backgroundColor: colors[MEMBER_COLORS[i % MEMBER_COLORS.length]] },
               ]}
             >
-              <Text style={styles.initial}>
-                {(m.profile?.display_name ?? '?').slice(0, 1).toUpperCase()}
-              </Text>
+              <Text style={styles.initial}>{initial(m.profile)}</Text>
             </View>
           ))}
         </View>

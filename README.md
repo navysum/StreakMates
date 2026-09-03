@@ -84,7 +84,7 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 | | |
 | --- | --- |
-| `supabase/migrations/` | `0001` every table, security policy and invite-code function; `0002` turns on live updates. See [`supabase/README.md`](./supabase/README.md) |
+| `supabase/migrations/` | `0001` tables, security policies and invite codes; `0002` live updates; `0003` unique usernames. See [`supabase/README.md`](./supabase/README.md) |
 | `app/_layout.tsx` | Fonts, splash, theme, data cache, and the redirect to sign-in when signed out |
 | `app/sign-in.tsx` | Continue with Google — doubles as the setup notice until Supabase is connected |
 | `app/(tabs)/` | Today (Mine / Shared), Groups, Activity, You |
@@ -92,6 +92,7 @@ $99/year Apple Developer account) becomes worth paying for. See
 | `app/manage.tsx` | Reorder, archive and restore in one place |
 | `app/group/` | Create a group, join by code, and the group screen: today's board, shared habits, members, invite code |
 | `src/lib/streak.ts` | Streak and weekly-progress maths — pure functions, covered by `npm test` |
+| `src/lib/identity.ts` | How a person is named where others can see them — the handle wins over the display name |
 | `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
 | `src/theme/` | Design tokens, and the theme provider with System / Light / Dark, remembered between launches |
 | `assets/fonts/` | DM Sans and Cascadia Code, static instances + their OFL licences |
