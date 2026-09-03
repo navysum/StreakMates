@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import * as outbox from './outbox';
+import { positionsFor, type Positions } from './ordering';
 import { addDays, toLocalDate } from './date';
 import type {
   CheckIn,
@@ -33,6 +34,7 @@ export const keys = {
   people: ['people'] as const,
   reactions: ['reactions'] as const,
   nudges: ['nudges'] as const,
+  order: ['habit-order'] as const,
 };
 
 // ---------------------------------------------------------------- profile
@@ -99,9 +101,7 @@ export function useHabits(includeArchived = false) {
     queryFn: async (): Promise<Habit[]> => {
       let q = db().from('habits').select('*');
       if (!includeArchived) q = q.is('archived_at', null);
-      const { data, error } = await q
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true });
+      const { data, error } = await q.order('created_at', { ascending: true });
       if (error) throw error;
       return data ?? [];
     },
@@ -130,7 +130,6 @@ type HabitDraft = Pick<Habit, 'title'> &
       | 'target_days'
       | 'target_per_week'
       | 'group_id'
-      | 'sort_order'
       | 'reminder_at'
     >
   >;
@@ -192,20 +191,52 @@ export function useDeleteHabit() {
   });
 }
 
-export function useReorderHabits() {
+/** Where you have put each habit. Yours alone — see 0006_habit_order.sql. */
+export function useHabitOrder(userId: string | null) {
+  return useQuery({
+    queryKey: keys.order,
+    enabled: !!userId,
+    queryFn: async (): Promise<Positions> => {
+      const { data, error } = await db()
+        .from('habit_order')
+        .select('habit_id, position');
+      if (error) throw error;
+      return new Map((data ?? []).map((r) => [r.habit_id as string, r.position as number]));
+    },
+  });
+}
+
+/**
+ * Save one list's arrangement.
+ *
+ * Only the habits in that list are renumbered, so private habits and each
+ * group's habits keep their own sequence rather than sharing one.
+ */
+export function useReorderHabits(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (orderedIds: string[]) => {
-      // Sequential rather than upsert: upsert would need every non-null column.
-      for (let i = 0; i < orderedIds.length; i++) {
-        const { error } = await db()
-          .from('habits')
-          .update({ sort_order: i })
-          .eq('id', orderedIds[i]);
-        if (error) throw error;
-      }
+      const rows = positionsFor(orderedIds).map((r) => ({ ...r, user_id: userId }));
+      const { error } = await db()
+        .from('habit_order')
+        .upsert(rows, { onConflict: 'user_id,habit_id' });
+      if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: keys.habits }),
+    // Reordering should feel immediate; the list is the whole feedback.
+    onMutate: async (orderedIds) => {
+      await qc.cancelQueries({ queryKey: keys.order });
+      const previous = qc.getQueryData<Positions>(keys.order);
+      qc.setQueryData<Positions>(keys.order, (old) => {
+        const next = new Map(old ?? []);
+        orderedIds.forEach((id, index) => next.set(id, index));
+        return next;
+      });
+      return { previous };
+    },
+    onError: (_e, _v, context) => {
+      if (context?.previous) qc.setQueryData(keys.order, context.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.order }),
   });
 }
 
