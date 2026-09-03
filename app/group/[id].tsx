@@ -8,6 +8,7 @@ import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
+import { Sheet } from '@/components/Sheet';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   checkInIndex,
@@ -37,6 +38,7 @@ export default function GroupScreen() {
 
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const today = toLocalDate();
   const group = useMemo(() => groups.data?.find((g) => g.id === id), [groups.data, id]);
@@ -105,6 +107,8 @@ export default function GroupScreen() {
     <Screen
       title={group.emoji ? `${group.emoji}  ${group.name}` : group.name}
       eyebrow={`${list.length} member${list.length === 1 ? '' : 's'}`}
+      onMenu={() => setMenuOpen(true)}
+      menuLabel="Group options"
     >
       <Card title="Today's board" action={formatToday(today)}>
         <Board habits={groupHabits} members={list} done={done} date={today} />
@@ -160,19 +164,32 @@ export default function GroupScreen() {
 
       {error ? <Notice label="Something went wrong" tone="bad">{error}</Notice> : null}
 
-      {isOwner ? (
-        <Button
-          label="Change the code"
-          busy={rotate.isPending}
-          onPress={() =>
-            rotate.mutate(group.id, {
-              onError: (e) => setError(e instanceof Error ? e.message : 'Could not change it.'),
-            })
-          }
-        />
-      ) : null}
-
-      <Button label="Leave group" variant="danger" busy={leave.isPending} onPress={confirmLeave} />
+      <Sheet
+        visible={menuOpen}
+        title="Group options"
+        onClose={() => setMenuOpen(false)}
+        actions={[
+          ...(isOwner
+            ? [
+                {
+                  label: 'Change the invite code',
+                  hint: 'THE OLD ONE STOPS WORKING',
+                  onPress: () =>
+                    rotate.mutate(group.id, {
+                      onError: (e: unknown) =>
+                        setError(e instanceof Error ? e.message : 'Could not change it.'),
+                    }),
+                },
+              ]
+            : []),
+          {
+            label: 'Leave group',
+            tone: 'danger' as const,
+            hint: 'YOU CAN REJOIN WITH THE CODE',
+            onPress: confirmLeave,
+          },
+        ]}
+      />
 
       <Notice label="How shared habits work">
         {'A shared habit is one habit the whole group checks in against — not a copy each. Check in from Today; the board here shows who has and who hasn’t, and updates as they do.'}
