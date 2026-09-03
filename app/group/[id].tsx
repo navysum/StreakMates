@@ -1,14 +1,24 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Share, Text, View, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { Board } from '@/components/Board';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
-import { useGroupMembers, useGroups, useLeaveGroup, useRotateInviteCode } from '@/lib/queries';
+import {
+  checkInIndex,
+  useCheckIns,
+  useGroupMembers,
+  useGroups,
+  useHabits,
+  useLeaveGroup,
+  useRotateInviteCode,
+} from '@/lib/queries';
+import { formatToday, toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing, typography } from '@/theme/tokens';
 
@@ -20,15 +30,24 @@ export default function GroupScreen() {
 
   const groups = useGroups();
   const members = useGroupMembers(id);
+  const habits = useHabits();
+  const checkIns = useCheckIns();
   const leave = useLeaveGroup(userId);
   const rotate = useRotateInviteCode();
 
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const today = toLocalDate();
   const group = useMemo(() => groups.data?.find((g) => g.id === id), [groups.data, id]);
   const list = members.data ?? [];
   const isOwner = list.some((m) => m.user_id === userId && m.role === 'owner');
+
+  const groupHabits = useMemo(
+    () => (habits.data ?? []).filter((h) => h.group_id === id),
+    [habits.data, id],
+  );
+  const done = useMemo(() => checkInIndex(checkIns.data), [checkIns.data]);
 
   if (groups.isLoading || members.isLoading) {
     return (
@@ -87,6 +106,17 @@ export default function GroupScreen() {
       title={group.emoji ? `${group.emoji}  ${group.name}` : group.name}
       eyebrow={`${list.length} member${list.length === 1 ? '' : 's'}`}
     >
+      <Card title="Today's board" action={formatToday(today)}>
+        <Board habits={groupHabits} members={list} done={done} date={today} />
+      </Card>
+
+      <Link
+        href={{ pathname: '/habit/new', params: { group: group.id } }}
+        style={[typography.rowName, styles.add, { color: colors.green }]}
+      >
+        + Add a shared habit
+      </Link>
+
       <Card title="Invite code" action={isOwner ? 'Owner' : undefined}>
         <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel="Copy invite code">
           <Text style={[styles.code, { color: colors.textPrimary }]}>{group.invite_code}</Text>
@@ -144,8 +174,8 @@ export default function GroupScreen() {
 
       <Button label="Leave group" variant="danger" busy={leave.isPending} onPress={confirmLeave} />
 
-      <Notice label="Coming in Phase 3">
-        {'Shared habits everyone checks in against, and the board showing who has and who hasn’t.'}
+      <Notice label="How shared habits work">
+        {'A shared habit is one habit the whole group checks in against — not a copy each. Check in from Today; the board here shows who has and who hasn’t, and updates as they do.'}
       </Notice>
     </Screen>
   );
@@ -166,4 +196,5 @@ const styles = StyleSheet.create({
   avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   initial: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 9, color: '#fff' },
   name: { flex: 1, minWidth: 0 },
+  add: { paddingHorizontal: 2 },
 });

@@ -23,6 +23,9 @@ people in, and tell the app where the project is.
 2. Open [`migrations/0001_init.sql`](./migrations/0001_init.sql) in this repo,
    copy the whole file, and paste it into the editor.
 3. Press **Run**.
+4. Repeat with [`migrations/0002_realtime.sql`](./migrations/0002_realtime.sql),
+   which switches on the live updates the group board uses. Run the files in
+   order, and each one only once.
 
 You should see *Success. No rows returned*. That one file creates every table,
 every security rule, and the invite-code functions.
