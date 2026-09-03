@@ -3,7 +3,8 @@
 A design for keeping habit check-ins in step between this app and the LifeOS
 portal, so ticking a habit in either place ticks it in the other.
 
-**Status:** proposed. Nothing here is built.
+**Status:** built for a single user, in `navysum/life-os-portal`. See §12 for
+what other people would need.
 
 ---
 
@@ -66,9 +67,12 @@ A small worker on the VPS, on a systemd timer, every ~5 minutes:
                        Supabase  ◄──── the phone app
 ```
 
-It talks to LifeOS over **localhost**, so LifeOS still owns and validates every
-vault write — the worker cannot corrupt the vault in ways the portal's own code
-would not. It talks to Supabase over PostgREST.
+It reaches the vault **in process** rather than over localhost HTTP. Writes go
+through `vault_habits_api.toggle`, which is exactly what the portal's own
+`PATCH` route calls — same validation, same daily-note creation — so the sync
+still cannot reach the vault by a path the portal's own code would not, and it
+gains no dependency on the web server being up. It talks to Supabase over
+PostgREST.
 
 **Nothing ever connects to the VPS.** Not Supabase, not the app, not a webhook.
 
@@ -225,27 +229,93 @@ links:
 to link habits from inside the app and show a "synced" badge on a habit. The
 worker reads the table instead of the file; nothing else changes.
 
-## 10. What gets built
+## 10. What got built
 
-In `navysum/life-os-portal`, since it needs to live beside the vault:
+Built in `navysum/life-os-portal`, since it lives beside the vault:
 
 | | |
 | --- | --- |
-| `lifeos/habit_sync/client.py` | Thin Supabase PostgREST client, token refresh |
-| `lifeos/habit_sync/merge.py` | The three-way merge — pure functions, unit tested |
-| `lifeos/habit_sync/run.py` | One cycle: read both, merge, apply, save state |
+| `lifeos/habit_sync/merge.py` | The three-way merge — pure, and the reason unticking works |
+| `lifeos/habit_sync/config.py` | The mapping file, with its rejections |
+| `lifeos/habit_sync/state.py` | What the sides last agreed on |
+| `lifeos/habit_sync/remote.py` | Supabase over stdlib HTTP, refresh-token rotation |
+| `lifeos/habit_sync/vault.py` | The vault, in process via `vault_habits_api` |
+| `lifeos/habit_sync/run.py` | One cycle: read both, reconcile, apply, remember |
 | `systemd/lifeos-habit-sync.{service,timer}` | Every 5 minutes |
-| `tests/test_habit_sync_merge.py` | Every row of the table in §6 |
+| `tests/test_habit_sync_*.py` | 50 tests, including every row of §6 |
 
-Nothing changes in this app for the first version. That is the point — the
-bridge is one-directional in its dependencies, so it can be deleted without
-touching either side.
+Nothing changed in this app. That is the point — the bridge is one-directional
+in its dependencies, so it can be deleted without touching either side.
 
-## 11. Before building
+Setup lives in that repo at `docs/habit-sync.md`.
 
-- **Push access to `life-os-portal`.** Currently read-only in these sessions.
-- **It cannot be verified from here.** The tailnet means the VPS is unreachable
-  from a development session, so the merge logic gets unit tests and you run the
-  integration.
-- **Decide the first link.** One habit, `from-lifeos`, for a few days is a safer
-  first run than eight habits bidirectional.
+## 11. What about other people's vaults
+
+Everything above is a **single-user bridge**. It assumes a machine that is
+always on, running LifeOS, next to the vault. Almost nobody else has that: their
+vault lives on a laptop and a phone, kept in step by iCloud or Obsidian Sync,
+with no server anywhere.
+
+So this design does not generalise, and should not be stretched to try.
+
+### The answer is a plugin, not a server
+
+Obsidian has a plugin API. A plugin runs **inside Obsidian**, on desktop and
+mobile, can read and write vault files, and can make HTTPS calls. That is how
+every other Obsidian integration works, and it removes the server entirely.
+
+It also fixes the credential problem. Telling *yourself* to paste a refresh
+token onto your own VPS is fine. Telling *users* to do it teaches a bad habit
+and hands out a credential with no scoping and no revocation screen. A plugin
+can do a **normal Supabase sign-in** — the same Google flow the app uses — and
+get a real session under the same row-level security as the phone. Nothing to
+paste, revocable by signing out.
+
+### What carries over
+
+The valuable part is portable, because it never knew about LifeOS:
+
+| | |
+| --- | --- |
+| The three-way merge | ~40 lines of pure logic, and the reason unticking works. Port it to TypeScript with its test table. |
+| The remembered-agreement file | Same idea, in the plugin's own data folder. |
+| The read/write windows | Same policy, same reason. |
+| Ticked-wins, and per-link direction | Same. |
+
+### What does not
+
+**Vault layout.** LifeOS uses `02 Habits/Habit Logs/<year>/<date>.md` with
+specific frontmatter keys. Nobody else's vault looks like that. A general plugin
+needs the layout to be configurable — folder, filename pattern, and per habit
+either a frontmatter key or the text of a checkbox line. That configuration
+screen is most of the work, and it is the part this design has never had to
+solve.
+
+**Where links live.** A file on a VPS works for one person. A plugin needs the
+mapping in the app, so it can be edited on a phone — the `habit_links` table
+from §10, plus a "Linked to Obsidian" badge on a habit.
+
+### Decided: not building it
+
+**No plugin.** The app's users are three friends, and two of them have never
+used Obsidian. Building a configurable vault mapper, publishing a plugin and
+supporting layouts nobody has seen would be a second product serving nobody.
+
+So the sync stays what it is: **a personal bridge, for one person who happens to
+run a server.** It is not a feature of the app, it is not mentioned in the app,
+and no user ever encounters it.
+
+What matters is only that it stays *possible* if that changes, and it does at no
+cost: the merge and the state format never knew about LifeOS, Supabase's auth
+already supports a plugin signing in properly, and `habit_links` would be an
+additive migration.
+
+## 12. Before switching it on
+
+- **It has not run against the real VPS.** The tailnet makes it unreachable from
+  a development session, so the logic is unit tested and the integration run is
+  yours. `--dry-run` reports what it would change without touching either side.
+- **Start with one habit and `from-lifeos`** for a few days. That is a safer
+  first run than eight habits bidirectional, and it exercises the whole path.
+- **Back up the state file with the vault.** Losing it costs one run of
+  tie-breaking, which can resurrect a very recent untick.
