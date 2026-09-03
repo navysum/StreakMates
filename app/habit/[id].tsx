@@ -10,6 +10,7 @@ import {
   byHabit,
   useCheckIns,
   useDeleteHabit,
+  useGroups,
   useHabit,
   useSetArchived,
   useUpdateHabit,
@@ -27,6 +28,7 @@ export default function EditHabitScreen() {
 
   const habitQuery = useHabit(id);
   const checkIns = useCheckIns();
+  const { data: groups } = useGroups();
   const update = useUpdateHabit();
   const setArchived = useSetArchived();
   const remove = useDeleteHabit();
@@ -54,9 +56,10 @@ export default function EditHabitScreen() {
     cadence: habit.cadence,
     target_days: habit.target_days.length ? habit.target_days : [1, 2, 3, 4, 5, 6, 7],
     target_per_week: habit.target_per_week,
+    group_id: habit.group_id,
   };
 
-  async function onSubmit(value: HabitFormValue) {
+  async function save(value: HabitFormValue) {
     setError(null);
     try {
       await update.mutateAsync({
@@ -67,11 +70,28 @@ export default function EditHabitScreen() {
         cadence: value.cadence,
         target_days: value.cadence === 'days' ? value.target_days : [],
         target_per_week: value.target_per_week,
+        group_id: value.group_id,
       });
       router.back();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save the habit.');
     }
+  }
+
+  function onSubmit(value: HabitFormValue) {
+    const goingPublic = !habit!.group_id && value.group_id;
+    if (!goingPublic) return void save(value);
+
+    // Sharing cannot be un-seen, so it is never a silent side effect of Save.
+    const group = groups?.find((g) => g.id === value.group_id);
+    Alert.alert(
+      'Share this habit?',
+      `Everyone in ${group?.name ?? 'the group'} will see ${habit!.title}, including the ${dates.size} check-in${dates.size === 1 ? '' : 's'} already against it. You can make it private again, but they will have seen it.`,
+      [
+        { text: 'Keep private', style: 'cancel' },
+        { text: 'Share it', onPress: () => void save(value) },
+      ],
+    );
   }
 
   function confirmDelete() {
@@ -120,6 +140,7 @@ export default function EditHabitScreen() {
         submitLabel="Save changes"
         busy={update.isPending}
         onSubmit={onSubmit}
+        groups={groups ?? []}
         footer={
           <View style={styles.footer}>
             {error ? <Notice label="Something went wrong" tone="bad">{error}</Notice> : null}
