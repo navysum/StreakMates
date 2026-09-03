@@ -5,7 +5,7 @@ import { HabitForm, emptyHabit, type HabitFormValue } from '@/components/HabitFo
 import { ModalHeader } from '@/components/ModalHeader';
 import { Notice } from '@/components/Notice';
 import { useAuth } from '@/auth/AuthProvider';
-import { useCreateHabit, useGroups, useHabits } from '@/lib/queries';
+import { useCreateHabit, useGroups } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
 import { spacing } from '@/theme/tokens';
 
@@ -17,7 +17,6 @@ export default function NewHabitScreen() {
   const { group } = useLocalSearchParams<{ group?: string }>();
 
   const create = useCreateHabit(userId);
-  const { data: habits } = useHabits();
   const { data: groups } = useGroups();
   const [error, setError] = useState<string | null>(null);
 
@@ -35,8 +34,6 @@ export default function NewHabitScreen() {
         target_per_week: value.target_per_week,
         group_id: value.group_id,
         reminder_at: value.reminder_at ? `${value.reminder_at}:00` : null,
-        // New habits go to the bottom of the list.
-        sort_order: habits?.length ?? 0,
       });
       router.back();
     } catch (e) {

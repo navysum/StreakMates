@@ -31,6 +31,8 @@ people in, and tell the app where the project is.
    which adds reactions and nudges.
 7. Repeat with [`migrations/0005_account_deletion.sql`](./migrations/0005_account_deletion.sql),
    which adds the account-deletion function Apple requires.
+8. Repeat with [`migrations/0006_habit_order.sql`](./migrations/0006_habit_order.sql),
+   which moves habit ordering off the shared row and onto a row per person.
 
    Run the files in order, and each one only once.
 
@@ -173,6 +175,7 @@ bypasses every policy. It is not used anywhere in this project.
 | `check_ins` | Anyone who can see the habit | Only your own, dated within 3 days |
 | `reactions` | Anyone who can see the check-in | Only your own |
 | `nudges` | Only the sender and the recipient | Only as yourself, to someone you share a group with, once per habit per day |
+| `habit_order` | Only you | Only you — nobody can see or change how you arrange your list |
 | `invite_code_attempts` | Nobody | Nobody (written by the server only) |
 
 Two details worth knowing, because both are easy to get wrong:
