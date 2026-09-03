@@ -8,10 +8,11 @@ auth and data.
 
 - **Full plan:** [`PLAN.md`](./PLAN.md) · rendered with screen mockups in [`docs/plan.html`](./docs/plan.html)
 - **LifeOS sync (proposed, not built):** [`docs/lifeos-sync.md`](./docs/lifeos-sync.md)
-- **Status:** Phases 0–4 complete — app shell and design system, Google sign-in, private
-  habits with check-ins and streaks, groups with invite codes, shared habits with a live
-  group board, and the social layer: activity feed, reactions and the group leaderboard.
-  Push reminders, the offline queue and account deletion are Phase 5.
+- **Status:** Phases 0–5 complete — design system, Google sign-in, habits with check-ins
+  and streaks, groups with invite codes, shared habits with a live board, the social layer
+  (activity feed, reactions, leaderboard), and now habit detail with a heatmap, on-device
+  reminders, an offline queue and account deletion. Phase 6 is shipping: Sign in with
+  Apple, privacy policy, store listings, TestFlight.
 
 ---
 
@@ -86,16 +87,18 @@ $99/year Apple Developer account) becomes worth paying for. See
 
 | | |
 | --- | --- |
-| `supabase/migrations/` | `0001` tables, security policies and invite codes; `0002` live updates; `0003` unique usernames; `0004` reactions and nudges. See [`supabase/README.md`](./supabase/README.md) |
+| `supabase/migrations/` | `0001` tables and policies; `0002` live updates; `0003` usernames; `0004` reactions and nudges; `0005` account deletion. See [`supabase/README.md`](./supabase/README.md) |
 | `app/_layout.tsx` | Fonts, splash, theme, data cache, and the redirect to sign-in when signed out |
 | `app/sign-in.tsx` | Continue with Google — doubles as the setup notice until Supabase is connected |
 | `app/(tabs)/` | Today (Mine / Shared), Groups, Activity, You |
 | `src/lib/leaderboard.ts` | Consistency, group streak, perfect days, habit rates — pure, tested |
-| `app/habit/` | Create and edit a habit; archive, restore and delete live on the edit screen |
+| `app/habit/` | A habit's detail — streak, heatmap, notes — plus create and edit |
 | `app/manage.tsx` | Reorder, archive and restore in one place |
 | `app/group/` | Create a group, join by code, and the group screen: today's board, shared habits, members, invite code |
 | `src/lib/streak.ts` | Streak and weekly-progress maths — pure functions, covered by `npm test` |
 | `src/lib/identity.ts` | How a person is named where others can see them — the handle wins over the display name |
+| `src/lib/reminders.ts` | On-device reminder scheduling; the decisions are in `reminders-pure.ts` and tested |
+| `src/lib/outbox.ts` | Check-ins that have not reached the server yet |
 | `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
 | `src/theme/` | Design tokens, and the theme provider with System / Light / Dark, remembered between launches |
 | `assets/fonts/` | DM Sans and Cascadia Code, static instances + their OFL licences |
@@ -139,6 +142,19 @@ Sydney lands on the wrong day.
 
 Streaks are computed on read from the check-in rows, never stored, so a check-in
 that arrives late can't leave a counter wrong.
+
+If the save fails — no signal, a tunnel, the app closed — the intent goes to an
+**outbox** on disk and is replayed next launch. Replaying is safe because
+`check_ins` is unique on `(habit, user, date)`: a write that lands twice does
+nothing the second time. Entries older than three days are dropped rather than
+retried forever, because the insert policy would reject them anyway.
+
+### Reminders are on the device
+
+`remind me at 07:00` needs no server, no push token and no development build, so
+reminders are scheduled locally with `expo-notifications` and kept in step with
+the habits on every launch. Server push is only needed for things the server
+knows first — a friend checking in — which is a later problem.
 
 ### About the fonts
 
