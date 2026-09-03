@@ -42,10 +42,24 @@ the other.
    create a project (any name).
 2. **APIs & Services** → **OAuth consent screen** (newer consoles call this
    **Google Auth Platform**). Choose **External**.
-3. Fill in the **Branding** page — app name, user support email, developer
-   contact email — and save. Until this is complete the console shows *"Your
-   app's OAuth configuration is incomplete"* and blocks everything else, so do
-   it before going further.
+3. Fill in the **Branding** page and save. Until this is complete the console
+   shows *"Your app's OAuth configuration is incomplete"* and blocks everything
+   else, so do it before going further. You need four things:
+
+   | Field | What to put |
+   | --- | --- |
+   | App name | Anything — it's what people see on the Google consent screen |
+   | User support email | Your own address |
+   | Authorised domain 1 | `supabase.co` |
+   | Developer contact email | Your own address again |
+
+   Everything else on that page (logo, home page, privacy policy, terms) is
+   optional while the app is in Testing.
+
+   > **Authorised domain is `supabase.co`, not your project host.** Google wants
+   > the registrable domain and rejects a subdomain, so
+   > `xxxxxxxx.supabase.co` will not be accepted. The short form still covers
+   > your project.
 4. Go to **Audience**. While publishing status is **Testing**, only accounts
    you list can sign in, so add your own Google account under **Test users**.
    Miss this and sign-in fails with "app is blocked" — which looks like a bug
