@@ -13,6 +13,19 @@ import type { Cadence, HabitColor } from '@/lib/types';
 
 const COLORS: HabitColor[] = ['green', 'amber', 'blue', 'purple', 'teal', 'coral'];
 
+/** Accepts 7, 7:5, 0705 and the like; anything unreadable becomes no reminder. */
+export function normaliseTime(input: string): string {
+  const digits = input.replace(/\D/g, '');
+  if (digits.length === 0) return '';
+  const [rawHour, rawMinute] =
+    input.includes(':') ? input.split(':') : [digits.slice(0, -2) || '0', digits.slice(-2)];
+  const hour = Number(rawHour);
+  const minute = Number(rawMinute || 0);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return '';
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return '';
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
 export type HabitFormValue = {
   title: string;
   emoji: string;
@@ -22,6 +35,8 @@ export type HabitFormValue = {
   target_per_week: number;
   /** null = private. A group id makes it shared with that group. */
   group_id: string | null;
+  /** `HH:MM`, or empty for no reminder. */
+  reminder_at: string;
 };
 
 export const emptyHabit: HabitFormValue = {
@@ -33,6 +48,7 @@ export const emptyHabit: HabitFormValue = {
   target_per_week: 3,
   // Private by default. Sharing is always a deliberate act.
   group_id: null,
+  reminder_at: '',
 };
 
 type Props = {
@@ -163,6 +179,17 @@ export function HabitForm({
               options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: String(n), label: `${n}×` }))}
             />
           ) : null}
+
+          <Field
+            label="Remind me"
+            value={value.reminder_at}
+            onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
+            onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
+            placeholder="07:00 — leave blank for none"
+            keyboardType="numbers-and-punctuation"
+            maxLength={5}
+            last
+          />
 
           <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
             {value.cadence === 'daily'

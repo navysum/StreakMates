@@ -34,6 +34,7 @@ export default function NewHabitScreen() {
         target_days: value.cadence === 'days' ? value.target_days : [],
         target_per_week: value.target_per_week,
         group_id: value.group_id,
+        reminder_at: value.reminder_at ? `${value.reminder_at}:00` : null,
         // New habits go to the bottom of the list.
         sort_order: habits?.length ?? 0,
       });

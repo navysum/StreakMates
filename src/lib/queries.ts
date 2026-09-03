@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import * as outbox from './outbox';
 import { addDays, toLocalDate } from './date';
 import type {
   CheckIn,
@@ -119,7 +121,19 @@ export function useHabit(id: string | undefined) {
 }
 
 type HabitDraft = Pick<Habit, 'title'> &
-  Partial<Pick<Habit, 'emoji' | 'color' | 'cadence' | 'target_days' | 'target_per_week' | 'group_id' | 'sort_order'>>;
+  Partial<
+    Pick<
+      Habit,
+      | 'emoji'
+      | 'color'
+      | 'cadence'
+      | 'target_days'
+      | 'target_per_week'
+      | 'group_id'
+      | 'sort_order'
+      | 'reminder_at'
+    >
+  >;
 
 export function useCreateHabit(userId: string | null) {
   const qc = useQueryClient();
@@ -224,6 +238,44 @@ export function byHabit(checkIns: CheckIn[] | undefined, userId: string | null) 
   return map;
 }
 
+/** One check-in write. Shared by the tap and by the outbox replay. */
+async function writeCheckIn(
+  userId: string | null,
+  habitId: string,
+  date: string,
+  complete: boolean,
+): Promise<void> {
+  if (complete) {
+    // The unique key on (habit, user, date) makes this idempotent, so a retry
+    // that lands twice is harmless.
+    const { error } = await db()
+      .from('check_ins')
+      .upsert(
+        { habit_id: habitId, user_id: userId, local_date: date },
+        { onConflict: 'habit_id,user_id,local_date', ignoreDuplicates: true },
+      );
+    if (error) throw error;
+  } else {
+    const { error } = await db()
+      .from('check_ins')
+      .delete()
+      .eq('habit_id', habitId)
+      .eq('user_id', userId!)
+      .eq('local_date', date);
+    if (error) throw error;
+  }
+}
+
+/**
+ * Sends anything a previous session could not. Safe to call on every launch:
+ * an empty outbox costs one read.
+ */
+export async function flushOutbox(userId: string | null, today: string) {
+  return outbox.flush(AsyncStorage, today, (entry) =>
+    writeCheckIn(userId, entry.habitId, entry.date, entry.complete),
+  );
+}
+
 /**
  * Every completion as `habit|user|date`, for looking up any member's day on
  * the group board rather than only your own.
@@ -287,23 +339,7 @@ export function useToggleCheckIn(userId: string | null) {
       date: string;
       complete: boolean;
     }) => {
-      if (complete) {
-        const { error } = await db()
-          .from('check_ins')
-          .upsert(
-            { habit_id: habitId, user_id: userId, local_date: date },
-            { onConflict: 'habit_id,user_id,local_date', ignoreDuplicates: true },
-          );
-        if (error) throw error;
-      } else {
-        const { error } = await db()
-          .from('check_ins')
-          .delete()
-          .eq('habit_id', habitId)
-          .eq('user_id', userId!)
-          .eq('local_date', date);
-        if (error) throw error;
-      }
+      await writeCheckIn(userId, habitId, date, complete);
     },
 
     onMutate: async ({ habitId, date, complete }) => {
@@ -331,11 +367,35 @@ export function useToggleCheckIn(userId: string | null) {
       return { previous };
     },
 
-    onError: (_err, _vars, context) => {
+    onError: (_err, variables, context) => {
+      // Keep the intent on disk so closing the app does not lose it. The tick
+      // is rolled back so the screen stays honest about what has landed.
+      void outbox.enqueue(AsyncStorage, {
+        habitId: variables.habitId,
+        date: variables.date,
+        complete: variables.complete,
+        queuedAt: new Date().toISOString(),
+      });
       if (context?.previous) qc.setQueryData(keys.checkIns, context.previous);
     },
 
     onSettled: () => qc.invalidateQueries({ queryKey: keys.checkIns }),
+  });
+}
+
+/**
+ * Deletes the account for good.
+ *
+ * The function behind this hands over anything shared before it cascades:
+ * a group habit you created keeps existing under a new owner, so leaving
+ * cannot destroy the check-ins your friends made against it.
+ */
+export function useDeleteAccount() {
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await db().rpc('delete_my_account');
+      if (error) throw error;
+    },
   });
 }
 
