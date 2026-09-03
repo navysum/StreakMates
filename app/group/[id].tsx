@@ -115,12 +115,20 @@ export default function GroupScreen() {
         <Board habits={groupHabits} members={list} done={done} date={today} />
       </Card>
 
-      <Link
-        href={{ pathname: '/habit/new', params: { group: group.id } }}
-        style={[typography.rowName, styles.add, { color: colors.green }]}
-      >
-        + Add a shared habit
-      </Link>
+      <View style={styles.links}>
+        <Link
+          href={{ pathname: '/habit/new', params: { group: group.id } }}
+          style={[typography.rowName, { color: colors.green }]}
+        >
+          + Add a shared habit
+        </Link>
+        <Link
+          href={{ pathname: '/group/leaderboard', params: { id: group.id } }}
+          style={[typography.rowName, { color: colors.textMuted }]}
+        >
+          Leaderboard
+        </Link>
+      </View>
 
       <Card title="Invite code" action={isOwner ? 'Owner' : undefined}>
         <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel="Copy invite code">
@@ -218,5 +226,5 @@ const styles = StyleSheet.create({
   avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   initial: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 9, color: '#fff' },
   name: { flex: 1, minWidth: 0 },
-  add: { paddingHorizontal: 2 },
+  links: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
 });
