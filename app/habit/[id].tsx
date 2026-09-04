@@ -1,18 +1,26 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { Link, useLocalSearchParams } from 'expo-router';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Heatmap } from '@/components/Heatmap';
+import { StatTrio } from '@/components/StatTrio';
+import { WeekStrip } from '@/components/WeekStrip';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
-import { StatusDot } from '@/components/StatusDot';
 import { useAuth } from '@/auth/AuthProvider';
 import { byHabit, useCheckIns, useGroups, useHabit, useToggleCheckIn } from '@/lib/queries';
-import { addDays, formatToday, toLocalDate, WEEKDAY_LABELS } from '@/lib/date';
-import { computeStreak, describeProgress, isScheduled, weeklyProgress } from '@/lib/streak';
+import { addDays, toLocalDate, WEEKDAY_LABELS } from '@/lib/date';
+import { gridCells } from '@/lib/week';
+import {
+  bestStreak,
+  computeStreak,
+  describeProgress,
+  isScheduled,
+  weeklyProgress,
+} from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography } from '@/theme/tokens';
+import { radius, space, typography } from '@/theme/tokens';
 
 const HISTORY = 40;
 
@@ -62,48 +70,43 @@ export default function HabitDetailScreen() {
   const owed = days.filter((d) => isScheduled(schedule, d) && d >= habit.created_at.slice(0, 10));
   const hit = owed.filter((d) => dates.has(d)).length;
   const streak = computeStreak(schedule, dates, today);
+  const best = bestStreak(schedule, dates, today);
+  const grid = gridCells(12, dates, schedule, today);
   const week = weeklyProgress(schedule, dates, today);
   const group = groups.data?.find((g) => g.id === habit.group_id);
   const completeToday = dates.has(today);
 
   return (
     <Screen
-      title={habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
-      eyebrow={describeProgress(schedule, dates, today)}
-    >
-      <Card>
-        <View style={styles.todayRow}>
-          <View style={styles.todayText}>
-            <Text style={[typography.rowName, { color: colors.textPrimary }]}>
-              {formatToday(today)}
-            </Text>
-            <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-              {completeToday
-                ? 'DONE'
-                : isScheduled(schedule, today)
-                  ? 'NOT YET'
-                  : 'NOT SCHEDULED TODAY'}
-            </Text>
+      title={habit.title}
+      eyebrow={`${group ? group.name : 'Private'} · ${cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}`}
+      trailing={
+        habit.emoji ? (
+          <View style={[styles.tile, { backgroundColor: colors.bgSurfaceMuted }]}>
+            <Text style={styles.tileGlyph}>{habit.emoji}</Text>
           </View>
-          <View
-            onStartShouldSetResponder={() => true}
-            onResponderRelease={() =>
-              toggle.mutate({ habitId: habit.id, date: today, complete: !completeToday })
-            }
-          >
-            <StatusDot complete={completeToday} />
-          </View>
-        </View>
-      </Card>
-
-      <View style={styles.stats}>
-        <Stat label="Streak" value={String(streak)} tone={streak > 0 ? 'good' : undefined} />
-        <Stat
-          label={`Last ${HISTORY}`}
-          value={owed.length === 0 ? '—' : `${Math.round((hit / owed.length) * 100)}%`}
+        ) : null
+      }
+      footer={
+        <Button
+          label={completeToday ? '✓  Done today' : 'Check in for today'}
+          variant={completeToday ? 'default' : 'primary'}
+          onPress={() =>
+            toggle.mutate({ habitId: habit.id, date: today, complete: !completeToday })
+          }
         />
-        <Stat label="Total" value={String(dates.size)} />
-      </View>
+      }
+    >
+      <StatTrio
+        stats={[
+          { value: String(streak), label: 'Streak' },
+          { value: String(best), label: 'Best' },
+          {
+            value: owed.length === 0 ? '—' : `${Math.round((hit / owed.length) * 100)}%`,
+            label: `${HISTORY}-day rate`,
+          },
+        ]}
+      />
 
       {habit.cadence === 'weekly' ? (
         <Card title="This week">
@@ -113,13 +116,47 @@ export default function HabitDetailScreen() {
         </Card>
       ) : null}
 
-      <Card title={`Last ${HISTORY} days`}>
-        <Heatmap days={days} done={dates} schedule={schedule} />
-        <View style={styles.legend}>
-          <Legend color={colors.green} label="Done" />
-          <Legend color={colors.greenMuted} label="Missed" />
-          <Legend color={colors.neutralChart} label="Not owed" />
+      <Card title="Last 12 weeks">
+        <View style={styles.grid}>
+          {grid.map((week, i) => (
+            <WeekStrip key={i} cells={week} size={20} direction="column" />
+          ))}
         </View>
+      </Card>
+
+      <Card title="Cadence">
+        <View style={styles.chips}>
+          {WEEKDAY_LABELS.map((letter, i) => {
+            const on = habit.cadence === 'days' && habit.target_days.includes(i + 1);
+            const flexible = habit.cadence !== 'days';
+            return (
+              <View
+                key={i}
+                style={[
+                  styles.chip,
+                  flexible
+                    ? { backgroundColor: colors.bgPage, borderColor: colors.borderDefault }
+                    : on
+                      ? { backgroundColor: colors.greenSoft, borderColor: colors.green }
+                      : { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
+                ]}
+              >
+                <Text
+                  style={[
+                    typography.caption,
+                    styles.chipText,
+                    { color: !flexible && on ? colors.green : colors.textMuted },
+                  ]}
+                >
+                  {letter}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+        <Text style={[typography.caption, styles.cadenceNote, { color: colors.textSecondary }]}>
+          {describeProgress(schedule, dates, today)}
+        </Text>
       </Card>
 
       <Card title="Details">
@@ -174,32 +211,6 @@ function cadenceLabel(cadence: string, days: number[], perWeek: number): string 
   return days.map((d) => WEEKDAY_LABELS[d - 1]).join(' ') || 'No days picked';
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'good' }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={[styles.stat, { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault }]}
-    >
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
-      <Text
-        style={[typography.stat, { color: tone === 'good' ? colors.green : colors.textPrimary }]}
-      >
-        {value}
-      </Text>
-    </View>
-  );
-}
-
-function Legend({ color, label }: { color: string; label: string }) {
-  const { colors } = useTheme();
-  return (
-    <View style={styles.legendItem}>
-      <View style={[styles.swatch, { backgroundColor: color }]} />
-      <Text style={[typography.monoSmall, { color: colors.textMuted }]}>{label}</Text>
-    </View>
-  );
-}
-
 function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
   const { colors } = useTheme();
   return (
@@ -217,13 +228,28 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  todayRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  todayText: { gap: 2 },
-  stats: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, padding: 10, borderWidth: 1, borderRadius: radius.card, gap: 2 },
-  legend: { flexDirection: 'row', gap: 14, marginTop: 10 },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  swatch: { width: 9, height: 9, borderRadius: 2 },
+  tile: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileGlyph: { fontSize: 26, lineHeight: 32 },
+  // Twelve weeks as columns, Monday at the top: the same strip as everywhere
+  // else, turned on its side.
+  grid: { flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
+  chips: { flexDirection: 'row', gap: space.sm },
+  chip: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: radius.chip,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chipText: { fontFamily: 'DMSans-SemiBold' },
+  cadenceNote: { marginTop: space.md },
   row: {
     minHeight: 40,
     flexDirection: 'row',

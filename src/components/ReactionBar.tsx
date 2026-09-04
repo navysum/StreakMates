@@ -1,6 +1,6 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography } from '@/theme/tokens';
+import { radius, space, typography } from '@/theme/tokens';
 import { REACTIONS, type ReactionEmoji } from '@/lib/types';
 
 type Props = {
@@ -25,7 +25,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
           <Pressable
             key={emoji}
             onPress={() => onToggle(emoji, !entry.mine)}
-            hitSlop={6}
+            hitSlop={8}
             accessibilityRole="button"
             accessibilityState={{ selected: entry.mine }}
             accessibilityLabel={`${emoji} ${entry.count}`}
@@ -39,7 +39,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
           >
             <Text style={styles.glyph}>{emoji}</Text>
             <Text
-              style={[typography.monoSmall, { color: entry.mine ? colors.green : colors.textMuted }]}
+              style={[typography.caption, { color: entry.mine ? colors.green : colors.textMuted }]}
             >
               {entry.count}
             </Text>
@@ -64,16 +64,18 @@ export function ReactionBar({ counts, onToggle }: Props) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 6 },
+  row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.sm },
   chip: {
+    minHeight: 32,
+    minWidth: 32,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
+    justifyContent: 'center',
+    gap: space.xs + 2,
+    paddingHorizontal: space.sm + 2,
     borderWidth: 1,
-    borderRadius: radius.pill,
+    borderRadius: radius.chip,
   },
-  faint: { opacity: 0.45 },
+  faint: { opacity: 0.5 },
   glyph: { fontSize: 16, lineHeight: 20 },
 });
