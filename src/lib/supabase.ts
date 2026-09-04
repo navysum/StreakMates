@@ -1,6 +1,6 @@
 import 'react-native-url-polyfill/auto';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { sessionStorage } from './secure-storage';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
 const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
@@ -40,7 +40,7 @@ export const supabase: SupabaseClient | null =
   url && anonKey && !configError
     ? createClient(url, anonKey, {
         auth: {
-          storage: AsyncStorage,
+          storage: sessionStorage,
           autoRefreshToken: true,
           persistSession: true,
           // There is no URL to read a session back from on native.

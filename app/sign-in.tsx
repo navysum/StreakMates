@@ -71,7 +71,9 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.page, gap: spacing.card, justifyContent: 'center' },
   head: { alignItems: 'center', gap: 8, marginBottom: 12 },
-  mark: { width: 96, height: 96 },
+  // The mark is 365x482, so the box matches it rather than letterboxing a
+  // square down to 72pt wide.
+  mark: { width: 100, height: 132 },
   title: { marginTop: 8 },
   tagline: { textAlign: 'center' },
   fine: { textAlign: 'center' },
