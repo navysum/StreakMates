@@ -1,4 +1,6 @@
-# Habits With Friends
+# StreakMates
+
+**Building better habits, together.**
 
 A habit tracker where the streak isn't only yours. Private habits stay private; shared
 habits go in front of a small group of friends who can see, react and nudge.

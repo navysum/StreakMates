@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Notice } from '@/components/Notice';
@@ -36,12 +36,17 @@ export default function SignInScreen() {
       ]}
     >
       <View style={styles.head}>
-        <View style={[styles.mark, { borderColor: colors.green, borderRightColor: colors.greenFaint }]} />
-        <Text style={[typography.screenTitle, styles.title, { color: colors.textPrimary }]}>
-          Habits
+        <Image
+          source={require('../assets/splash-icon.png')}
+          style={styles.mark}
+          resizeMode="contain"
+          accessibilityIgnoresInvertColors
+        />
+        <Text style={[typography.display, styles.title, { color: colors.textPrimary }]}>
+          StreakMates
         </Text>
         <Text style={[typography.body, styles.tagline, { color: colors.textSecondary }]}>
-          Streaks are easier with witnesses.
+          Building better habits, together.
         </Text>
       </View>
 
@@ -66,7 +71,7 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.page, gap: spacing.card, justifyContent: 'center' },
   head: { alignItems: 'center', gap: 8, marginBottom: 12 },
-  mark: { width: 44, height: 44, borderRadius: 22, borderWidth: 3 },
+  mark: { width: 96, height: 96 },
   title: { marginTop: 8 },
   tagline: { textAlign: 'center' },
   fine: { textAlign: 'center' },
