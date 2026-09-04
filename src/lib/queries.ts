@@ -71,10 +71,14 @@ export function useSetUsername(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (username: string) => {
-      const { error } = await db()
-        .from('profiles')
-        .update({ username: username.trim() })
-        .eq('id', userId!);
+      // Through a function, not a table write. An UPDATE that matches no rows
+      // is not an error in PostgREST, so a missing profile row — anyone whose
+      // account predates the handle_new_user trigger — used to report success,
+      // leave the username unset, and bounce straight back to this screen
+      // forever. An upsert cannot fix it either: PostgREST puts every column
+      // of the payload into the ON CONFLICT DO UPDATE, id included, and that
+      // column is deliberately not updatable.
+      const { error } = await db().rpc('set_username', { p_username: username.trim() });
       if (error) {
         // Two people can pick the same free name in the same moment; the
         // unique index is what decides, and this is how it says so.
