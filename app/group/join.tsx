@@ -160,9 +160,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  char: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 20 },
+  char: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 24 },
   hidden: { position: 'absolute', opacity: 0, height: 1, width: 1 },
   found: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   foundText: { flex: 1, gap: 1 },
-  fine: { textAlign: 'center', lineHeight: 14, marginTop: 4 },
+  fine: { textAlign: 'center', marginTop: 8 },
 });

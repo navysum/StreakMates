@@ -1,6 +1,6 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography } from '@/theme/tokens';
+import { elevation, radius, space, typography } from '@/theme/tokens';
 
 type Props<T extends string> = {
   options: { value: T; label: string }[];
@@ -8,11 +8,16 @@ type Props<T extends string> = {
   onChange: (value: T) => void;
 };
 
+/**
+ * A track with a raised thumb, rather than a row of outlined boxes. The
+ * selected option is the one that looks like it is sitting on top.
+ */
 export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
-  const { colors } = useTheme();
+  const { colors, scheme } = useTheme();
+
   return (
-    <View style={[styles.wrap, { borderColor: colors.borderDefault }]}>
-      {options.map((opt, i) => {
+    <View style={[styles.track, { backgroundColor: colors.bgSurfaceMuted }]}>
+      {options.map((opt) => {
         const on = opt.value === value;
         return (
           <Pressable
@@ -20,15 +25,15 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
             accessibilityRole="button"
             accessibilityState={{ selected: on }}
             onPress={() => onChange(opt.value)}
-            style={[
+            style={({ pressed }) => [
               styles.seg,
-              i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.borderDefault },
-              { backgroundColor: on ? colors.greenSoft : colors.bgSurface },
+              on && [{ backgroundColor: colors.bgSurface }, elevation[scheme]],
+              pressed && !on && styles.pressed,
             ]}
           >
             <Text
-              style={[styles.label, { color: on ? colors.green : colors.textMuted }]}
               numberOfLines={1}
+              style={[typography.action, { color: on ? colors.textPrimary : colors.textMuted }]}
             >
               {opt.label}
             </Text>
@@ -40,7 +45,18 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
 }
 
 const styles = StyleSheet.create({
-  wrap: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.button, overflow: 'hidden' },
-  seg: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
-  label: { ...typography.rowName, fontWeight: '600', fontSize: 11 },
+  track: {
+    flexDirection: 'row',
+    borderRadius: radius.button,
+    padding: space.xs,
+    gap: space.xs,
+  },
+  seg: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: space.sm + 2,
+    borderRadius: radius.chip,
+  },
+  pressed: { opacity: 0.6 },
 });

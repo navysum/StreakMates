@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.page, gap: spacing.card, justifyContent: 'center' },
   head: { alignItems: 'center', gap: 8, marginBottom: 12 },
   mark: { width: 44, height: 44, borderRadius: 22, borderWidth: 3 },
-  title: { fontSize: 26, marginTop: 6 },
+  title: { marginTop: 8 },
   tagline: { textAlign: 'center' },
-  fine: { textAlign: 'center', lineHeight: 14 },
+  fine: { textAlign: 'center' },
 });
