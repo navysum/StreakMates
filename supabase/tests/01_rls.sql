@@ -34,7 +34,7 @@ insert into auth.users (id, email) values
 set role authenticated;
 
 select tests.as_user(:'alice');
-update public.profiles set username = 'alice' where id = auth.uid();
+select public.set_username('alice');
 select id as gid, invite_code as code from public.create_group('Sunrise Club', 'S') \gset
 insert into public.habits (owner_id, group_id, title) values (auth.uid(), :'gid', 'Morning run');
 insert into public.habits (owner_id, title) values (auth.uid(), 'Private journal');
@@ -50,11 +50,11 @@ insert into public.check_ins (habit_id, user_id, local_date)
 select id as alice_checkin from public.check_ins where habit_id = :'shared_habit' \gset
 
 select tests.as_user(:'bob');
-update public.profiles set username = 'bob' where id = auth.uid();
+select public.set_username('bob');
 select 1 from public.join_group_with_code(:'code');
 
 select tests.as_user(:'mallory');
-update public.profiles set username = 'mallory' where id = auth.uid();
+select public.set_username('mallory');
 select id as mgid from public.create_group('Mallory Club') \gset
 
 \echo ''
@@ -90,10 +90,8 @@ select tests.denied('ordering a habit she cannot see',
   'insert into public.habit_order (user_id, habit_id, position) values (auth.uid(), ' || quote_literal(:'shared_habit') || ', 1)');
 select tests.denied('inserting a profile for someone else',
   'insert into public.profiles (id, display_name) values (gen_random_uuid(), ''ghost'')');
--- Allowed on purpose: it is how "choose a username" heals an account whose
--- profile row predates the trigger. It can only ever be your own row.
-select tests.allowed('upserting her OWN profile row',
-  'insert into public.profiles (id, display_name) values (auth.uid(), ''mallory'') on conflict (id) do nothing');
+select tests.denied('inserting a profile row for herself',
+  'insert into public.profiles (id, display_name) values (auth.uid(), ''ghost'') on conflict (id) do nothing');
 
 select tests.no_effect('renaming a group she is not in',
   'update public.groups set name = ''Owned'' where name = ''Sunrise Club''');

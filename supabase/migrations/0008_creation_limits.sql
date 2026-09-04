@@ -105,7 +105,7 @@ create trigger habits_guard_rate
 
 
 -- ----------------------------------------------------------------------------
--- A profile you can create for yourself
+-- Choosing a username, for an account with no profile row
 --
 -- handle_new_user makes a profile row on signup, so normally there is nothing
 -- to do here. But anyone whose account predates the trigger — someone who
@@ -117,16 +117,48 @@ create trigger habits_guard_rate
 -- profile still without a username, and sent them straight back to the same
 -- screen. A loop with nothing on screen to explain it.
 --
--- With this, the client can upsert and the row heals itself. It grants nothing
--- new: the row can only be your own, and its contents were already yours to
--- change.
+-- The client cannot fix this with an upsert: PostgREST puts every column of
+-- the payload into the ON CONFLICT DO UPDATE, id included, and 0007 revoked
+-- UPDATE on profiles.id precisely so that identity cannot move. The upsert
+-- would be refused for everyone, which is worse than the loop.
+--
+-- So it goes through a function instead. Running as the definer sidesteps the
+-- column grant without loosening it, and profiles keeps having no INSERT
+-- policy at all: creating a profile row stays something only the database
+-- does, never a client.
 -- ----------------------------------------------------------------------------
 
-drop policy if exists profiles_insert on public.profiles;
-create policy profiles_insert on public.profiles for insert
-  with check (id = auth.uid());
+create or replace function public.set_username(p_username text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in' using errcode = '28000';
+  end if;
 
--- Backfill anyone already in that state.
+  insert into public.profiles (id, display_name, username)
+  values (
+    auth.uid(),
+    coalesce(
+      (select coalesce(
+                u.raw_user_meta_data ->> 'full_name',
+                u.raw_user_meta_data ->> 'name',
+                split_part(coalesce(u.email, ''), '@', 1))
+       from auth.users u where u.id = auth.uid()),
+      'Someone'),
+    btrim(p_username)
+  )
+  on conflict (id) do update set username = excluded.username;
+end;
+$$;
+
+revoke all on function public.set_username(text) from public, anon;
+grant execute on function public.set_username(text) to authenticated;
+
+-- Heal anyone already in that state, so they never meet the loop at all.
 insert into public.profiles (id, display_name)
 select u.id, coalesce(
          u.raw_user_meta_data ->> 'full_name',

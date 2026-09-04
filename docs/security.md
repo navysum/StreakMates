@@ -73,6 +73,16 @@ that must not move are held by **grant** instead:
 | `check_ins` | note | `habit_id`, `user_id`, `local_date` |
 | `profiles` | username, display name, avatar, timezone | `id` |
 
+`profiles` has no INSERT policy at all: creating a profile row is something the
+database does, through `handle_new_user` on signup or `set_username` for an
+account that predates it. Never a client.
+
+That is also why choosing a username goes through a function rather than an
+upsert. PostgREST puts every column of an upsert payload into the
+`ON CONFLICT DO UPDATE`, `id` included — so an upsert would be refused by the
+very grant that keeps identity fixed, for everyone, not just the accounts it
+was meant to help.
+
 ## Known and accepted
 
 - **Any group member can edit a shared habit** — rename it, change its cadence,
