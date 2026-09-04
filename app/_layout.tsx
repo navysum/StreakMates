@@ -35,6 +35,11 @@ function AuthGate() {
     if (loading) return;
     const onSignIn = segments[0] === 'sign-in';
     const onUsername = segments[0] === 'username';
+    const onCallback = segments[0] === 'auth-callback';
+
+    // A link from an email lands here signed out, and stays here while a new
+    // password is being chosen.
+    if (onCallback) return;
 
     // With no Supabase project yet, sign-in doubles as the setup screen.
     if ((!session || !configured) && !onSignIn) {
@@ -77,6 +82,7 @@ function AuthGate() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="username" />
+        <Stack.Screen name="auth-callback" />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" />
         <Stack.Screen name="habit/edit" options={{ presentation: 'modal' }} />
