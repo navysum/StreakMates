@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Habits",
-    "slug": "habits-with-friends",
-    "scheme": "habits",
+    "name": "StreakMates",
+    "slug": "streakmates",
+    "scheme": "streakmates",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,16 +10,17 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.navysum.habitswithfriends"
+      "bundleIdentifier": "com.navysum.streakmates"
     },
     "android": {
-      "package": "com.navysum.habitswithfriends",
+      "package": "com.navysum.streakmates",
       "adaptiveIcon": {
-        "backgroundColor": "#EDF2ED",
+        "backgroundColor": "#FDFAF2",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
+      "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -31,10 +32,10 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
-          "imageWidth": 160,
+          "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": { "backgroundColor": "#000000" }
+          "backgroundColor": "#FDFAF2",
+          "dark": { "backgroundColor": "#0A0B0A" }
         }
       ]
     ],

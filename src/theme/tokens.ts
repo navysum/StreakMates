@@ -140,6 +140,22 @@ const dark: Palette = {
 
 export const palettes = { light, dark };
 
+/**
+ * The logo's own colours, straight off the mark.
+ *
+ * These are the identity — the app icon, the splash plate, the sign-in mark —
+ * and are deliberately kept apart from the UI palette above. The brand green is
+ * darker than the interface green, which is tuned for contrast against both a
+ * light and a dark ground; a logo only ever sits on cream.
+ */
+export const brand = {
+  green: '#183b28',
+  gold: '#b2924f',
+  cream: '#fdfaf2',
+  name: 'StreakMates',
+  tagline: 'Building better habits, together.',
+} as const;
+
 /** Font family names, as registered with expo-font in app/_layout.tsx. */
 export const font = {
   regular: 'DMSans-Regular',
