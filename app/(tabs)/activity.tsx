@@ -139,10 +139,10 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   loader: { marginTop: 24 },
   empty: { gap: 7, paddingVertical: 4, alignItems: 'flex-start' },
-  body: { lineHeight: 18 },
+  body: {},
   row: { flexDirection: 'row', gap: 10, paddingVertical: 11 },
   avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 9, color: '#fff' },
+  initial: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#fff' },
   text: { flex: 1, minWidth: 0, gap: 2 },
   strong: { fontFamily: 'DMSans-SemiBold' },
   note: { fontStyle: 'italic' },

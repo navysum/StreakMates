@@ -68,7 +68,7 @@ export function Board({ habits, members, done, date }: Props) {
             </Text>
             {members.map((m) => (
               <View key={m.user_id} style={styles.cell}>
-                <StatusDot complete={done.has(doneKey(habit.id, m.user_id, date))} />
+                <StatusDot size="sm" complete={done.has(doneKey(habit.id, m.user_id, date))} />
               </View>
             ))}
           </View>
@@ -80,11 +80,11 @@ export function Board({ habits, members, done, date }: Props) {
 
 const styles = StyleSheet.create({
   pad: { paddingRight: 4 },
-  row: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  head: { minHeight: 28, borderBottomWidth: 1 },
-  label: { width: 132 },
-  cell: { width: 22, alignItems: 'center', justifyContent: 'center' },
-  avatar: { height: 22, borderRadius: 11 },
-  initial: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 9, color: '#fff' },
-  empty: { paddingVertical: 10, lineHeight: 18 },
+  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  head: { minHeight: 36, borderBottomWidth: 1 },
+  label: { width: 144 },
+  cell: { width: 32, alignItems: 'center', justifyContent: 'center' },
+  avatar: { height: 28, borderRadius: 14 },
+  initial: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#fff' },
+  empty: { paddingVertical: 12 },
 });

@@ -2,7 +2,7 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, typography } from '@/theme/tokens';
+import { hit, radius, space, spacing, typography } from '@/theme/tokens';
 
 export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: string }) {
   const { colors } = useTheme();
@@ -10,25 +10,24 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
   const router = useRouter();
 
   return (
-    <View
-      style={[
-        styles.bar,
-        { paddingTop: insets.top + 12, borderBottomColor: colors.borderDefault },
-      ]}
-    >
+    <View style={[styles.bar, { paddingTop: insets.top + space.md }]}>
       <View style={styles.text}>
         <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
         {eyebrow ? (
-          <Text style={[typography.label, { color: colors.textMuted }]}>{eyebrow}</Text>
+          <Text style={[typography.body, { color: colors.textSecondary }]}>{eyebrow}</Text>
         ) : null}
       </View>
+
       <Pressable
         onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-        hitSlop={12}
         accessibilityRole="button"
         accessibilityLabel="Close"
+        style={({ pressed }) => [
+          styles.close,
+          { backgroundColor: pressed ? colors.bgHover : colors.bgSurfaceMuted },
+        ]}
       >
-        <Text style={[typography.rowName, { color: colors.textMuted }]}>Close</Text>
+        <Text style={[styles.glyph, { color: colors.textSecondary }]}>✕</Text>
       </Pressable>
     </View>
   );
@@ -37,12 +36,19 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
 const styles = StyleSheet.create({
   bar: {
     paddingHorizontal: spacing.page,
-    paddingBottom: 12,
+    paddingBottom: space.lg,
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12,
-    borderBottomWidth: 1,
+    gap: space.md,
   },
-  text: { gap: 3, flex: 1 },
+  text: { gap: space.xs, flex: 1, minWidth: 0, paddingTop: space.xs },
+  close: {
+    width: hit,
+    height: hit,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glyph: { fontSize: 16, lineHeight: 20 },
 });

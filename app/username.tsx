@@ -138,6 +138,6 @@ export default function UsernameScreen() {
 const styles = StyleSheet.create({
   body: { paddingHorizontal: spacing.page, gap: spacing.card },
   head: { gap: 8, marginBottom: 4 },
-  lede: { lineHeight: 19 },
+  lede: {},
   status: { minHeight: 24, justifyContent: 'center' },
 });

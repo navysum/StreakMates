@@ -1,7 +1,10 @@
 import { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DayProgress } from '@/components/DayProgress';
+import { EmptyState } from '@/components/EmptyState';
 import { HabitRow } from '@/components/HabitRow';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
@@ -69,7 +72,8 @@ export default function TodayScreen() {
     return (
       <HabitRow
         key={habit.id}
-        name={habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
+        name={habit.title}
+        icon={habit.emoji}
         meta={describeProgress(
           {
             cadence: habit.cadence,
@@ -88,19 +92,16 @@ export default function TodayScreen() {
   }
 
   return (
-    <Screen
-      title="Today"
-      eyebrow={
-        loading
-          ? formatToday(today)
-          : `${formatToday(today)} · ${doneToday} of ${visible.length} done`
-      }
-    >
+    <Screen title="Today">
       {error ? (
         <Notice label="Could not load" tone="bad">
           {error instanceof Error ? error.message : 'Something went wrong.'}
         </Notice>
       ) : null}
+
+      {loading ? null : (
+        <DayProgress done={doneToday} total={visible.length} date={formatToday(today)} />
+      )}
 
       <Segmented
         value={tab}
@@ -115,38 +116,30 @@ export default function TodayScreen() {
         <ActivityIndicator style={styles.loader} color={colors.textMuted} />
       ) : tab === 'mine' ? (
         mine.length === 0 ? (
-          <Card>
-            <View style={styles.empty}>
-              <Text style={[typography.rowName, { color: colors.textPrimary }]}>No habits yet</Text>
-              <Text style={[typography.body, styles.emptyBody, { color: colors.textSecondary }]}>
-                Add your first one. All it needs is a name — everything else has a sensible default.
-              </Text>
-              <Link href="/habit/new" style={[typography.rowName, { color: colors.green }]}>
-                + Add habit
-              </Link>
-            </View>
-          </Card>
+          <EmptyState
+            icon="✨"
+            title="No habits yet"
+            body="Add your first one. All it needs is a name — everything else has a sensible default."
+            actionLabel="Add habit"
+            onAction={() => router.push('/habit/new')}
+          />
         ) : (
-          <Card title="Private" action="+ Add habit" onAction={() => router.push('/habit/new')}>
+          <Card title="Private" flush>
             {mine.map((h, i) => row(h, i === mine.length - 1))}
           </Card>
         )
       ) : shared.length === 0 ? (
-        <Card>
-          <View style={styles.empty}>
-            <Text style={[typography.rowName, { color: colors.textPrimary }]}>
-              No shared habits yet
-            </Text>
-            <Text style={[typography.body, styles.emptyBody, { color: colors.textSecondary }]}>
-              {groupsQuery.data?.length
-                ? 'Open a group and add one. Everyone in it checks in against the same habit.'
-                : 'Join or create a group first, then add a habit everyone checks in against.'}
-            </Text>
-            <Link href="/groups" style={[typography.rowName, { color: colors.green }]}>
-              Go to groups
-            </Link>
-          </View>
-        </Card>
+        <EmptyState
+          icon="🤝"
+          title="No shared habits yet"
+          body={
+            groupsQuery.data?.length
+              ? 'Open a group and add one. Everyone in it checks in against the same habit.'
+              : 'Join or create a group first, then add a habit everyone checks in against.'
+          }
+          actionLabel="Go to groups"
+          onAction={() => router.push('/groups')}
+        />
       ) : (
         [...byGroup.entries()].map(([groupId, list]) => {
           const group = groupsQuery.data?.find((g) => g.id === groupId);
@@ -156,6 +149,7 @@ export default function TodayScreen() {
               title={group ? (group.emoji ? `${group.emoji} ${group.name}` : group.name) : 'Group'}
               action="Open"
               onAction={() => router.push(`/group/${groupId}`)}
+              flush
             >
               {list.map((h, i) => row(h, i === list.length - 1))}
             </Card>
@@ -164,20 +158,20 @@ export default function TodayScreen() {
       )}
 
       <View style={styles.links}>
-        <Link href="/habit/new" style={[typography.rowName, { color: colors.green }]}>
-          + Add habit
-        </Link>
-        <Link href="/manage" style={[typography.rowName, { color: colors.textMuted }]}>
-          Manage
-        </Link>
+        <Button
+          label="Add habit"
+          variant="primary"
+          onPress={() => router.push('/habit/new')}
+          style={styles.grow}
+        />
+        <Button label="Manage" onPress={() => router.push('/manage')} />
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  loader: { marginTop: 24 },
-  empty: { gap: 7, paddingVertical: 4, alignItems: 'flex-start' },
-  emptyBody: { lineHeight: 18 },
-  links: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
+  loader: { marginTop: 32 },
+  links: { flexDirection: 'row', gap: 12 },
+  grow: { flex: 1 },
 });

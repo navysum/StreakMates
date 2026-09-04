@@ -1,12 +1,14 @@
 import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
-import { Link, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { useGroups } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { radius, typography } from '@/theme/tokens';
 
 export default function GroupsScreen() {
   const { colors } = useTheme();
@@ -25,16 +27,15 @@ export default function GroupsScreen() {
       {groups.isLoading ? (
         <ActivityIndicator style={styles.loader} color={colors.textMuted} />
       ) : list.length === 0 ? (
-        <Card>
-          <View style={styles.empty}>
-            <Text style={[typography.rowName, { color: colors.textPrimary }]}>No groups yet</Text>
-            <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>
-              Create one and share its six-character code, or enter a friend’s code to join theirs.
-            </Text>
-          </View>
-        </Card>
+        <EmptyState
+          icon="👥"
+          title="No groups yet"
+          body="Create one and share its six-character code, or enter a friend’s code to join theirs."
+          actionLabel="Create a group"
+          onAction={() => router.push('/group/new')}
+        />
       ) : (
-        <Card title="Your groups">
+        <Card title="Your groups" flush>
           {list.map((group, i) => (
             <Pressable
               key={group.id}
@@ -48,12 +49,17 @@ export default function GroupsScreen() {
                 },
               ]}
             >
+              {group.emoji ? (
+                <View style={[styles.icon, { backgroundColor: colors.bgSurfaceMuted }]}>
+                  <Text style={styles.glyph}>{group.emoji}</Text>
+                </View>
+              ) : null}
               <View style={styles.info}>
                 <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
-                  {group.emoji ? `${group.emoji}  ${group.name}` : group.name}
+                  {group.name}
                 </Text>
-                <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-                  CODE {group.invite_code}
+                <Text style={[typography.caption, { color: colors.textMuted }]}>
+                  Code {group.invite_code}
                 </Text>
               </View>
               <Pill label="Open" />
@@ -63,12 +69,13 @@ export default function GroupsScreen() {
       )}
 
       <View style={styles.actions}>
-        <Link href="/group/new" style={[typography.rowName, { color: colors.green }]}>
-          + Create a group
-        </Link>
-        <Link href="/group/join" style={[typography.rowName, { color: colors.textMuted }]}>
-          Join with a code
-        </Link>
+        <Button
+          label="Create a group"
+          variant="primary"
+          onPress={() => router.push('/group/new')}
+          style={styles.grow}
+        />
+        <Button label="Join" onPress={() => router.push('/group/join')} />
       </View>
 
       <Notice label="Shared habits">
@@ -79,10 +86,17 @@ export default function GroupsScreen() {
 }
 
 const styles = StyleSheet.create({
-  loader: { marginTop: 24 },
-  empty: { gap: 6, paddingVertical: 4 },
-  body: { lineHeight: 18 },
-  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  loader: { marginTop: 32 },
+  row: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12 },
   info: { flex: 1, minWidth: 0, gap: 1 },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
+  icon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.chip,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glyph: { fontSize: 18, lineHeight: 22 },
+  actions: { flexDirection: 'row', gap: 12 },
+  grow: { flex: 1 },
 });

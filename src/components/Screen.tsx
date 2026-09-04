@@ -1,10 +1,11 @@
 import { Pressable, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, typography } from '@/theme/tokens';
+import { hit, radius, space, spacing, typography } from '@/theme/tokens';
 
 type Props = {
   title: string;
+  /** The one line under the title that says what you are looking at. */
   eyebrow?: string;
   /** Opens a menu for actions that shouldn't sit in the page body. */
   onMenu?: () => void;
@@ -21,29 +22,27 @@ export function Screen({ title, eyebrow, onMenu, menuLabel = 'More', children }:
       style={{ backgroundColor: colors.bgPage }}
       contentContainerStyle={[
         styles.content,
-        { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 24 },
+        { paddingTop: insets.top + space.sm, paddingBottom: insets.bottom + space.xxxl },
       ]}
+      showsVerticalScrollIndicator={false}
     >
       <View style={styles.headRow}>
         <View style={styles.head}>
           <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
           {eyebrow ? (
-            <Text style={[typography.label, styles.eyebrow, { color: colors.textMuted }]}>
-              {eyebrow}
-            </Text>
+            <Text style={[typography.body, { color: colors.textSecondary }]}>{eyebrow}</Text>
           ) : null}
         </View>
 
         {onMenu ? (
           <Pressable
             onPress={onMenu}
-            hitSlop={14}
+            hitSlop={space.sm}
             accessibilityRole="button"
             accessibilityLabel={menuLabel}
             style={({ pressed }) => [
               styles.menu,
-              { borderColor: colors.borderStrong },
-              pressed && { backgroundColor: colors.bgHover },
+              { backgroundColor: pressed ? colors.bgHover : colors.bgSurfaceMuted },
             ]}
           >
             {[0, 1, 2].map((i) => (
@@ -61,26 +60,24 @@ export function Screen({ title, eyebrow, onMenu, menuLabel = 'More', children }:
 const styles = StyleSheet.create({
   content: {
     paddingHorizontal: spacing.page,
-    gap: spacing.card,
+    gap: spacing.section,
   },
   headRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.md,
+    marginBottom: -space.xs,
   },
-  head: { gap: 3, flex: 1, minWidth: 0 },
-  eyebrow: { marginTop: 1 },
+  head: { gap: space.xs, flex: 1, minWidth: 0, paddingTop: space.xs },
   menu: {
-    width: 38,
-    height: 32,
-    borderWidth: 1,
-    borderRadius: 8,
+    width: hit,
+    height: hit,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 3.5,
-    marginTop: 2,
+    gap: 4,
   },
-  pip: { width: 3.5, height: 3.5, borderRadius: 2 },
+  pip: { width: 4, height: 4, borderRadius: 2 },
 });

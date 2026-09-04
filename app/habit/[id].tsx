@@ -233,6 +233,6 @@ const styles = StyleSheet.create({
   },
   value: { flexShrink: 1, textAlign: 'right' },
   note: { paddingVertical: 9, gap: 2 },
-  noteText: { fontStyle: 'italic', lineHeight: 18 },
+  noteText: { fontStyle: 'italic' },
   edit: { paddingHorizontal: 2 },
 });
