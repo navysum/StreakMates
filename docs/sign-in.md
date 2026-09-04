@@ -49,6 +49,12 @@ the code for a session and asks for a new password. The screen deliberately
 says the same thing whether or not the address has an account, so the form
 cannot be used to find out who is signed up.
 
+The link carries its own `flow=reset` marker rather than relying on Supabase's
+`PASSWORD_RECOVERY` event. That event is only emitted under the implicit flow,
+and this app uses PKCE, where `exchangeCodeForSession` reports an ordinary
+`SIGNED_IN`. Depending on it would mean a reset link signed you in and dropped
+you on Today, having never asked for the new password.
+
 ### Password rules
 
 Eight characters minimum, 72 bytes maximum. The ceiling is not arbitrary:

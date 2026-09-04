@@ -18,7 +18,7 @@ export default function AuthCallbackScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { code } = useLocalSearchParams<{ code?: string }>();
+  const { code, flow } = useLocalSearchParams<{ code?: string; flow?: string }>();
   const { exchangeCode, updatePassword, recovering, session } = useAuth();
 
   const [state, setState] = useState<'working' | 'ready' | 'failed'>('working');
@@ -59,10 +59,15 @@ export default function AuthCallbackScreen() {
     };
   }, [code, exchangeCode, session]);
 
+  // Whether to ask for a new password. The marker in the link is the reliable
+  // half: sendPasswordReset puts it there because Supabase's PASSWORD_RECOVERY
+  // event does not fire under PKCE. recovering covers the implicit flow.
+  const isReset = flow === 'reset' || recovering;
+
   // A confirmed email needs no further input, so it goes straight in.
   useEffect(() => {
-    if (state === 'ready' && !recovering) router.replace('/');
-  }, [state, recovering, router]);
+    if (state === 'ready' && !isReset) router.replace('/');
+  }, [state, isReset, router]);
 
   async function save() {
     const problem = passwordProblem(password);

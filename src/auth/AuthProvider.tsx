@@ -20,7 +20,11 @@ type AuthState = {
   signInWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (email: string, password: string, name: string) => Promise<SignUpResult>;
   sendPasswordReset: (email: string) => Promise<void>;
-  /** True between following a reset link and choosing the new password. */
+  /**
+   * Supabase's own recovery signal, when it arrives. Not relied on: under PKCE
+   * it does not fire, so the reset link carries its own marker instead. Kept
+   * as a second signal for the implicit flow.
+   */
   recovering: boolean;
   exchangeCode: (code: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -173,8 +177,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       async sendPasswordReset(email) {
         if (!supabase) throw new Error('Supabase is not configured yet.');
+
+        // The marker is ours, in a redirect we control, because Supabase's own
+        // PASSWORD_RECOVERY event is not emitted under the PKCE flow this app
+        // uses — exchangeCodeForSession reports SIGNED_IN like any other
+        // sign-in. Without it the reset link would sign you in and drop you on
+        // Today, having never asked for the new password.
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: Linking.createURL('/auth-callback'),
+          redirectTo: Linking.createURL('/auth-callback', { queryParams: { flow: 'reset' } }),
         });
         // Never reveal whether the address exists — the screen says the same
         // thing either way, so this only surfaces real failures.
