@@ -119,7 +119,7 @@ export default function GroupScreen() {
 
   async function shareCode() {
     await Share.share({
-      message: `Join ${group!.name} on Habits — the code is ${group!.invite_code}`,
+      message: `Join ${group!.name} on StreakMates — the code is ${group!.invite_code}`,
     });
   }
 
