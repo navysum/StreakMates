@@ -20,7 +20,7 @@ export function StatTrio({ stats }: { stats: Stat[] }) {
           ]}
         >
           <Text style={[typography.stat, { color: colors.textPrimary }]}>{stat.value}</Text>
-          <Text numberOfLines={1} style={[typography.label, { color: colors.textMuted }]}>
+          <Text numberOfLines={2} style={[typography.label, { color: colors.textMuted }]}>
             {stat.label}
           </Text>
         </View>

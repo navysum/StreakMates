@@ -146,7 +146,7 @@ export default function GroupScreen() {
 
   return (
     <Screen
-      title={group.name}
+      title={group.emoji ? `${group.emoji}  ${group.name}` : group.name}
       eyebrow={`${list.length} member${list.length === 1 ? '' : 's'} · ${groupHabits.length} shared ${groupHabits.length === 1 ? 'habit' : 'habits'}`}
       onMenu={() => setMenuOpen(true)}
       menuLabel="Group options"
