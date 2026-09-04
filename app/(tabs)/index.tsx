@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { DayProgress } from '@/components/DayProgress';
@@ -16,13 +17,14 @@ import {
   useGroups,
   useHabitOrder,
   useHabits,
+  useProfile,
   useToggleCheckIn,
 } from '@/lib/queries';
 import { sortHabits } from '@/lib/ordering';
+import { weekCells } from '@/lib/week';
 import { formatToday, toLocalDate } from '@/lib/date';
-import { describeProgress } from '@/lib/streak';
+import { computeStreak, describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
 import type { Habit } from '@/lib/types';
 
 export default function TodayScreen() {
@@ -51,6 +53,26 @@ export default function TodayScreen() {
   const visible = tab === 'mine' ? mine : shared;
   const doneToday = visible.filter((h) => completed.get(h.id)?.has(today)).length;
 
+  const profile = useProfile(userId);
+
+  // The longest run going among the habits on screen, as the one extra fact
+  // the progress card carries.
+  const streakNote = useMemo(() => {
+    let best = 0;
+    for (const h of visible) {
+      const dates = completed.get(h.id) ?? new Set<string>();
+      best = Math.max(
+        best,
+        computeStreak(
+          { cadence: h.cadence, targetDays: h.target_days, targetPerWeek: h.target_per_week },
+          dates,
+          today,
+        ),
+      );
+    }
+    return best > 1 ? `${best} day streak` : undefined;
+  }, [visible, completed, today]);
+
   const loading = habitsQuery.isLoading || checkInsQuery.isLoading;
   const error = habitsQuery.error ?? checkInsQuery.error;
 
@@ -69,20 +91,18 @@ export default function TodayScreen() {
   function row(habit: Habit, last: boolean) {
     const dates = completed.get(habit.id) ?? new Set<string>();
     const complete = dates.has(today);
+    const schedule = {
+      cadence: habit.cadence,
+      targetDays: habit.target_days,
+      targetPerWeek: habit.target_per_week,
+    };
     return (
       <HabitRow
         key={habit.id}
         name={habit.title}
         icon={habit.emoji}
-        meta={describeProgress(
-          {
-            cadence: habit.cadence,
-            targetDays: habit.target_days,
-            targetPerWeek: habit.target_per_week,
-          },
-          dates,
-          today,
-        )}
+        week={weekCells(today, dates, schedule, today)}
+        meta={describeProgress(schedule, dates, today)}
         complete={complete}
         last={last}
         onToggle={() => toggle.mutate({ habitId: habit.id, date: today, complete: !complete })}
@@ -92,7 +112,22 @@ export default function TodayScreen() {
   }
 
   return (
-    <Screen title="Today">
+    <Screen
+      title="Today"
+      eyebrow={formatToday(today)}
+      trailing={
+        profile.data ? (
+          <Pressable
+            onPress={() => router.push('/you')}
+            accessibilityRole="button"
+            accessibilityLabel="Your profile"
+            style={({ pressed }) => pressed && styles.pressed}
+          >
+            <Avatar id={profile.data.id} name={profile.data.display_name} size={44} />
+          </Pressable>
+        ) : null
+      }
+    >
       {error ? (
         <Notice label="Could not load" tone="bad">
           {error instanceof Error ? error.message : 'Something went wrong.'}
@@ -100,7 +135,12 @@ export default function TodayScreen() {
       ) : null}
 
       {loading ? null : (
-        <DayProgress done={doneToday} total={visible.length} date={formatToday(today)} />
+        <DayProgress
+          done={doneToday}
+          total={visible.length}
+          label={tab === 'mine' ? 'Private habits' : 'Shared habits'}
+          note={streakNote}
+        />
       )}
 
       <Segmented
@@ -173,5 +213,6 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
   links: { flexDirection: 'row', gap: 12 },
+  pressed: { opacity: 0.6 },
   grow: { flex: 1 },
 });
