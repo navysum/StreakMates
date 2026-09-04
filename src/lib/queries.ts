@@ -71,10 +71,13 @@ export function useSetUsername(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (username: string) => {
+      // Upsert, not update. An UPDATE that matches no rows is not an error in
+      // PostgREST, so a missing profile row — anyone whose account predates the
+      // handle_new_user trigger — used to report success, leave the username
+      // unset, and bounce straight back to this screen forever.
       const { error } = await db()
         .from('profiles')
-        .update({ username: username.trim() })
-        .eq('id', userId!);
+        .upsert({ id: userId!, username: username.trim() }, { onConflict: 'id' });
       if (error) {
         // Two people can pick the same free name in the same moment; the
         // unique index is what decides, and this is how it says so.
