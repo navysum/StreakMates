@@ -1,6 +1,6 @@
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { space, typography } from '@/theme/tokens';
 
 type Props = TextInputProps & { label: string; last?: boolean };
 
@@ -49,12 +49,12 @@ export function FieldRow({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 44,
+    minHeight: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.lg,
   },
-  input: { ...typography.rowName, flex: 1, textAlign: 'right', paddingVertical: 10 },
-  value: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  input: { ...typography.rowName, flex: 1, textAlign: 'right', paddingVertical: space.md },
+  value: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
 });

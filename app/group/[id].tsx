@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   grow: { flex: 1 },
   row: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10 },
   avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 9, color: '#fff' },
+  initial: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#fff' },
   name: { flex: 1, minWidth: 0 },
   links: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
 });

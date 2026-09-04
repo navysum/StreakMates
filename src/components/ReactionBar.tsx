@@ -75,5 +75,5 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
   },
   faint: { opacity: 0.45 },
-  glyph: { fontSize: 12, lineHeight: 16 },
+  glyph: { fontSize: 16, lineHeight: 20 },
 });

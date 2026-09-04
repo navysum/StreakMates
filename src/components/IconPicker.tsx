@@ -89,5 +89,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: { fontSize: 19, lineHeight: 24 },
+  glyph: { fontSize: 22, lineHeight: 28 },
 });

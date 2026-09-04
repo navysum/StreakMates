@@ -1,8 +1,14 @@
 /**
- * Design tokens copied once from life-os-portal/src/styles/variables.css.
+ * Design tokens.
  *
- * This is a one-time copy, not a live dependency: the phone app shares nothing
- * with LifeOS but its appearance. Change anything here freely.
+ * The palette came from life-os-portal and is kept — it is the reason the app
+ * looks like LifeOS. Everything dimensional (type sizes, spacing, radii) was
+ * originally copied across too, and that was the mistake: those numbers were
+ * drawn for a 1400px monitor at arm's length, not a 390px phone held at 30cm.
+ * They have been redrawn against Apple's Human Interface Guidelines and
+ * Material's type scale.
+ *
+ * This shares nothing with LifeOS but its colours. Change anything freely.
  */
 
 export type Palette = {
@@ -72,17 +78,19 @@ const light: Palette = {
   coralSoft: '#f5eae7',
   redSoft: '#f6ecea',
 
-  bgPage: '#ffffff',
+  // The page sits a shade below the card, so a card reads as a raised object
+  // rather than as a hairline rectangle drawn on the same white.
+  bgPage: '#f7f6f3',
   bgSurface: '#ffffff',
-  bgSurfaceMuted: '#f5f5f3',
-  bgHover: '#f1f2ef',
+  bgSurfaceMuted: '#f1f0ec',
+  bgHover: '#eceae5',
 
   textPrimary: '#171717',
-  textSecondary: '#737373',
-  textMuted: '#949494',
+  textSecondary: '#6b6b68',
+  textMuted: '#8f8f8c',
 
-  borderDefault: '#e4e4e1',
-  borderStrong: '#ccccca',
+  borderDefault: '#e6e5e1',
+  borderStrong: '#d3d2cd',
 
   greenMid: '#7f9b82',
   greenMuted: '#c9d5cb',
@@ -111,17 +119,18 @@ const dark: Palette = {
   coralSoft: '#2a2119',
   redSoft: '#2c1c1b',
 
-  bgPage: '#000000',
-  bgSurface: '#101110',
-  bgSurfaceMuted: '#252725',
-  bgHover: '#1c1e1c',
+  // Same idea inverted: the card is lifted off the page rather than outlined.
+  bgPage: '#0a0b0a',
+  bgSurface: '#161816',
+  bgSurfaceMuted: '#212421',
+  bgHover: '#252825',
 
   textPrimary: '#f2f2ee',
   textSecondary: '#a9aaa6',
-  textMuted: '#777a76',
+  textMuted: '#7d807c',
 
-  borderDefault: '#292b29',
-  borderStrong: '#414441',
+  borderDefault: '#262926',
+  borderStrong: '#3b3e3b',
 
   greenMid: '#647c68',
   greenMuted: '#364139',
@@ -142,43 +151,111 @@ export const font = {
 } as const;
 
 /**
- * The portal's phone breakpoint values, not its desktop ones —
- * page padding drops to 20 under 650px in globals.css.
+ * A 4pt grid. Every gap, pad and inset comes from here, so everything on a
+ * screen lands on the same rhythm instead of on an arbitrary number.
  */
+export const space = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
+  xxxl: 32,
+} as const;
+
 export const spacing = {
-  page: 20,
-  section: 20,
-  card: 14,
-  row: 11,
+  /** Side gutter. 20 is the iOS standard for a phone. */
+  page: space.xl,
+  /** Between cards. Cards need more air than the things inside them. */
+  section: space.lg,
+  /** Inside a card. */
+  card: space.lg,
+  /** Between rows in a list. */
+  row: space.md,
 } as const;
 
 export const radius = {
-  card: 8,
-  button: 6,
+  /** Large enough to read as a modern surface rather than a boxy panel. */
+  card: 16,
+  button: 12,
+  input: 12,
+  chip: 10,
   pill: 999,
 } as const;
 
 /**
- * Type scale lifted from the portal's components. Letter-spacing is in points
- * here rather than em, so 0.06em on an 8px label becomes 0.5.
+ * A card is separated from the page by a soft shadow in light mode and by a
+ * lighter surface in dark mode, because shadows are close to invisible on a
+ * dark background. Both are deliberately restrained — this is one step of
+ * elevation, not a floating panel.
+ */
+export const elevation = {
+  light: {
+    shadowColor: '#1c1b17',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+  },
+  dark: {
+    shadowColor: '#000000',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+  },
+} as const;
+
+/** The minimum comfortable tap target, per Apple's HIG. */
+export const hit = 44;
+
+/**
+ * Type scale.
+ *
+ * Three jobs, kept deliberately far apart in size so a glance finds the
+ * important thing: a display number, a title, and body text. Everything else
+ * is a supporting role. Nothing is below 11pt.
  */
 export const typography = {
-  screenTitle: { fontFamily: font.bold, fontSize: 19, letterSpacing: -0.2 },
-  cardTitle: {
-    fontFamily: font.bold,
-    fontSize: 11,
-    letterSpacing: 0.44,
-    textTransform: 'uppercase' as const,
-  },
+  /** The one number a screen is about. Tabular so digits don't jitter. */
+  display: { fontFamily: font.bold, fontSize: 40, letterSpacing: -1.2, lineHeight: 44 },
+
+  /** Large title, at the top of a screen. */
+  screenTitle: { fontFamily: font.bold, fontSize: 28, letterSpacing: -0.6, lineHeight: 34 },
+
+  /** A heading inside the page. */
+  sectionTitle: { fontFamily: font.bold, fontSize: 20, letterSpacing: -0.3, lineHeight: 26 },
+
+  /** A card's own heading. */
+  cardTitle: { fontFamily: font.semibold, fontSize: 16, letterSpacing: -0.2, lineHeight: 21 },
+
+  /** The name of a thing in a list. */
+  rowName: { fontFamily: font.medium, fontSize: 16, letterSpacing: -0.2, lineHeight: 21 },
+
+  /** Running text. */
+  body: { fontFamily: font.regular, fontSize: 15, lineHeight: 22 },
+
+  /** Secondary text under a row, and captions. */
+  caption: { fontFamily: font.regular, fontSize: 13, lineHeight: 18 },
+
+  /** Small print, still legible. */
+  monoSmall: { fontFamily: font.regular, fontSize: 13, lineHeight: 18 },
+
+  /** Micro-caps, for the one-word label above a group of things. */
   label: {
-    fontFamily: font.monoSemibold,
-    fontSize: 8,
-    letterSpacing: 0.5,
+    fontFamily: font.semibold,
+    fontSize: 11,
+    letterSpacing: 0.7,
+    lineHeight: 14,
     textTransform: 'uppercase' as const,
   },
-  rowName: { fontFamily: font.medium, fontSize: 12 },
-  body: { fontFamily: font.regular, fontSize: 12, lineHeight: 18 },
-  stat: { fontFamily: font.monoSemibold, fontSize: 17 },
-  monoSmall: { fontFamily: font.mono, fontSize: 8 },
-  tabLabel: { fontFamily: font.medium, fontSize: 9 },
+
+  /** A figure in a stat block. Mono keeps columns of numbers aligned. */
+  stat: { fontFamily: font.monoSemibold, fontSize: 22, lineHeight: 28 },
+
+  /** Button and action text. */
+  action: { fontFamily: font.semibold, fontSize: 15, letterSpacing: -0.1, lineHeight: 20 },
+
+  tabLabel: { fontFamily: font.medium, fontSize: 11, letterSpacing: 0 },
 } as const;
