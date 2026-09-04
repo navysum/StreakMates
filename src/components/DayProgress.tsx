@@ -6,8 +6,8 @@ import { radius, space, typography } from '@/theme/tokens';
 type Props = {
   done: number;
   total: number;
-  /** The date line, e.g. "Wednesday 3 September". */
-  date: string;
+  /** What is being counted, e.g. "Private habits". The date sits in the header. */
+  label: string;
   /** Optional extra fact, e.g. a streak. */
   note?: string;
 };
@@ -19,7 +19,7 @@ type Props = {
  * The bar is one segment per habit while that stays legible, and a single
  * filled track once there are too many for segments to mean anything.
  */
-export function DayProgress({ done, total, date, note }: Props) {
+export function DayProgress({ done, total, label, note }: Props) {
   const { colors } = useTheme();
   const complete = total > 0 && done === total;
   const segmented = total > 0 && total <= 10;
@@ -34,12 +34,15 @@ export function DayProgress({ done, total, date, note }: Props) {
 
   return (
     <Card>
-      <Text style={[typography.label, { color: colors.textMuted }]}>{date}</Text>
+      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
 
       <View style={styles.figure}>
         <Text style={[typography.display, { color: colors.textPrimary }]}>{done}</Text>
         <Text style={[typography.sectionTitle, styles.of, { color: colors.textMuted }]}>
           / {total}
+        </Text>
+        <Text style={[typography.caption, styles.of, { color: colors.textSecondary }]}>
+          done today
         </Text>
       </View>
 

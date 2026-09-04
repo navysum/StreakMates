@@ -31,6 +31,7 @@ export const keys = {
   checkIns: ['check-ins'] as const,
   groups: ['groups'] as const,
   members: (groupId: string) => ['group-members', groupId] as const,
+  allMembers: ['group-members'] as const,
   people: ['people'] as const,
   reactions: ['reactions'] as const,
   nudges: ['nudges'] as const,
@@ -598,6 +599,40 @@ export function useGroupMembers(groupId: string | undefined) {
       return (data ?? []) as unknown as GroupMember[];
     },
   });
+}
+
+/**
+ * Members of every group you are in, in one request. The Groups list needs a
+ * face and a count per group, and a hook cannot be called in a loop.
+ *
+ * RLS scopes this to groups you belong to, so it is the same data as
+ * `useGroupMembers` for each of them, fetched once.
+ */
+export function useAllMembers() {
+  return useQuery({
+    queryKey: keys.allMembers,
+    queryFn: async (): Promise<GroupMember[]> => {
+      const { data, error } = await db()
+        .from('group_members')
+        .select(
+          'group_id, user_id, role, joined_at, profile:profiles(id, username, display_name, avatar_url, timezone)',
+        )
+        .order('joined_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as GroupMember[];
+    },
+  });
+}
+
+/** Members keyed by the group they are in, preserving join order. */
+export function membersByGroup(members: GroupMember[] | undefined) {
+  const map = new Map<string, GroupMember[]>();
+  for (const m of members ?? []) {
+    const list = map.get(m.group_id) ?? [];
+    list.push(m);
+    map.set(m.group_id, list);
+  }
+  return map;
 }
 
 export function useCreateGroup() {

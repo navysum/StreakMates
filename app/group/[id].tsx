@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, Share, Text, View, StyleSheet } from 'react-native';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
+import { Avatar } from '@/components/Avatar';
 import { Board } from '@/components/Board';
+import { HabitRow } from '@/components/HabitRow';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
@@ -20,11 +22,14 @@ import {
   useHabits,
   useLeaveGroup,
   useRotateInviteCode,
+  useToggleCheckIn,
+  doneKey,
 } from '@/lib/queries';
-import { formatToday, toLocalDate } from '@/lib/date';
-import { handle, initial } from '@/lib/identity';
+import { toLocalDate } from '@/lib/date';
+import { aggregateCells } from '@/lib/week';
+import { handle } from '@/lib/identity';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, typography } from '@/theme/tokens';
+import { space, typography } from '@/theme/tokens';
 
 export default function GroupScreen() {
   const { colors } = useTheme();
@@ -39,6 +44,7 @@ export default function GroupScreen() {
   const order = useHabitOrder(userId);
   const leave = useLeaveGroup(userId);
   const rotate = useRotateInviteCode();
+  const toggle = useToggleCheckIn(userId);
 
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +60,37 @@ export default function GroupScreen() {
     [habits.data, id, order.data],
   );
   const done = useMemo(() => checkInIndex(checkIns.data), [checkIns.data]);
+
+  // This week, aggregated the same way the board draws it: a member-day counts
+  // only when everything owed that day was kept.
+  const { weekDone, weekOwed, top3 } = useMemo(() => {
+    const schedules = groupHabits.map((h) => ({
+      id: h.id,
+      schedule: {
+        cadence: h.cadence,
+        targetDays: h.target_days,
+        targetPerWeek: h.target_per_week,
+      },
+    }));
+    const rows = list.map((member) => {
+      const cells = aggregateCells(
+        today,
+        schedules,
+        (habitId, day) => done.has(doneKey(habitId, member.user_id, day)),
+        today,
+      );
+      return {
+        member,
+        kept: cells.filter((c) => c.state === 'done').length,
+        owed: cells.filter((c) => c.state !== 'off').length,
+      };
+    });
+    return {
+      weekDone: rows.reduce((n, r) => n + r.kept, 0),
+      weekOwed: rows.reduce((n, r) => n + r.owed, 0),
+      top3: [...rows].sort((a, b) => b.kept - a.kept).slice(0, 3),
+    };
+  }, [groupHabits, list, done, today]);
 
   if (groups.isLoading || members.isLoading) {
     return (
@@ -110,28 +147,94 @@ export default function GroupScreen() {
   return (
     <Screen
       title={group.emoji ? `${group.emoji}  ${group.name}` : group.name}
-      eyebrow={`${list.length} member${list.length === 1 ? '' : 's'}`}
+      eyebrow={`${list.length} member${list.length === 1 ? '' : 's'} · ${groupHabits.length} shared ${groupHabits.length === 1 ? 'habit' : 'habits'}`}
       onMenu={() => setMenuOpen(true)}
       menuLabel="Group options"
     >
-      <Card title="Today's board" action={formatToday(today)}>
+      <Card title="This week" action={`${weekDone} / ${weekOwed}`}>
         <Board habits={groupHabits} members={list} done={done} date={today} />
       </Card>
 
-      <View style={styles.links}>
-        <Link
-          href={{ pathname: '/habit/new', params: { group: group.id } }}
-          style={[typography.rowName, { color: colors.green }]}
-        >
-          + Add a shared habit
-        </Link>
-        <Link
-          href={{ pathname: '/group/leaderboard', params: { id: group.id } }}
-          style={[typography.rowName, { color: colors.textMuted }]}
-        >
-          Leaderboard
-        </Link>
-      </View>
+      <Card title="Shared habits" action="+ Add" onAction={() => router.push({ pathname: '/habit/new', params: { group: group.id } })} flush>
+        {groupHabits.length === 0 ? (
+          <Text style={[typography.caption, styles.none, { color: colors.textMuted }]}>
+            None yet. A shared habit is one habit the whole group checks in against.
+          </Text>
+        ) : (
+          groupHabits.map((habit, i) => {
+            const inToday = list.filter((m) =>
+              done.has(doneKey(habit.id, m.user_id, today)),
+            ).length;
+            return (
+              <HabitRow
+                key={habit.id}
+                name={habit.title}
+                icon={habit.emoji}
+                meta={`${inToday} of ${list.length} in today`}
+                complete={userId ? done.has(doneKey(habit.id, userId, today)) : false}
+                last={i === groupHabits.length - 1}
+                onToggle={
+                  userId
+                    ? () =>
+                        toggle.mutate({
+                          habitId: habit.id,
+                          date: today,
+                          complete: !done.has(doneKey(habit.id, userId, today)),
+                        })
+                    : undefined
+                }
+                onPress={() => router.push(`/habit/${habit.id}`)}
+              />
+            );
+          })
+        )}
+      </Card>
+
+      <Pressable
+        onPress={() => router.push({ pathname: '/group/leaderboard', params: { id: group.id } })}
+        accessibilityRole="button"
+        accessibilityLabel="See all standings"
+        style={({ pressed }) => pressed && styles.pressed}
+      >
+        <Card title="Standings" action="See all" flush>
+          {top3.map((row, i) => (
+            <View
+              key={row.member.user_id}
+              style={[
+                styles.rank,
+                {
+                  borderBottomColor: colors.borderDefault,
+                  borderBottomWidth: i === top3.length - 1 ? 0 : 1,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  typography.stat,
+                  styles.place,
+                  { color: i === 0 ? colors.amber : colors.textMuted },
+                ]}
+              >
+                {i + 1}
+              </Text>
+              <Avatar
+                id={row.member.user_id}
+                name={row.member.profile?.display_name ?? '?'}
+                size={28}
+              />
+              <Text
+                numberOfLines={1}
+                style={[typography.body, styles.name, { color: colors.textPrimary }]}
+              >
+                {row.member.profile?.display_name ?? 'Someone'}
+              </Text>
+              <Text style={[typography.stat, styles.score, { color: colors.textPrimary }]}>
+                {row.kept}
+              </Text>
+            </View>
+          ))}
+        </Card>
+      </Pressable>
 
       <Card title="Invite code" action={isOwner ? 'Owner' : undefined}>
         <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel="Copy invite code">
@@ -155,14 +258,7 @@ export default function GroupScreen() {
               },
             ]}
           >
-            <View
-              style={[
-                styles.avatar,
-                { backgroundColor: member.role === 'owner' ? colors.green : colors.blue },
-              ]}
-            >
-              <Text style={styles.initial}>{initial(member.profile)}</Text>
-            </View>
+            <Avatar id={member.user_id} name={member.profile?.display_name ?? '?'} size={28} />
             <Text numberOfLines={1} style={[typography.rowName, styles.name, { color: colors.textPrimary }]}>
               {handle(member.profile)}
               {member.user_id === userId ? ' (you)' : ''}
@@ -225,9 +321,11 @@ const styles = StyleSheet.create({
   },
   codeActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
   grow: { flex: 1 },
-  row: { minHeight: 46, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#fff' },
+  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md },
+  rank: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md },
+  place: { width: 20 },
+  score: { minWidth: 28, textAlign: 'right' },
   name: { flex: 1, minWidth: 0 },
-  links: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
+  none: { paddingBottom: space.sm },
+  pressed: { opacity: 0.7 },
 });
