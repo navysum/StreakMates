@@ -1,12 +1,11 @@
-import { ScrollView, Text, View, StyleSheet } from 'react-native';
-import { StatusDot } from './StatusDot';
-import { initial } from '@/lib/identity';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { Avatar } from './Avatar';
+import { WeekLabels, WeekStrip } from './WeekStrip';
+import { aggregateCells } from '@/lib/week';
 import { doneKey } from '@/lib/queries';
+import { space, typography } from '@/theme/tokens';
 import type { GroupMember, Habit } from '@/lib/types';
-
-const MEMBER_COLORS = ['green', 'amber', 'blue', 'purple', 'teal', 'coral'] as const;
 
 type Props = {
   habits: Habit[];
@@ -16,75 +15,77 @@ type Props = {
 };
 
 /**
- * Habits down, people across. The empty rings are the point — that is what
- * everyone can see.
+ * The group's week: one row per member, seven cells across.
+ *
+ * A cell is filled only when that person kept everything owed that day, so the
+ * board answers "who is actually keeping up" rather than "who ticked something".
+ * Members are ordered by how much of the week they have kept.
  */
 export function Board({ habits, members, done, date }: Props) {
   const { colors } = useTheme();
 
-  if (habits.length === 0) {
+  const schedules = habits.map((h) => ({
+    id: h.id,
+    schedule: {
+      cadence: h.cadence,
+      targetDays: h.target_days,
+      targetPerWeek: h.target_per_week,
+    },
+  }));
+
+  const rows = members
+    .map((member) => {
+      const cells = aggregateCells(
+        date,
+        schedules,
+        (habitId, day) => done.has(doneKey(habitId, member.user_id, day)),
+        date,
+      );
+      return { member, cells, kept: cells.filter((c) => c.state === 'done').length };
+    })
+    .sort((a, b) => b.kept - a.kept);
+
+  if (members.length === 0) {
     return (
-      <Text style={[typography.body, styles.empty, { color: colors.textMuted }]}>
-        No shared habits yet. Add one and everyone in the group checks in against it.
+      <Text style={[typography.caption, { color: colors.textMuted }]}>
+        Nobody has joined yet.
       </Text>
     );
   }
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.pad}>
-      <View>
-        <View style={[styles.row, styles.head, { borderBottomColor: colors.borderDefault }]}>
-          <Text style={[typography.label, styles.label, { color: colors.textMuted }]}>Habit</Text>
-          {members.map((m, i) => (
-            <View
-              key={m.user_id}
-              style={[
-                styles.cell,
-                styles.avatar,
-                { backgroundColor: colors[MEMBER_COLORS[i % MEMBER_COLORS.length]] },
-              ]}
-            >
-              <Text style={styles.initial}>{initial(m.profile)}</Text>
-            </View>
-          ))}
-        </View>
+    <View style={styles.wrap}>
+      <View style={styles.headRow}>
+        <View style={styles.nameCol} />
+        <WeekLabels />
+      </View>
 
-        {habits.map((habit, i) => (
-          <View
-            key={habit.id}
-            style={[
-              styles.row,
-              {
-                borderBottomColor: colors.borderDefault,
-                borderBottomWidth: i === habits.length - 1 ? 0 : 1,
-              },
-            ]}
-          >
+      {rows.map(({ member, cells }) => (
+        <View key={member.user_id} style={styles.row}>
+          <View style={styles.nameCol}>
+            <Avatar
+              id={member.user_id}
+              name={member.profile?.display_name ?? '?'}
+              size={24}
+            />
             <Text
               numberOfLines={1}
-              style={[typography.rowName, styles.label, { color: colors.textPrimary }]}
+              style={[typography.caption, styles.name, { color: colors.textPrimary }]}
             >
-              {habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
+              {member.profile?.display_name ?? 'Someone'}
             </Text>
-            {members.map((m) => (
-              <View key={m.user_id} style={styles.cell}>
-                <StatusDot size="sm" complete={done.has(doneKey(habit.id, m.user_id, date))} />
-              </View>
-            ))}
           </View>
-        ))}
-      </View>
-    </ScrollView>
+          <WeekStrip cells={cells} size={16} />
+        </View>
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pad: { paddingRight: 4 },
-  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  head: { minHeight: 36, borderBottomWidth: 1 },
-  label: { width: 144 },
-  cell: { width: 32, alignItems: 'center', justifyContent: 'center' },
-  avatar: { height: 28, borderRadius: 14 },
-  initial: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#fff' },
-  empty: { paddingVertical: 12 },
+  wrap: { gap: space.md },
+  headRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  row: { flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 32 },
+  nameCol: { width: 96, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  name: { flex: 1, minWidth: 0 },
 });

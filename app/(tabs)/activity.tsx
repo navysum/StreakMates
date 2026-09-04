@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
+import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
+import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { ReactionBar } from '@/components/ReactionBar';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
-import { handle, initial } from '@/lib/identity';
+import { handle } from '@/lib/identity';
 import {
   peopleById,
   reactionSummary,
@@ -19,14 +21,14 @@ import {
 } from '@/lib/queries';
 import { addDays, toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { radius, typography } from '@/theme/tokens';
 
 const FEED_DAYS = 14;
-const MEMBER_COLORS = ['green', 'amber', 'blue', 'purple', 'teal', 'coral'] as const;
 
 export default function ActivityScreen() {
   const { colors } = useTheme();
   const { userId } = useAuth();
+  const router = useRouter();
 
   const habits = useHabits();
   const checkIns = useCheckIns();
@@ -55,33 +57,28 @@ export default function ActivityScreen() {
   }, [checkIns.data, habits.data]);
 
   const loading = habits.isLoading || checkIns.isLoading || people.isLoading;
-  const colorFor = (id: string) => {
-    const index = [...names.keys()].sort().indexOf(id);
-    return colors[MEMBER_COLORS[(index < 0 ? 0 : index) % MEMBER_COLORS.length]];
-  };
 
   return (
     <Screen title="Activity" eyebrow={feed.length ? `Last ${FEED_DAYS} days` : 'Nothing yet'}>
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.textMuted} />
       ) : feed.length === 0 ? (
-        <Card>
-          <View style={styles.empty}>
-            <Text style={[typography.rowName, { color: colors.textPrimary }]}>Nothing yet</Text>
-            <Text style={[typography.body, styles.body, { color: colors.textSecondary }]}>
-              {groups.data?.length
-                ? 'Check in on a shared habit and it shows up here for the group.'
-                : 'Join or create a group, add a shared habit, and check-ins appear here.'}
-            </Text>
-            <Link href="/groups" style={[typography.rowName, { color: colors.green }]}>
-              Go to groups
-            </Link>
-          </View>
-        </Card>
+        <EmptyState
+          icon="📣"
+          title="Nothing yet"
+          body={
+            groups.data?.length
+              ? 'Check in on a shared habit and it shows up here for the group.'
+              : 'Join or create a group, add a shared habit, and check-ins appear here.'
+          }
+          actionLabel="Go to groups"
+          onAction={() => router.push('/groups')}
+        />
       ) : (
-        <Card title="Recent">
+        <Card title="Recent" flush>
           {feed.map(({ checkIn, habit }, i) => {
             const person = names.get(checkIn.user_id);
+            const group = groups.data?.find((g) => g.id === habit.group_id);
             return (
               <View
                 key={checkIn.id}
@@ -93,20 +90,27 @@ export default function ActivityScreen() {
                   },
                 ]}
               >
-                <View style={[styles.avatar, { backgroundColor: colorFor(checkIn.user_id) }]}>
-                  <Text style={styles.initial}>{initial(person)}</Text>
-                </View>
+                <Avatar
+                  id={checkIn.user_id}
+                  name={person?.display_name ?? 'Someone'}
+                  size={32}
+                />
 
                 <View style={styles.text}>
-                  <Text style={[typography.body, { color: colors.textPrimary }]}>
-                    <Text style={styles.strong}>
-                      {checkIn.user_id === userId ? 'You' : handle(person)}
+                  <View style={styles.line}>
+                    <Text style={[typography.body, styles.grow, { color: colors.textPrimary }]}>
+                      <Text style={styles.strong}>
+                        {checkIn.user_id === userId ? 'You' : handle(person)}
+                      </Text>
+                      {' checked in on '}
+                      <Text style={styles.strong}>{habit.title}</Text>
                     </Text>
-                    {' checked in '}
-                    <Text style={styles.strong}>
-                      {habit.emoji ? `${habit.emoji} ${habit.title}` : habit.title}
-                    </Text>
-                  </Text>
+                    {habit.emoji ? (
+                      <View style={[styles.tile, { backgroundColor: colors.bgSurfaceMuted }]}>
+                        <Text style={styles.glyph}>{habit.emoji}</Text>
+                      </View>
+                    ) : null}
+                  </View>
 
                   {checkIn.note ? (
                     <Text style={[typography.body, styles.note, { color: colors.textSecondary }]}>
@@ -114,8 +118,9 @@ export default function ActivityScreen() {
                     </Text>
                   ) : null}
 
-                  <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-                    {checkIn.local_date === toLocalDate() ? 'TODAY' : checkIn.local_date}
+                  <Text style={[typography.caption, { color: colors.textMuted }]}>
+                    {checkIn.local_date === toLocalDate() ? 'Today' : checkIn.local_date}
+                    {group ? ` · ${group.name}` : ''}
                   </Text>
 
                   <ReactionBar
@@ -140,10 +145,18 @@ const styles = StyleSheet.create({
   loader: { marginTop: 24 },
   empty: { gap: 7, paddingVertical: 4, alignItems: 'flex-start' },
   body: {},
-  row: { flexDirection: 'row', gap: 10, paddingVertical: 11 },
-  avatar: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: 'DMSans-Bold', fontSize: 13, color: '#fff' },
-  text: { flex: 1, minWidth: 0, gap: 2 },
+  row: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
+  text: { flex: 1, minWidth: 0, gap: 4 },
+  line: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  grow: { flex: 1, minWidth: 0 },
+  tile: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.chip,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  glyph: { fontSize: 16, lineHeight: 20 },
   strong: { fontFamily: 'DMSans-SemiBold' },
   note: { fontStyle: 'italic' },
 });

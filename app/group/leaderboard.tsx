@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { Avatar } from '@/components/Avatar';
+import { Bar } from '@/components/Bar';
 import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
 import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
-import { handle, initial } from '@/lib/identity';
+import { handle } from '@/lib/identity';
 import {
   checkInIndex,
   useCheckIns,
@@ -30,7 +32,6 @@ import { toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, typography } from '@/theme/tokens';
 
-const MEMBER_COLORS = ['green', 'amber', 'blue', 'purple', 'teal', 'coral'] as const;
 const localDate = (iso: string) => iso.slice(0, 10);
 
 export default function LeaderboardScreen() {
@@ -88,10 +89,9 @@ export default function LeaderboardScreen() {
     const m = (members.data ?? []).find((x) => x.user_id === uid);
     return uid === userId ? `${handle(m?.profile)} (you)` : handle(m?.profile);
   };
-  const colorFor = (uid: string) => {
-    const index = roster.findIndex((m) => m.userId === uid);
-    return colors[MEMBER_COLORS[(index < 0 ? 0 : index) % MEMBER_COLORS.length]];
-  };
+  // Bars are scaled to the leader, so first place fills its track and everyone
+  // else reads as a share of it rather than of an abstract 100%.
+  const leaderScore = rows.reduce((n, r) => Math.max(n, r.completed), 0);
 
   if (groups.isLoading || members.isLoading || habits.isLoading || checkIns.isLoading) {
     return (
@@ -125,61 +125,54 @@ export default function LeaderboardScreen() {
         <Stat label="Group rate" value={percent(groupRate(rows))} />
       </View>
 
-      <Card title="Consistency" action="7 days">
-        {rows.map((row, i) => (
-          <View
-            key={row.userId}
-            style={[
-              styles.row,
-              {
-                borderBottomColor: colors.borderDefault,
-                borderBottomWidth: i === rows.length - 1 ? 0 : 1,
-              },
-            ]}
-          >
-            <Text
+      <Card title="Consistency" action="7 days" flush>
+        {rows.map((row, i) => {
+          const you = row.userId === userId;
+          return (
+            <View
+              key={row.userId}
               style={[
-                typography.monoSmall,
-                styles.rank,
-                { color: i === 0 && row.rate !== null ? colors.green : colors.textMuted },
+                styles.row,
+                you && { backgroundColor: colors.greenSoft },
+                {
+                  borderBottomColor: colors.borderDefault,
+                  borderBottomWidth: i === rows.length - 1 ? 0 : 1,
+                },
               ]}
             >
-              {row.rate === null ? '–' : i + 1}
-            </Text>
-
-            <View style={[styles.avatar, { backgroundColor: colorFor(row.userId) }]}>
-              <Text style={styles.initial}>
-                {initial((members.data ?? []).find((m) => m.user_id === row.userId)?.profile)}
+              <Text
+                style={[
+                  typography.stat,
+                  styles.rank,
+                  { color: i === 0 && row.rate !== null ? colors.amber : colors.textMuted },
+                ]}
+              >
+                {row.rate === null ? '–' : i + 1}
               </Text>
-            </View>
 
-            <View style={styles.main}>
-              <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
-                {nameOf(row.userId)}
-              </Text>
-              <View style={[styles.bar, { backgroundColor: colors.neutralChart }]}>
-                <View
-                  style={[
-                    styles.fill,
-                    {
-                      width: `${Math.round((row.rate ?? 0) * 100)}%`,
-                      backgroundColor: (row.rate ?? 0) < 0.5 ? colors.amber : colors.green,
-                    },
-                  ]}
+              <Avatar id={row.userId} name={nameOf(row.userId)} size={32} />
+
+              <View style={styles.main}>
+                <View style={styles.nameRow}>
+                  <Text
+                    numberOfLines={1}
+                    style={[typography.rowName, styles.name, { color: colors.textPrimary }]}
+                  >
+                    {nameOf(row.userId)}
+                  </Text>
+                  <Text style={[typography.stat, styles.value, { color: colors.textPrimary }]}>
+                    {percent(row.rate)}
+                  </Text>
+                </View>
+                <Bar
+                  value={row.completed}
+                  max={leaderScore}
+                  tone={you ? colors.green : colors.greenMid}
                 />
               </View>
             </View>
-
-            <View style={styles.end}>
-              <Text style={[typography.stat, styles.value, { color: colors.textPrimary }]}>
-                {percent(row.rate)}
-              </Text>
-              <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-                {row.completed}/{row.expected}
-              </Text>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </Card>
 
       {improved ? (
@@ -196,7 +189,7 @@ export default function LeaderboardScreen() {
         </Card>
       ) : null}
 
-      <Card title="Habits" action="30 days">
+      <Card title="Habits" action="30 days" flush>
         {byHabit.map((h, i) => (
           <View
             key={h.habit.id}
@@ -212,17 +205,11 @@ export default function LeaderboardScreen() {
               <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
                 {h.habit.emoji ? `${h.habit.emoji}  ${h.habit.title}` : h.habit.title}
               </Text>
-              <View style={[styles.bar, { backgroundColor: colors.neutralChart }]}>
-                <View
-                  style={[
-                    styles.fill,
-                    {
-                      width: `${Math.round((h.rate ?? 0) * 100)}%`,
-                      backgroundColor: (h.rate ?? 0) < 0.4 ? colors.amber : colors.green,
-                    },
-                  ]}
-                />
-              </View>
+              <Bar
+                value={Math.round((h.rate ?? 0) * 100)}
+                max={100}
+                tone={(h.rate ?? 0) < 0.4 ? colors.amber : colors.greenMid}
+              />
             </View>
             <View style={styles.end}>
               <Text style={[typography.stat, styles.value, { color: colors.textPrimary }]}>
@@ -264,14 +251,20 @@ const styles = StyleSheet.create({
   loader: { marginTop: 32 },
   stats: { flexDirection: 'row', gap: 8 },
   stat: { flex: 1, padding: 10, borderWidth: 1, borderRadius: radius.card, gap: 2 },
-  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 9 },
-  rank: { width: 14, textAlign: 'right' },
-  avatar: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  initial: { fontFamily: 'DMSans-Bold', fontSize: 12, color: '#fff' },
-  main: { flex: 1, minWidth: 0, gap: 5 },
-  bar: { height: 3, borderRadius: 2, overflow: 'hidden' },
-  fill: { height: '100%' },
-  end: { alignItems: 'flex-end', gap: 3 },
+  row: {
+    minHeight: 60,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 8,
+    marginHorizontal: -8,
+    borderRadius: 10,
+  },
+  rank: { width: 20, textAlign: 'center' },
+  main: { flex: 1, minWidth: 0, gap: 8 },
+  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
+  end: { alignItems: 'flex-end', gap: 4 },
+  name: { flex: 1, minWidth: 0 },
   value: { fontSize: 15 },
   standout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
   hint: { marginTop: 8 },

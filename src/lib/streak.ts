@@ -98,3 +98,42 @@ export function describeProgress(
   if (done.size > 0 && !done.has(yesterday) && !done.has(today)) return 'STREAK BROKEN';
   return 'NO STREAK YET';
 }
+
+/**
+ * The longest run of scheduled days ever kept, not just the current one.
+ *
+ * Unscheduled days are skipped rather than breaking a run, exactly as
+ * `computeStreak` treats them; a scheduled day that was missed resets it.
+ * Days before the first check-in are not counted against anyone.
+ */
+export function bestStreak(
+  schedule: Schedule,
+  completedDates: Iterable<string>,
+  today: string = toLocalDate(),
+): number {
+  if (schedule.cadence === 'weekly') return 0;
+
+  const done = completedDates instanceof Set ? completedDates : new Set(completedDates);
+  if (done.size === 0) return 0;
+
+  const first = [...done].sort()[0];
+
+  let best = 0;
+  let run = 0;
+  let cursor = first;
+
+  for (let guard = 0; guard < 4000 && cursor <= today; guard++) {
+    if (isScheduled(schedule, cursor)) {
+      if (done.has(cursor)) {
+        run++;
+        if (run > best) best = run;
+      } else if (cursor !== today) {
+        // Today being blank is not yet a miss — it might still be done.
+        run = 0;
+      }
+    }
+    cursor = addDays(cursor, 1);
+  }
+
+  return best;
+}

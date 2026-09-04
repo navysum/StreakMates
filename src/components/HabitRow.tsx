@@ -2,6 +2,8 @@ import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { hit, radius, space, typography } from '@/theme/tokens';
 import { StatusDot } from './StatusDot';
+import { WeekStrip } from './WeekStrip';
+import type { Cell } from '@/lib/week';
 
 type Props = {
   name: string;
@@ -9,6 +11,8 @@ type Props = {
   icon?: string | null;
   meta?: string;
   metaTone?: 'muted' | 'warn';
+  /** This week, drawn under the name. The motif that repeats app-wide. */
+  week?: Cell[];
   complete: boolean;
   last?: boolean;
   onToggle?: () => void;
@@ -20,6 +24,7 @@ export function HabitRow({
   icon,
   meta,
   metaTone = 'muted',
+  week,
   complete,
   last,
   onToggle,
@@ -51,16 +56,22 @@ export function HabitRow({
           <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
             {name}
           </Text>
-          {meta ? (
-            <Text
-              numberOfLines={1}
-              style={[
-                typography.caption,
-                { color: metaTone === 'warn' ? colors.amber : colors.textMuted },
-              ]}
-            >
-              {meta}
-            </Text>
+          {week || meta ? (
+            <View style={styles.under}>
+              {week ? <WeekStrip cells={week} /> : null}
+              {meta ? (
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    typography.caption,
+                    styles.meta,
+                    { color: metaTone === 'warn' ? colors.amber : colors.textMuted },
+                  ]}
+                >
+                  {meta}
+                </Text>
+              ) : null}
+            </View>
           ) : null}
         </View>
       </Pressable>
@@ -95,7 +106,9 @@ const styles = StyleSheet.create({
     gap: space.md,
     paddingVertical: space.sm,
   },
-  text: { flex: 1, minWidth: 0, gap: 1 },
+  text: { flex: 1, minWidth: 0, gap: 4 },
+  under: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  meta: { flex: 1, minWidth: 0 },
   icon: {
     width: 36,
     height: 36,

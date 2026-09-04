@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { addDays, isoWeekday, startOfWeek, toLocalDate } from '../date.ts';
-import { computeStreak, describeProgress, weeklyProgress, type Schedule } from '../streak.ts';
+import {
+  bestStreak,
+  computeStreak,
+  describeProgress,
+  weeklyProgress,
+  type Schedule,
+} from '../streak.ts';
 
 const daily: Schedule = { cadence: 'daily', targetDays: [], targetPerWeek: 1 };
 // Monday, Wednesday, Friday
@@ -76,4 +82,36 @@ test('describeProgress: wording matches the state', () => {
   assert.equal(describeProgress(daily, [], THU), 'NO STREAK YET');
   assert.equal(describeProgress(daily, ['2026-08-20'], THU), 'STREAK BROKEN');
   assert.equal(describeProgress(weekly, ['2026-09-01'], THU), '1 OF 3 THIS WEEK');
+});
+
+test('bestStreak: no check-ins means no streak', () => {
+  assert.equal(bestStreak(daily, [], '2026-09-04'), 0);
+});
+
+test('bestStreak: finds a past run longer than the current one', () => {
+  const done = [
+    // A five-day run in August...
+    '2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13', '2026-08-14',
+    // ...then a gap, then a two-day run up to today.
+    '2026-09-03', '2026-09-04',
+  ];
+  assert.equal(bestStreak(daily, done, '2026-09-04'), 5);
+  assert.equal(computeStreak(daily, done, '2026-09-04'), 2);
+});
+
+test('bestStreak: a blank today does not cut the run short', () => {
+  const done = ['2026-09-01', '2026-09-02', '2026-09-03'];
+  assert.equal(bestStreak(daily, done, '2026-09-04'), 3);
+});
+
+test('bestStreak: unscheduled days are skipped, not treated as misses', () => {
+  // Mon-Fri habit kept across a weekend: one run of four, not two of two.
+  const weekdaysOnly = { cadence: 'days' as const, targetDays: [1, 2, 3, 4, 5], targetPerWeek: 5 };
+  const done = ['2026-09-03', '2026-09-04', '2026-09-07', '2026-09-08'];
+  assert.equal(bestStreak(weekdaysOnly, done, '2026-09-08'), 4);
+});
+
+test('bestStreak: a flexible habit has no per-day run to report', () => {
+  const flexible = { cadence: 'weekly' as const, targetDays: [], targetPerWeek: 4 };
+  assert.equal(bestStreak(flexible, ['2026-09-01', '2026-09-02'], '2026-09-04'), 0);
 });
