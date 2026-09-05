@@ -73,16 +73,6 @@ that must not move are held by **grant** instead:
 | `check_ins` | note | `habit_id`, `user_id`, `local_date` |
 | `profiles` | username, display name, avatar, timezone | `id` |
 
-`profiles` has no INSERT policy at all: creating a profile row is something the
-database does, through `handle_new_user` on signup or `set_username` for an
-account that predates it. Never a client.
-
-That is also why choosing a username goes through a function rather than an
-upsert. PostgREST puts every column of an upsert payload into the
-`ON CONFLICT DO UPDATE`, `id` included — so an upsert would be refused by the
-very grant that keeps identity fixed, for everyone, not just the accounts it
-was meant to help.
-
 ## Known and accepted
 
 - **Any group member can edit a shared habit** — rename it, change its cadence,
@@ -97,46 +87,19 @@ was meant to help.
   (`@expo/prebuild-config` → `decode-uri-component`, `uuid`). Neither is
   reachable from the shipped bundle, and `npm audit fix --force` downgrades
   Expo. They clear when Expo updates.
-- **Realtime DELETE events** stay as above — that one cannot be fixed from
-  here.
-
-## Ceilings
-
-Row-level security decides what you may touch, never how much of it you may
-make. Every row below is one the user is entitled to create, so only a rate
-limit bounds them. All are far above real use, and all are per person.
-
-| | Limit | Bounded by |
-| --- | --- | --- |
-| Invite-code guesses | 10 an hour | `assert_invite_rate_limit`, shared by preview and join |
-| Groups created | 10 an hour | `create_group` |
-| Habits created | 60 an hour | `habits_guard_rate` trigger |
-| Check-ins | one per habit, per person, per day | unique key, plus the backfill window |
-| Reactions | 5 per check-in per person | the primary key, over a fixed emoji set |
-| Nudges | one per person per habit per day | `nudges_one_a_day` |
+- **Group creation is not rate limited.** Worth adding if the app ever opens up
+  beyond people who know each other.
 
 ## Testing the policies
 
-```bash
-./supabase/tests/run.sh
+`supabase/migrations/` applies cleanly to a stock Postgres 16 with the Supabase
+roles and an `auth.uid()` stub. To exercise a policy as a specific person:
+
+```sql
+set role authenticated;
+set request.jwt.claim.sub = '<their uuid>';
+-- then run the statement you want to prove is refused
 ```
 
-Stands up a throwaway Postgres, applies every migration, and attacks the
-policies as an outsider, as a group member, and signed out — then checks the
-ceilings hold and that a legitimate member can still do everything they should.
-It touches nothing outside its own temporary directory and never speaks to the
-real project.
-
-Two things to prove of any new policy, and the suite is written to make both
-easy:
-
-- **An attack must fail for the right reason.** Three tests in the first draft
-  of this suite "passed" on a malformed uuid rather than on a policy, and one
-  attacked a row RLS had already hidden, so it inserted nothing and refused
-  nothing. Attacks target ids captured during set-up, standing in for an id
-  leaked some other way, because that is the case worth testing.
-- **RLS filtering is not an error.** An `UPDATE` or `DELETE` a policy excludes
-  affects no rows and reports success. `tests.no_effect` exists because "no
-  error" and "no effect" are different claims.
-
-A policy nobody has attacked has not been tested.
+Do this for any new policy. A policy that has never been attacked has not been
+tested.

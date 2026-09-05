@@ -1,6 +1,6 @@
 import { View, StyleSheet, type ColorValue } from 'react-native';
 
-export type TabName = 'today' | 'groups' | 'focus' | 'you';
+export type TabName = 'today' | 'groups' | 'activity' | 'you';
 
 /**
  * Drawn rather than imported: the portal uses 19px flat glyphs, and four
@@ -17,11 +17,12 @@ export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
           <View style={[styles.small, styles.right, { borderColor: color }]} />
         </View>
       );
-    case 'focus':
-      // A clock: a ring with a hand, which reads at 19px where a tomato does not.
+    case 'activity':
       return (
-        <View style={[styles.box, styles.ring, { borderColor: color }]}>
-          <View style={[styles.hand, { backgroundColor: color }]} />
+        <View style={[styles.box, styles.bars]}>
+          <View style={[styles.bar, { backgroundColor: color, width: 17 }]} />
+          <View style={[styles.bar, { backgroundColor: color, width: 11 }]} />
+          <View style={[styles.bar, { backgroundColor: color, width: 14 }]} />
         </View>
       );
     case 'you':
@@ -37,10 +38,11 @@ export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
 const styles = StyleSheet.create({
   box: { width: 19, height: 19, alignItems: 'center', justifyContent: 'center' },
   ring: { borderWidth: 1.6, borderRadius: 9.5, width: 17, height: 17 },
-  hand: { width: 1.6, height: 5, borderRadius: 1, marginBottom: 4 },
   small: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 1.6 },
   left: { left: 0 },
   right: { right: 0 },
+  bars: { gap: 2.5 },
+  bar: { height: 1.8, borderRadius: 1 },
   person: { gap: 1.5 },
   head: { width: 7.5, height: 7.5, borderRadius: 4, borderWidth: 1.6 },
   body: {
