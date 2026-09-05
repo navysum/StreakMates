@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   AppState,
   Pressable,
-  ScrollView,
   Text,
   TextInput,
   View,
@@ -210,6 +209,15 @@ export default function FocusScreen() {
     return p ? `${p.done} of ${p.total} done` : undefined;
   }
 
+  /** Ticked tasks, which are the ones it makes sense to clear away. */
+  function clearable(list: Task[]): Task[] {
+    return list.filter((t) => isDone(t, ticked, userId));
+  }
+
+  function clearDone(list: Task[]) {
+    for (const t of clearable(list)) deleteTask.mutate(t.id);
+  }
+
   function taskRow(task: Task, last: boolean) {
     return (
       <TaskRow
@@ -410,7 +418,13 @@ export default function FocusScreen() {
             body="Add the one thing you keep putting off, then start a stretch of focus on it."
           />
         ) : (
-          <Card title="Your list" subtitle="Tap a task to focus on it" flush>
+          <Card
+            title="Your list"
+            subtitle="Tap a task to focus on it"
+            action={clearable(mine).length ? `Clear ${clearable(mine).length}` : undefined}
+            onAction={clearable(mine).length ? () => clearDone(mine) : undefined}
+            flush
+          >
             {mine.map((t, i) => taskRow(t, i === mine.length - 1))}
           </Card>
         )
@@ -431,6 +445,8 @@ export default function FocusScreen() {
             <Card
               key={groupId}
               title={group ? (group.emoji ? `${group.emoji}  ${group.name}` : group.name) : 'Group'}
+              action={clearable(list).length ? `Clear ${clearable(list).length}` : undefined}
+              onAction={clearable(list).length ? () => clearDone(list) : undefined}
               flush
             >
               {list.map((t, i) => taskRow(t, i === list.length - 1))}
