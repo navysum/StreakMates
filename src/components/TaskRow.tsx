@@ -7,12 +7,14 @@ type Props = {
   done: boolean;
   /** Marks the task the timer is currently running against. */
   active?: boolean;
+  /** "done by Dan", or "2 of 3" — whichever the task's kind makes true. */
+  meta?: string;
   last?: boolean;
   onToggle: () => void;
   onPress?: () => void;
 };
 
-export function TaskRow({ title, done, active, last, onToggle, onPress }: Props) {
+export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: Props) {
   const { colors, scheme } = useTheme();
 
   return (
@@ -64,6 +66,11 @@ export function TaskRow({ title, done, active, last, onToggle, onPress }: Props)
         >
           {title}
         </Text>
+        {meta ? (
+          <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+            {meta}
+          </Text>
+        ) : null}
       </Pressable>
 
       {active ? (
@@ -87,7 +94,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tick: { fontFamily: 'DMSans-Bold', fontSize: 13, includeFontPadding: false },
-  text: { flex: 1, minWidth: 0, paddingVertical: space.sm },
+  text: { flex: 1, minWidth: 0, paddingVertical: space.sm, gap: 2 },
   badge: {
     paddingHorizontal: space.sm,
     paddingVertical: 3,

@@ -36,8 +36,8 @@ select tests.denied('recording focus as alice',
 select tests.denied('taking over a task, using its id',
   'update public.tasks set user_id = auth.uid() where id = ' || quote_literal(:'alice_task'));
 
-select tests.no_effect('ticking off alice''s task',
-  'update public.tasks set done_at = now() where id = ' || quote_literal(:'alice_task'));
+select tests.denied('ticking off alice''s private task',
+  'insert into public.task_completions (task_id, user_id) values (' || quote_literal(:'alice_task') || ', auth.uid())');
 select tests.no_effect('deleting alice''s task',
   'delete from public.tasks where id = ' || quote_literal(:'alice_task'));
 select tests.no_effect('deleting alice''s focus session',
@@ -48,9 +48,9 @@ select tests.no_effect('deleting alice''s focus session',
 select tests.allowed('adding a task',
   'insert into public.tasks (user_id, title, position) values (auth.uid(), ''Book the dentist'', 0)');
 select tests.allowed('ticking it off',
-  'update public.tasks set done_at = now() where user_id = auth.uid()');
+  'insert into public.task_completions (task_id, user_id) select id, auth.uid() from public.tasks where user_id = auth.uid()');
 select tests.allowed('un-ticking it',
-  'update public.tasks set done_at = null where user_id = auth.uid()');
+  'delete from public.task_completions where user_id = auth.uid()');
 select tests.allowed('renaming it',
   'update public.tasks set title = ''Book the dentist, properly'' where user_id = auth.uid()');
 select tests.allowed('reordering it',
