@@ -36,14 +36,13 @@ echo "--- harness"
 psql "${DB[@]}" -f "$ROOT/supabase/tests/00_harness.sql"
 
 echo "--- migrations"
+# In order, once each, exactly as they are run against the real project. The
+# harness sets default privileges so grants arrive with each new table and the
+# revokes in 0007 and 0009 stay revoked.
 for f in "$ROOT"/supabase/migrations/*.sql; do
   echo "    $(basename "$f")"
   psql "${DB[@]}" -f "$f"
-  # Supabase grants every table to the API roles as tables are created, so
-  # mirror that between files. 0007's revokes then land last, as they do live.
-  psql "${DB[@]}" -c 'grant all on all tables in schema public to anon, authenticated, service_role' >/dev/null
 done
-psql "${DB[@]}" -f "$ROOT/supabase/migrations/0007_hardening.sql"
 
 echo "--- attacking"
 for t in "$ROOT"/supabase/tests/0[1-9]_*.sql; do
