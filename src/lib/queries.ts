@@ -7,6 +7,7 @@ import { positionsFor, type Positions } from './ordering';
 import { addDays, toLocalDate } from './date';
 import type {
   CheckIn,
+  FocusSession,
   Group,
   GroupMember,
   GroupPreview,
@@ -15,6 +16,9 @@ import type {
   Profile,
   Reaction,
   ReactionEmoji,
+  Task,
+  TaskCompletion,
+  TaskCompletionKind,
 } from './types';
 
 /** Streaks need contiguous history; a year and a bit is far past any real one. */
@@ -36,6 +40,9 @@ export const keys = {
   reactions: ['reactions'] as const,
   nudges: ['nudges'] as const,
   order: ['habit-order'] as const,
+  tasks: ['tasks'] as const,
+  taskDone: ['task-completions'] as const,
+  focus: ['focus-sessions'] as const,
 };
 
 // ---------------------------------------------------------------- profile
@@ -71,10 +78,14 @@ export function useSetUsername(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (username: string) => {
-      const { error } = await db()
-        .from('profiles')
-        .update({ username: username.trim() })
-        .eq('id', userId!);
+      // Through a function, not a table write. An UPDATE that matches no rows
+      // is not an error in PostgREST, so a missing profile row — anyone whose
+      // account predates the handle_new_user trigger — used to report success,
+      // leave the username unset, and bounce straight back to this screen
+      // forever. An upsert cannot fix it either: PostgREST puts every column
+      // of the payload into the ON CONFLICT DO UPDATE, id included, and that
+      // column is deliberately not updatable.
+      const { error } = await db().rpc('set_username', { p_username: username.trim() });
       if (error) {
         // Two people can pick the same free name in the same moment; the
         // unique index is what decides, and this is how it says so.
@@ -724,5 +735,185 @@ export function useRotateInviteCode() {
       return data as string;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.groups }),
+  });
+}
+
+// -------------------------------------------------------------------- focus
+
+/**
+ * Tasks are private, so there is no visibility question here — RLS scopes
+ * every one of these to the signed-in person and nothing else is possible.
+ */
+export function useTasks() {
+  return useQuery({
+    queryKey: keys.tasks,
+    queryFn: async (): Promise<Task[]> => {
+      const { data, error } = await db()
+        .from('tasks')
+        .select('id, user_id, group_id, title, completion, position, created_at, done_at')
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useAddTask(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      title,
+      position,
+      groupId,
+      completion,
+    }: {
+      title: string;
+      position: number;
+      groupId: string | null;
+      completion: TaskCompletionKind;
+    }) => {
+      const { error } = await db().from('tasks').insert({
+        user_id: userId!,
+        group_id: groupId,
+        title: title.trim(),
+        // Meaningless on a private task, but a column cannot be absent.
+        completion: groupId ? completion : 'once',
+        position,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+/** Every completion you are allowed to see: your own, and your groups'. */
+export function useTaskCompletions() {
+  return useQuery({
+    queryKey: keys.taskDone,
+    queryFn: async (): Promise<TaskCompletion[]> => {
+      const { data, error } = await db()
+        .from('task_completions')
+        .select('task_id, user_id, done_at');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/**
+ * Ticking a task off. Optimistic, because the tick is the whole interaction
+ * and a round trip before the box fills makes the list feel broken.
+ *
+ * What that means depends on the task: your own row for a private or
+ * "everyone" task, and for a shared "once" task, everybody's — since anyone
+ * may put it back, whoever ticked it.
+ */
+export function useToggleTask(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      taskId,
+      add,
+      removeUsers,
+    }: {
+      taskId: string;
+      add: boolean;
+      removeUsers: string[];
+    }) => {
+      if (add) {
+        const { error } = await db()
+          .from('task_completions')
+          .upsert({ task_id: taskId, user_id: userId! }, { onConflict: 'task_id,user_id' });
+        if (error) throw error;
+        return;
+      }
+      const { error } = await db()
+        .from('task_completions')
+        .delete()
+        .eq('task_id', taskId)
+        .in('user_id', removeUsers);
+      if (error) throw error;
+    },
+    onMutate: async ({ taskId, add, removeUsers }) => {
+      await qc.cancelQueries({ queryKey: keys.taskDone });
+      const previous = qc.getQueryData<TaskCompletion[]>(keys.taskDone) ?? [];
+      const next = add
+        ? [...previous, { task_id: taskId, user_id: userId!, done_at: new Date().toISOString() }]
+        : previous.filter((c) => !(c.task_id === taskId && removeUsers.includes(c.user_id)));
+      qc.setQueryData<TaskCompletion[]>(keys.taskDone, next);
+      return { previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(keys.taskDone, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.taskDone }),
+  });
+}
+
+export function useRenameTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const { error } = await db().from('tasks').update({ title: title.trim() }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db().from('tasks').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+/** Recent sessions, for "focused today" and the week's total. */
+export function useFocusSessions() {
+  return useQuery({
+    queryKey: keys.focus,
+    queryFn: async (): Promise<FocusSession[]> => {
+      const { data, error } = await db()
+        .from('focus_sessions')
+        .select('id, user_id, task_id, started_at, minutes, created_at')
+        .gte('started_at', new Date(Date.now() - 30 * 86_400_000).toISOString())
+        .order('started_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/**
+ * A finished stretch of focus. Only ever recorded, never edited: the policy
+ * has no UPDATE, and started_at must be recent, so a quiet evening cannot
+ * become a productive month after the fact.
+ */
+export function useRecordFocus(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      startedAt,
+      minutes,
+      taskId,
+    }: {
+      startedAt: Date;
+      minutes: number;
+      taskId: string | null;
+    }) => {
+      const { error } = await db().from('focus_sessions').insert({
+        user_id: userId!,
+        task_id: taskId,
+        started_at: startedAt.toISOString(),
+        minutes,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.focus }),
   });
 }
