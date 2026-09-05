@@ -77,7 +77,6 @@ function AuthGate() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="username" />
-        <Stack.Screen name="activity" />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" />
         <Stack.Screen name="habit/edit" options={{ presentation: 'modal' }} />

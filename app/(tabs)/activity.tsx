@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Card } from '@/components/Card';
@@ -59,23 +59,7 @@ export default function ActivityScreen() {
   const loading = habits.isLoading || checkIns.isLoading || people.isLoading;
 
   return (
-    <Screen
-      title="Activity"
-      eyebrow={feed.length ? `Last ${FEED_DAYS} days` : 'Nothing yet'}
-      trailing={
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          style={({ pressed }) => [
-            styles.close,
-            { backgroundColor: pressed ? colors.bgHover : colors.bgSurfaceMuted },
-          ]}
-        >
-          <Text style={[styles.closeGlyph, { color: colors.textSecondary }]}>✕</Text>
-        </Pressable>
-      }
-    >
+    <Screen title="Activity" eyebrow={feed.length ? `Last ${FEED_DAYS} days` : 'Nothing yet'}>
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.textMuted} />
       ) : feed.length === 0 ? (
@@ -161,14 +145,6 @@ const styles = StyleSheet.create({
   loader: { marginTop: 24 },
   empty: { gap: 7, paddingVertical: 4, alignItems: 'flex-start' },
   body: {},
-  close: {
-    width: 44,
-    height: 44,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeGlyph: { fontSize: 16, lineHeight: 20 },
   row: { flexDirection: 'row', gap: 12, paddingVertical: 14 },
   text: { flex: 1, minWidth: 0, gap: 4 },
   line: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },

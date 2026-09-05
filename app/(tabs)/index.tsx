@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -17,18 +17,14 @@ import {
   useGroups,
   useHabitOrder,
   useHabits,
-  usePeople,
   useProfile,
   useToggleCheckIn,
-  peopleById,
 } from '@/lib/queries';
-import { handle } from '@/lib/identity';
 import { sortHabits } from '@/lib/ordering';
 import { weekCells } from '@/lib/week';
 import { formatToday, toLocalDate } from '@/lib/date';
 import { computeStreak, describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
 import type { Habit } from '@/lib/types';
 
 export default function TodayScreen() {
@@ -76,28 +72,6 @@ export default function TodayScreen() {
     }
     return best > 1 ? `${best} day streak` : undefined;
   }, [visible, completed, today]);
-
-  // The most recent thing anyone in a group did, as the reason to tap through
-  // to the feed. Only shared habits ever appear here — a private habit is
-  // private, including from this preview.
-  const people = usePeople();
-  const latest = useMemo(() => {
-    const shared = new Map(
-      (habitsQuery.data ?? []).filter((h) => h.group_id).map((h) => [h.id, h]),
-    );
-    const feed = (checkInsQuery.data ?? [])
-      .filter((c) => shared.has(c.habit_id))
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
-    const head = feed[0];
-    if (!head) return null;
-    const person = peopleById(people.data).get(head.user_id);
-    return {
-      checkIn: head,
-      habit: shared.get(head.habit_id)!,
-      who: head.user_id === userId ? 'You' : handle(person),
-      more: feed.length - 1,
-    };
-  }, [habitsQuery.data, checkInsQuery.data, people.data, userId]);
 
   const loading = habitsQuery.isLoading || checkInsQuery.isLoading;
   const error = habitsQuery.error ?? checkInsQuery.error;
@@ -223,40 +197,6 @@ export default function TodayScreen() {
         })
       )}
 
-      {latest ? (
-        <Pressable
-          onPress={() => router.push('/activity')}
-          accessibilityRole="button"
-          accessibilityLabel="Open activity"
-          style={({ pressed }) => pressed && styles.pressed}
-        >
-          <Card title="Activity" action="See all" flush>
-            <View style={styles.feedRow}>
-              <Avatar
-                id={latest.checkIn.user_id}
-                name={latest.who}
-                size={32}
-              />
-              <Text numberOfLines={2} style={[typography.body, styles.grow, { color: colors.textPrimary }]}>
-                <Text style={styles.strong}>{latest.who}</Text>
-                {' checked in on '}
-                <Text style={styles.strong}>{latest.habit.title}</Text>
-              </Text>
-              {latest.habit.emoji ? (
-                <View style={[styles.feedTile, { backgroundColor: colors.bgSurfaceMuted }]}>
-                  <Text style={styles.feedGlyph}>{latest.habit.emoji}</Text>
-                </View>
-              ) : null}
-            </View>
-            {latest.more > 0 ? (
-              <Text style={[typography.caption, styles.more, { color: colors.textMuted }]}>
-                and {latest.more} more {latest.more === 1 ? 'check-in' : 'check-ins'} from the group
-              </Text>
-            ) : null}
-          </Card>
-        </Pressable>
-      ) : null}
-
       <View style={styles.links}>
         <Button
           label="Add habit"
@@ -274,16 +214,5 @@ const styles = StyleSheet.create({
   loader: { marginTop: 32 },
   links: { flexDirection: 'row', gap: 12 },
   pressed: { opacity: 0.6 },
-  feedRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 4 },
-  grow: { flex: 1, minWidth: 0 },
-  strong: { fontFamily: 'DMSans-SemiBold' },
-  feedTile: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  feedGlyph: { fontSize: 16, lineHeight: 20 },
-  more: { marginTop: 8 },
+  grow: { flex: 1 },
 });
