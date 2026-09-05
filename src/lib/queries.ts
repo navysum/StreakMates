@@ -17,6 +17,8 @@ import type {
   Reaction,
   ReactionEmoji,
   Task,
+  TaskCompletion,
+  TaskCompletionKind,
 } from './types';
 
 /** Streaks need contiguous history; a year and a bit is far past any real one. */
@@ -39,6 +41,7 @@ export const keys = {
   nudges: ['nudges'] as const,
   order: ['habit-order'] as const,
   tasks: ['tasks'] as const,
+  taskDone: ['task-completions'] as const,
   focus: ['focus-sessions'] as const,
 };
 
@@ -747,7 +750,7 @@ export function useTasks() {
     queryFn: async (): Promise<Task[]> => {
       const { data, error } = await db()
         .from('tasks')
-        .select('id, user_id, title, done_at, position, created_at')
+        .select('id, user_id, group_id, title, completion, position, created_at, done_at')
         .order('position', { ascending: true })
         .order('created_at', { ascending: true });
       if (error) throw error;
@@ -759,44 +762,92 @@ export function useTasks() {
 export function useAddTask(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ title, position }: { title: string; position: number }) => {
-      const { error } = await db()
-        .from('tasks')
-        .insert({ user_id: userId!, title: title.trim(), position });
+    mutationFn: async ({
+      title,
+      position,
+      groupId,
+      completion,
+    }: {
+      title: string;
+      position: number;
+      groupId: string | null;
+      completion: TaskCompletionKind;
+    }) => {
+      const { error } = await db().from('tasks').insert({
+        user_id: userId!,
+        group_id: groupId,
+        title: title.trim(),
+        // Meaningless on a private task, but a column cannot be absent.
+        completion: groupId ? completion : 'once',
+        position,
+      });
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
   });
 }
 
+/** Every completion you are allowed to see: your own, and your groups'. */
+export function useTaskCompletions() {
+  return useQuery({
+    queryKey: keys.taskDone,
+    queryFn: async (): Promise<TaskCompletion[]> => {
+      const { data, error } = await db()
+        .from('task_completions')
+        .select('task_id, user_id, done_at');
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 /**
  * Ticking a task off. Optimistic, because the tick is the whole interaction
- * and a round trip before it moves makes the list feel broken.
+ * and a round trip before the box fills makes the list feel broken.
+ *
+ * What that means depends on the task: your own row for a private or
+ * "everyone" task, and for a shared "once" task, everybody's — since anyone
+ * may put it back, whoever ticked it.
  */
-export function useToggleTask() {
+export function useToggleTask(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+    mutationFn: async ({
+      taskId,
+      add,
+      removeUsers,
+    }: {
+      taskId: string;
+      add: boolean;
+      removeUsers: string[];
+    }) => {
+      if (add) {
+        const { error } = await db()
+          .from('task_completions')
+          .upsert({ task_id: taskId, user_id: userId! }, { onConflict: 'task_id,user_id' });
+        if (error) throw error;
+        return;
+      }
       const { error } = await db()
-        .from('tasks')
-        .update({ done_at: done ? new Date().toISOString() : null })
-        .eq('id', id);
+        .from('task_completions')
+        .delete()
+        .eq('task_id', taskId)
+        .in('user_id', removeUsers);
       if (error) throw error;
     },
-    onMutate: async ({ id, done }) => {
-      await qc.cancelQueries({ queryKey: keys.tasks });
-      const previous = qc.getQueryData<Task[]>(keys.tasks);
-      qc.setQueryData<Task[]>(keys.tasks, (old) =>
-        (old ?? []).map((t) =>
-          t.id === id ? { ...t, done_at: done ? new Date().toISOString() : null } : t,
-        ),
-      );
+    onMutate: async ({ taskId, add, removeUsers }) => {
+      await qc.cancelQueries({ queryKey: keys.taskDone });
+      const previous = qc.getQueryData<TaskCompletion[]>(keys.taskDone) ?? [];
+      const next = add
+        ? [...previous, { task_id: taskId, user_id: userId!, done_at: new Date().toISOString() }]
+        : previous.filter((c) => !(c.task_id === taskId && removeUsers.includes(c.user_id)));
+      qc.setQueryData<TaskCompletion[]>(keys.taskDone, next);
       return { previous };
     },
     onError: (_e, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(keys.tasks, ctx.previous);
+      if (ctx?.previous) qc.setQueryData(keys.taskDone, ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.taskDone }),
   });
 }
 
