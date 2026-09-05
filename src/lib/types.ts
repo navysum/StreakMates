@@ -77,3 +77,37 @@ export type GroupPreview = {
   emoji: string | null;
   member_count: number;
 };
+
+/** How a shared task gets finished. Private tasks are always effectively 'once'. */
+export type TaskCompletionKind = 'once' | 'everyone';
+
+export type Task = {
+  id: string;
+  user_id: string;
+  /** Null for a private task. */
+  group_id: string | null;
+  title: string;
+  completion: TaskCompletionKind;
+  position: number;
+  created_at: string;
+  /**
+   * Superseded by task_completions and no longer read or written. Left on the
+   * row so a build from before 0010 keeps working.
+   */
+  done_at: string | null;
+};
+
+export type TaskCompletion = {
+  task_id: string;
+  user_id: string;
+  done_at: string;
+};
+
+export type FocusSession = {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  started_at: string;
+  minutes: number;
+  created_at: string;
+};

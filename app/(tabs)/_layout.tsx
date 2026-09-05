@@ -14,7 +14,9 @@ import { typography } from '@/theme/tokens';
 const TABS: { name: string; title: string; icon: TabName }[] = [
   { name: 'index', title: 'Today', icon: 'today' },
   { name: 'groups', title: 'Groups', icon: 'groups' },
-  { name: 'activity', title: 'Activity', icon: 'activity' },
+  // Activity moved to a card on Today: it is something you read now and then,
+  // and a tab slot should be something you use daily.
+  { name: 'focus', title: 'Focus', icon: 'focus' },
   { name: 'you', title: 'You', icon: 'you' },
 ];
 
