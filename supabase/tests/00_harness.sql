@@ -26,6 +26,19 @@ grant usage on schema auth to anon, authenticated, service_role;
 grant select on auth.users to authenticated;
 grant usage on schema public to anon, authenticated, service_role;
 
+/**
+ * How Supabase actually grants the API roles access: by default privilege, so
+ * a table gets its grants the moment it is created and an explicit revoke in a
+ * later migration stays revoked.
+ *
+ * Re-granting "all on all tables" between migrations instead — which this
+ * harness used to do — quietly undoes the column revokes of whichever
+ * migration ran last, and every test of them passes for no reason.
+ */
+alter default privileges in schema public grant all on tables    to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
+
 create publication supabase_realtime;
 
 -- ---------------------------------------------------------------------------

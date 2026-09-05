@@ -77,3 +77,22 @@ export type GroupPreview = {
   emoji: string | null;
   member_count: number;
 };
+
+export type Task = {
+  id: string;
+  user_id: string;
+  title: string;
+  /** Null while it is still outstanding. */
+  done_at: string | null;
+  position: number;
+  created_at: string;
+};
+
+export type FocusSession = {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  started_at: string;
+  minutes: number;
+  created_at: string;
+};

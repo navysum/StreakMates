@@ -7,6 +7,7 @@ import { positionsFor, type Positions } from './ordering';
 import { addDays, toLocalDate } from './date';
 import type {
   CheckIn,
+  FocusSession,
   Group,
   GroupMember,
   GroupPreview,
@@ -15,6 +16,7 @@ import type {
   Profile,
   Reaction,
   ReactionEmoji,
+  Task,
 } from './types';
 
 /** Streaks need contiguous history; a year and a bit is far past any real one. */
@@ -36,6 +38,8 @@ export const keys = {
   reactions: ['reactions'] as const,
   nudges: ['nudges'] as const,
   order: ['habit-order'] as const,
+  tasks: ['tasks'] as const,
+  focus: ['focus-sessions'] as const,
 };
 
 // ---------------------------------------------------------------- profile
@@ -728,5 +732,137 @@ export function useRotateInviteCode() {
       return data as string;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.groups }),
+  });
+}
+
+// -------------------------------------------------------------------- focus
+
+/**
+ * Tasks are private, so there is no visibility question here — RLS scopes
+ * every one of these to the signed-in person and nothing else is possible.
+ */
+export function useTasks() {
+  return useQuery({
+    queryKey: keys.tasks,
+    queryFn: async (): Promise<Task[]> => {
+      const { data, error } = await db()
+        .from('tasks')
+        .select('id, user_id, title, done_at, position, created_at')
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+export function useAddTask(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ title, position }: { title: string; position: number }) => {
+      const { error } = await db()
+        .from('tasks')
+        .insert({ user_id: userId!, title: title.trim(), position });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+/**
+ * Ticking a task off. Optimistic, because the tick is the whole interaction
+ * and a round trip before it moves makes the list feel broken.
+ */
+export function useToggleTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, done }: { id: string; done: boolean }) => {
+      const { error } = await db()
+        .from('tasks')
+        .update({ done_at: done ? new Date().toISOString() : null })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onMutate: async ({ id, done }) => {
+      await qc.cancelQueries({ queryKey: keys.tasks });
+      const previous = qc.getQueryData<Task[]>(keys.tasks);
+      qc.setQueryData<Task[]>(keys.tasks, (old) =>
+        (old ?? []).map((t) =>
+          t.id === id ? { ...t, done_at: done ? new Date().toISOString() : null } : t,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(keys.tasks, ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+export function useRenameTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const { error } = await db().from('tasks').update({ title: title.trim() }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await db().from('tasks').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
+  });
+}
+
+/** Recent sessions, for "focused today" and the week's total. */
+export function useFocusSessions() {
+  return useQuery({
+    queryKey: keys.focus,
+    queryFn: async (): Promise<FocusSession[]> => {
+      const { data, error } = await db()
+        .from('focus_sessions')
+        .select('id, user_id, task_id, started_at, minutes, created_at')
+        .gte('started_at', new Date(Date.now() - 30 * 86_400_000).toISOString())
+        .order('started_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
+/**
+ * A finished stretch of focus. Only ever recorded, never edited: the policy
+ * has no UPDATE, and started_at must be recent, so a quiet evening cannot
+ * become a productive month after the fact.
+ */
+export function useRecordFocus(userId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      startedAt,
+      minutes,
+      taskId,
+    }: {
+      startedAt: Date;
+      minutes: number;
+      taskId: string | null;
+    }) => {
+      const { error } = await db().from('focus_sessions').insert({
+        user_id: userId!,
+        task_id: taskId,
+        started_at: startedAt.toISOString(),
+        minutes,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: keys.focus }),
   });
 }
