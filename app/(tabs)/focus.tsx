@@ -41,7 +41,7 @@ import {
   type Timer,
 } from '@/lib/pomodoro';
 import { loadTimer, saveTimer } from '@/lib/focus-storage';
-import { cancelFocusAlarm, scheduleFocusAlarm } from '@/lib/reminders';
+import { cancelFocusAlarm, ensurePermission, scheduleFocusAlarm } from '@/lib/reminders';
 import { toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
 import { radius, space, typography } from '@/theme/tokens';
@@ -116,8 +116,15 @@ export default function FocusScreen() {
   const onStart = useCallback(async () => {
     const next = start(timer, DEFAULTS, Date.now());
     setTimer(next);
+
+    // Ask here rather than on first open. The alert is the whole reason to
+    // leave the app while a stretch runs, so this is the moment it makes sense
+    // to ask for — and without it the alarm would be scheduled and silently
+    // never arrive. Saying no leaves the timer working, just quiet.
     const at = finishesAt(next);
-    if (at) await scheduleFocusAlarm(at, PHASE_LABEL[next.phase]);
+    if (at && (await ensurePermission())) {
+      await scheduleFocusAlarm(at, PHASE_LABEL[next.phase]);
+    }
   }, [timer]);
 
   const onPause = useCallback(async () => {
