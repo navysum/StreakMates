@@ -14,17 +14,27 @@ import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
+import { Segmented } from '@/components/Segmented';
 import { StatTrio } from '@/components/StatTrio';
 import { TaskRow } from '@/components/TaskRow';
 import { useAuth } from '@/auth/AuthProvider';
 import {
+  membersByGroup,
+  peopleById,
   useAddTask,
+  useAllMembers,
   useDeleteTask,
   useFocusSessions,
+  useGroups,
+  usePeople,
   useRecordFocus,
+  useTaskCompletions,
   useTasks,
   useToggleTask,
 } from '@/lib/queries';
+import { byTask, doneBy, isDone, progress, sortTasks, toggleIntent } from '@/lib/tasks';
+import { handle } from '@/lib/identity';
+import type { Task, TaskCompletionKind } from '@/lib/types';
 import {
   DEFAULTS,
   PHASE_LABEL,
@@ -51,17 +61,24 @@ export default function FocusScreen() {
   const { userId } = useAuth();
 
   const tasks = useTasks();
+  const completions = useTaskCompletions();
+  const groups = useGroups();
+  const members = useAllMembers();
   const sessions = useFocusSessions();
   const addTask = useAddTask(userId);
-  const toggleTask = useToggleTask();
+  const toggleTask = useToggleTask(userId);
   const deleteTask = useDeleteTask();
   const record = useRecordFocus(userId);
+  const people = usePeople();
 
   const [timer, setTimer] = useState<Timer>(idle());
   const [ready, setReady] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [scope, setScope] = useState<'mine' | 'shared'>('mine');
+  const [addTo, setAddTo] = useState<string | null>(null);
+  const [kind, setKind] = useState<TaskCompletionKind>('once');
 
   // Re-renders once a second purely to move the clock. Nothing counts down —
   // the remaining time is worked out from the start time every time.
@@ -142,18 +159,71 @@ export default function FocusScreen() {
     if (!title) return;
     setError(null);
     try {
-      const highest = (tasks.data ?? []).reduce((n, t) => Math.max(n, t.position), -1);
-      await addTask.mutateAsync({ title, position: highest + 1 });
+      const groupId = scope === 'shared' ? addTo : null;
+      const siblings = (tasks.data ?? []).filter((t) => t.group_id === groupId);
+      const highest = siblings.reduce((n, t) => Math.max(n, t.position), -1);
+      await addTask.mutateAsync({ title, position: highest + 1, groupId, completion: kind });
       setDraft('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add that.');
     }
   }
 
-  const list = tasks.data ?? [];
-  const open = useMemo(() => list.filter((t) => !t.done_at), [list]);
-  const done = useMemo(() => list.filter((t) => t.done_at), [list]);
-  const activeTask = list.find((t) => t.id === taskId) ?? null;
+  const all = tasks.data ?? [];
+  const ticked = useMemo(() => byTask(completions.data), [completions.data]);
+  const names = useMemo(() => peopleById(people.data), [people.data]);
+  const roster = useMemo(() => membersByGroup(members.data), [members.data]);
+
+  const mine = useMemo(
+    () => sortTasks(all.filter((t) => !t.group_id), ticked, userId),
+    [all, ticked, userId],
+  );
+  const sharedByGroup = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const t of all) {
+      if (!t.group_id) continue;
+      map.set(t.group_id, [...(map.get(t.group_id) ?? []), t]);
+    }
+    for (const [id, ts] of map) map.set(id, sortTasks(ts, ticked, userId));
+    return map;
+  }, [all, ticked, userId]);
+
+  const visible = scope === 'mine' ? mine : all.filter((t) => t.group_id);
+  const open = visible.filter((t) => !isDone(t, ticked, userId));
+  const activeTask = all.find((t) => t.id === taskId) ?? null;
+
+  // Only ever one group in the picker if that is all there is.
+  const groupList = groups.data ?? [];
+  useEffect(() => {
+    if (addTo === null && groupList.length > 0) setAddTo(groupList[0].id);
+  }, [addTo, groupList]);
+
+  /** "done by Dan", or "2 of 3" — whichever the task's kind makes true. */
+  function metaFor(task: Task): string | undefined {
+    const who = doneBy(task, ticked);
+    if (task.group_id && task.completion === 'once') {
+      if (who.size === 0) return undefined;
+      const first = [...who][0];
+      return `Done by ${first === userId ? 'you' : handle(names.get(first))}`;
+    }
+    const p = progress(task, ticked, (roster.get(task.group_id ?? '') ?? []).length);
+    return p ? `${p.done} of ${p.total} done` : undefined;
+  }
+
+  function taskRow(task: Task, last: boolean) {
+    return (
+      <TaskRow
+        key={task.id}
+        title={task.title}
+        done={isDone(task, ticked, userId)}
+        meta={metaFor(task)}
+        active={task.id === taskId}
+        last={last}
+        onToggle={() => toggleTask.mutate({ taskId: task.id, ...toggleIntent(task, ticked, userId) })}
+        onPress={() => setTaskId(task.id === taskId ? null : task.id)}
+      />
+    );
+  }
 
   const stats = useMemo(() => {
     const all = sessions.data ?? [];
@@ -169,7 +239,7 @@ export default function FocusScreen() {
 
   const total = minutesFor(timer.phase, DEFAULTS) * 60_000;
   const left = timer.state === 'idle' ? total : remainingMs(timer, Date.now());
-  const progress = total > 0 ? 1 - left / total : 0;
+  const barFilled = total > 0 ? 1 - left / total : 0;
 
   return (
     <Screen title="Focus" eyebrow={PHASE_LABEL[timer.phase]}>
@@ -196,7 +266,7 @@ export default function FocusScreen() {
             style={[
               styles.fill,
               {
-                width: `${Math.round(Math.min(1, Math.max(0, progress)) * 100)}%`,
+                width: `${Math.round(Math.min(1, Math.max(0, barFilled)) * 100)}%`,
                 backgroundColor: timer.phase === 'focus' ? colors.green : colors.blue,
               },
             ]}
@@ -232,7 +302,22 @@ export default function FocusScreen() {
         ]}
       />
 
-      <Card title="To do">
+      <Segmented
+        value={scope}
+        onChange={(v) => {
+          setScope(v);
+          setError(null);
+        }}
+        options={[
+          { value: 'mine', label: `Mine${mine.length ? ` (${mine.length})` : ''}` },
+          {
+            value: 'shared',
+            label: `Shared${all.filter((t) => t.group_id).length ? ` (${all.filter((t) => t.group_id).length})` : ''}`,
+          },
+        ]}
+      />
+
+      <Card title={scope === 'mine' ? 'Add a task' : 'Add a shared task'}>
         <View style={styles.addRow}>
           <TextInput
             value={draft}
@@ -256,6 +341,58 @@ export default function FocusScreen() {
           <Button label="Add" onPress={onAdd} disabled={!draft.trim()} busy={addTask.isPending} />
         </View>
 
+        {scope === 'shared' ? (
+          groupList.length === 0 ? (
+            <Text style={[typography.caption, styles.hint, { color: colors.textMuted }]}>
+              Join or create a group first, then tasks can be shared with it.
+            </Text>
+          ) : (
+            <View style={styles.options}>
+              {groupList.length > 1 ? (
+                <View style={styles.chips}>
+                  {groupList.map((g) => (
+                    <Pressable
+                      key={g.id}
+                      onPress={() => setAddTo(g.id)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: addTo === g.id }}
+                      style={[
+                        styles.chip,
+                        addTo === g.id
+                          ? { backgroundColor: colors.greenSoft, borderColor: colors.green }
+                          : { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          typography.caption,
+                          { color: addTo === g.id ? colors.green : colors.textSecondary },
+                        ]}
+                      >
+                        {g.emoji ? `${g.emoji} ${g.name}` : g.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
+
+              <Segmented
+                value={kind}
+                onChange={setKind}
+                options={[
+                  { value: 'once', label: 'One of us' },
+                  { value: 'everyone', label: 'Each of us' },
+                ]}
+              />
+              <Text style={[typography.caption, { color: colors.textMuted }]}>
+                {kind === 'once'
+                  ? 'Whoever does it ticks it off, and it is done for everyone.'
+                  : 'Everyone ticks off their own, and you can see who has not.'}
+              </Text>
+            </View>
+          )
+        ) : null}
+
         {error ? (
           <Notice label="Could not add" tone="bad">
             {error}
@@ -265,50 +402,50 @@ export default function FocusScreen() {
 
       {tasks.isLoading ? (
         <ActivityIndicator style={styles.loader} color={colors.textMuted} />
-      ) : list.length === 0 ? (
+      ) : scope === 'mine' ? (
+        mine.length === 0 ? (
+          <EmptyState
+            icon="✅"
+            title="Nothing on the list"
+            body="Add the one thing you keep putting off, then start a stretch of focus on it."
+          />
+        ) : (
+          <Card title="Your list" subtitle="Tap a task to focus on it" flush>
+            {mine.map((t, i) => taskRow(t, i === mine.length - 1))}
+          </Card>
+        )
+      ) : sharedByGroup.size === 0 ? (
         <EmptyState
-          icon="✅"
-          title="Nothing on the list"
-          body="Add the one thing you keep putting off, then start a stretch of focus on it."
+          icon="🤝"
+          title="No shared tasks yet"
+          body={
+            groupList.length
+              ? 'Add one above. Either one of you does it, or all of you do — you choose when you add it.'
+              : 'Join or create a group first, then tasks can be shared with it.'
+          }
         />
       ) : (
-        <>
-          {open.length > 0 ? (
-            <Card title="Open" subtitle="Tap a task to focus on it" flush>
-              {open.map((task, i) => (
-                <TaskRow
-                  key={task.id}
-                  title={task.title}
-                  done={false}
-                  active={task.id === taskId}
-                  last={i === open.length - 1}
-                  onToggle={() => toggleTask.mutate({ id: task.id, done: true })}
-                  onPress={() => setTaskId(task.id === taskId ? null : task.id)}
-                />
-              ))}
-            </Card>
-          ) : null}
-
-          {done.length > 0 ? (
+        [...sharedByGroup.entries()].map(([groupId, list]) => {
+          const group = groupList.find((g) => g.id === groupId);
+          return (
             <Card
-              title="Done"
-              action="Clear"
-              onAction={() => done.forEach((t) => deleteTask.mutate(t.id))}
+              key={groupId}
+              title={group ? (group.emoji ? `${group.emoji}  ${group.name}` : group.name) : 'Group'}
               flush
             >
-              {done.map((task, i) => (
-                <TaskRow
-                  key={task.id}
-                  title={task.title}
-                  done
-                  last={i === done.length - 1}
-                  onToggle={() => toggleTask.mutate({ id: task.id, done: false })}
-                />
-              ))}
+              {list.map((t, i) => taskRow(t, i === list.length - 1))}
             </Card>
-          ) : null}
-        </>
+          );
+        })
       )}
+
+      {open.length === 0 && visible.length > 0 ? (
+        <Notice label="All clear" tone="good">
+          {scope === 'mine'
+            ? 'Nothing left on your list.'
+            : 'Nothing left for you in any group.'}
+        </Notice>
+      ) : null}
     </Screen>
   );
 }
@@ -328,4 +465,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
   },
   loader: { marginTop: space.xxxl },
+  options: { gap: space.md, marginTop: space.md },
+  hint: { marginTop: space.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  chip: {
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+    borderRadius: radius.chip,
+    borderWidth: 1,
+  },
 });
