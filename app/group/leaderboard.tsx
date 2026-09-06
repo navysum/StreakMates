@@ -1,24 +1,18 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Bar } from '@/components/Bar';
-import { Card } from '@/components/Card';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
+import { Plate } from '@/components/Plate';
 import { Screen } from '@/components/Screen';
+import { StatTrio } from '@/components/StatTrio';
+import { Tag } from '@/components/Tag';
 import { useAuth } from '@/auth/AuthProvider';
 import { handle } from '@/lib/identity';
-import {
-  checkInIndex,
-  useCheckIns,
-  useGroupMembers,
-  useGroups,
-  useHabits,
-} from '@/lib/queries';
+import { checkInIndex, useCheckIns, useGroupMembers, useGroups, useHabits } from '@/lib/queries';
 import {
   groupRate,
-  groupStreak,
   habitRates,
   mostImproved,
   percent,
@@ -30,13 +24,14 @@ import {
 } from '@/lib/leaderboard';
 import { toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography } from '@/theme/tokens';
+import { ink, space, typography } from '@/theme/tokens';
 
 const localDate = (iso: string) => iso.slice(0, 10);
 
 export default function LeaderboardScreen() {
   const { colors } = useTheme();
   const { userId } = useAuth();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const groups = useGroups();
@@ -82,29 +77,27 @@ export default function LeaderboardScreen() {
   const before = standings(scored, roster, done, previousWeek);
   const improved = mostImproved(rows, before);
   const byHabit = habitRates(scored, roster, done, windowDays(30, today));
-  const streak = groupStreak(scored, roster, done, today);
   const perfect = perfectDays(scored, roster, done, week);
 
   const nameOf = (uid: string) => {
     const m = (members.data ?? []).find((x) => x.user_id === uid);
     return uid === userId ? `${handle(m?.profile)} (you)` : handle(m?.profile);
   };
-  // Bars are scaled to the leader, so first place fills its track and everyone
-  // else reads as a share of it rather than of an abstract 100%.
-  const leaderScore = rows.reduce((n, r) => Math.max(n, r.completed), 0);
+
+  const back = { label: 'Board', onPress: () => router.back() };
 
   if (groups.isLoading || members.isLoading || habits.isLoading || checkIns.isLoading) {
     return (
-      <Screen title="Leaderboard">
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+      <Screen title="Leaderboard" back={back}>
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       </Screen>
     );
   }
 
   if (scored.length === 0) {
     return (
-      <Screen title="Leaderboard" eyebrow={group?.name ?? ''}>
-        <Notice label="Nothing to rank yet" tone="warn">
+      <Screen title="Leaderboard" label={group?.name ?? ''} back={back}>
+        <Notice label="Nothing to rank yet">
           {'This group has no shared habits. Add one and everyone starts being counted from the day it was created.'}
         </Notice>
       </Screen>
@@ -115,17 +108,31 @@ export default function LeaderboardScreen() {
   const worst = [...byHabit].reverse().find((h) => h.rate !== null);
   const struggling = worst && worst.rate !== null && worst.rate < 0.4 && worst !== best;
 
+  // The best rate is the leader's own, off the same rows the list is drawn
+  // from — the screen never carries a second copy of a number.
+  const bestRate = rows.reduce<number | null>(
+    (top, r) => (r.rate === null ? top : top === null ? r.rate : Math.max(top, r.rate)),
+    null,
+  );
+
   return (
-    <Screen title="Leaderboard" eyebrow={`${group?.name ?? 'Group'} · this week`}>
+    <Screen
+      title="Leaderboard"
+      label={`${group?.name ?? 'Group'} · this week`}
+      back={back}
+    >
       {/* Collective first, deliberately: the top of the screen is something
           the group wins together before the part where they beat each other. */}
-      <View style={styles.stats}>
-        <Stat label="Group streak" value={String(streak)} tone={streak > 0 ? 'good' : undefined} />
-        <Stat label="Perfect days" value={String(perfect)} />
-        <Stat label="Group rate" value={percent(groupRate(rows))} />
-      </View>
+      <StatTrio
+        labelFirst
+        stats={[
+          { value: percent(groupRate(rows)), label: 'Group rate', accent: true },
+          { value: String(perfect), label: 'Perfect days' },
+          { value: percent(bestRate), label: 'Best rate' },
+        ]}
+      />
 
-      <Card title="Consistency" action="7 days" flush>
+      <Plate label="Consistency" action="This week" flush>
         {rows.map((row, i) => {
           const you = row.userId === userId;
           return (
@@ -133,97 +140,111 @@ export default function LeaderboardScreen() {
               key={row.userId}
               style={[
                 styles.row,
-                you && { backgroundColor: colors.greenSoft },
+                you && { backgroundColor: colors.accents[100] },
                 {
-                  borderBottomColor: colors.borderDefault,
+                  borderBottomColor: colors.divider,
                   borderBottomWidth: i === rows.length - 1 ? 0 : 1,
                 },
               ]}
             >
               <Text
                 style={[
-                  typography.stat,
                   styles.rank,
-                  { color: i === 0 && row.rate !== null ? colors.amber : colors.textMuted },
+                  typography.figureSmall,
+                  { color: i === 0 && row.rate !== null ? colors.accents[700] : ink(colors, 55) },
                 ]}
               >
-                {row.rate === null ? '–' : i + 1}
+                {row.rate === null ? '––' : String(i + 1).padStart(2, '0')}
               </Text>
 
-              <Avatar id={row.userId} name={nameOf(row.userId)} size={32} />
+              <Avatar name={nameOf(row.userId)} size={28} />
 
               <View style={styles.main}>
                 <View style={styles.nameRow}>
                   <Text
                     numberOfLines={1}
-                    style={[typography.rowName, styles.name, { color: colors.textPrimary }]}
+                    style={[typography.body, styles.name, { color: colors.text }]}
                   >
                     {nameOf(row.userId)}
                   </Text>
-                  <Text style={[typography.stat, styles.value, { color: colors.textPrimary }]}>
+                  <Text style={[typography.figureSmall, { color: colors.text }]}>
                     {percent(row.rate)}
                   </Text>
                 </View>
                 <Bar
-                  value={row.completed}
-                  max={leaderScore}
-                  tone={you ? colors.green : colors.greenMid}
+                  value={Math.round((row.rate ?? 0) * 100)}
+                  max={100}
+                  height={6}
+                  tone={you ? colors.accent : colors.accents[500]}
                 />
               </View>
             </View>
           );
         })}
-      </Card>
+      </Plate>
 
       {improved ? (
-        <Card title="Most improved">
+        <Plate label="Most improved" marks>
           <View style={styles.standout}>
-            <Text style={[typography.rowName, { color: colors.textPrimary }]}>
+            <Text numberOfLines={1} style={[typography.cardTitle, styles.name, { color: colors.text }]}>
               {nameOf(improved.userId)}
             </Text>
-            <Pill label={`▲ ${Math.round(improved.delta * 100)}%`} tone="good" />
+            <Tag label={`▲ ${Math.round(improved.delta * 100)}%`} />
           </View>
-          <Text style={[typography.body, styles.hint, { color: colors.textSecondary }]}>
+          <Text style={[typography.prose, styles.hint, { color: ink(colors, 78) }]}>
             Against last week. The one way to win that is open to whoever is bottom.
           </Text>
-        </Card>
+        </Plate>
       ) : null}
 
-      <Card title="Habits" action="30 days" flush>
+      <Plate label="Habits" action="30 days" flush>
         {byHabit.map((h, i) => (
           <View
             key={h.habit.id}
             style={[
               styles.row,
               {
-                borderBottomColor: colors.borderDefault,
+                borderBottomColor: colors.divider,
                 borderBottomWidth: i === byHabit.length - 1 ? 0 : 1,
               },
             ]}
           >
             <View style={styles.main}>
-              <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
-                {h.habit.emoji ? `${h.habit.emoji}  ${h.habit.title}` : h.habit.title}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text
+                  numberOfLines={1}
+                  style={[typography.body, styles.name, { color: colors.text }]}
+                >
+                  {h.habit.title}
+                </Text>
+                <Text style={[typography.figureSmall, { color: colors.text }]}>
+                  {percent(h.rate)}
+                </Text>
+              </View>
               <Bar
                 value={Math.round((h.rate ?? 0) * 100)}
                 max={100}
-                tone={(h.rate ?? 0) < 0.4 ? colors.amber : colors.greenMid}
+                height={6}
+                // Tone by ramp step, not by hue: a struggling habit steps back
+                // down the accent, it does not turn red.
+                tone={(h.rate ?? 0) < 0.4 ? colors.accents[400] : colors.accent}
               />
-            </View>
-            <View style={styles.end}>
-              <Text style={[typography.stat, styles.value, { color: colors.textPrimary }]}>
-                {percent(h.rate)}
-              </Text>
-              {h === best && h.rate !== null ? <Pill label="Strongest" tone="good" /> : null}
-              {h === worst && struggling ? <Pill label="Needs work" tone="warn" /> : null}
+              {h === best && h.rate !== null ? (
+                <View style={styles.tag}>
+                  <Tag label="Strongest" />
+                </View>
+              ) : h === worst && struggling ? (
+                <View style={styles.tag}>
+                  <Tag label="Needs work" variant="outline" />
+                </View>
+              ) : null}
             </View>
           </View>
         ))}
-      </Card>
+      </Plate>
 
       {struggling ? (
-        <Notice label="That habit, not those people" tone="warn">
+        <Notice label="That habit, not those people">
           {`${worst!.habit.title} is at ${percent(worst!.rate)} across the whole group. A habit nobody manages is usually a badly-set target rather than a lazy group — try moving the time, lowering it, or dropping it.`}
         </Notice>
       ) : null}
@@ -235,37 +256,25 @@ export default function LeaderboardScreen() {
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'good' }) {
-  const { colors } = useTheme();
-  return (
-    <View style={[styles.stat, { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault }]}>
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[typography.stat, { color: tone === 'good' ? colors.green : colors.textPrimary }]}>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  stats: { flexDirection: 'row', gap: 8 },
-  stat: { flex: 1, padding: 10, borderWidth: 1, borderRadius: radius.card, gap: 2 },
   row: {
-    minHeight: 60,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 8,
-    marginHorizontal: -8,
-    borderRadius: 10,
+    gap: space.lg,
+    paddingVertical: space.lg,
   },
-  rank: { width: 20, textAlign: 'center' },
-  main: { flex: 1, minWidth: 0, gap: 8 },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  end: { alignItems: 'flex-end', gap: 4 },
+  rank: { width: 22 },
+  main: { flex: 1, minWidth: 0, gap: space.sm },
+  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
   name: { flex: 1, minWidth: 0 },
-  value: { fontSize: 15 },
-  standout: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  hint: { marginTop: 8 },
+  tag: { flexDirection: 'row', marginTop: space.xs },
+  standout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.lg,
+  },
+  hint: { marginTop: space.md },
 });

@@ -1,18 +1,18 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Avatar, AvatarStack } from '@/components/Avatar';
+import { AvatarRow } from '@/components/Avatar';
 import { Bar } from '@/components/Bar';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
+import { Plate } from '@/components/Plate';
 import { Screen } from '@/components/Screen';
 import { useAllMembers, useCheckIns, useGroups, useHabits, membersByGroup } from '@/lib/queries';
-import { fromLocalDate, startOfWeek, toLocalDate } from '@/lib/date';
+import { formatWeekOf, toLocalDate } from '@/lib/date';
 import { weekOf } from '@/lib/week';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, space, typography } from '@/theme/tokens';
+import { ink, space, tnum, typography } from '@/theme/tokens';
 
 export default function GroupsScreen() {
   const { colors } = useTheme();
@@ -42,15 +42,15 @@ export default function GroupsScreen() {
     for (const group of groups.data ?? []) {
       const shared = (habits.data ?? []).filter((h) => h.group_id === group.id);
       const people = byGroup.get(group.id) ?? [];
-      let hit = 0;
+      let kept = 0;
       for (const h of shared) {
         for (const m of people) {
-          for (const day of elapsed) if (done.has(`${h.id}|${m.user_id}|${day}`)) hit++;
+          for (const day of elapsed) if (done.has(`${h.id}|${m.user_id}|${day}`)) kept++;
         }
       }
       map.set(group.id, {
         habits: shared.length,
-        done: hit,
+        done: kept,
         owed: shared.length * people.length * elapsed.length,
       });
     }
@@ -58,24 +58,19 @@ export default function GroupsScreen() {
   }, [groups.data, habits.data, byGroup, checkIns.data, week, elapsed]);
 
   const list = groups.data ?? [];
-  const weekLabel = fromLocalDate(startOfWeek(today)).toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-  });
 
   return (
-    <Screen title="Groups" eyebrow={`Week of ${weekLabel}`}>
+    <Screen title="Groups" label={formatWeekOf(today)}>
       {groups.error ? (
-        <Notice label="Could not load" tone="bad">
+        <Notice label="Could not load">
           {groups.error instanceof Error ? groups.error.message : 'Something went wrong.'}
         </Notice>
       ) : null}
 
       {groups.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       ) : list.length === 0 ? (
         <EmptyState
-          icon="👥"
           title="No groups yet"
           body="Create one and share its six-character code, or enter a friend’s code to join theirs."
           actionLabel="Create a group"
@@ -93,48 +88,48 @@ export default function GroupsScreen() {
               accessibilityLabel={`Open ${group.name}`}
               style={({ pressed }) => pressed && styles.pressed}
             >
-              <Card>
+              <Plate>
                 <View style={styles.top}>
-                  <View style={[styles.tile, { backgroundColor: colors.bgSurfaceMuted }]}>
-                    <Text style={styles.glyph}>{group.emoji ?? '👥'}</Text>
-                  </View>
-
-                  <View style={styles.head}>
-                    <Text
-                      numberOfLines={1}
-                      style={[typography.cardTitle, { color: colors.textPrimary }]}
-                    >
-                      {group.name}
-                    </Text>
-                    <Text style={[typography.caption, { color: colors.textMuted }]}>
-                      {people.length} {people.length === 1 ? 'member' : 'members'} ·{' '}
-                      {stat.habits} shared {stat.habits === 1 ? 'habit' : 'habits'}
-                    </Text>
-                  </View>
-
-                  <Text style={[styles.chevron, { color: colors.borderStrong }]}>›</Text>
+                  <Text
+                    numberOfLines={1}
+                    style={[typography.cardTitle, styles.grow, { color: colors.text }]}
+                  >
+                    {group.name}
+                  </Text>
+                  <Text style={[typography.label, { color: colors.accent }]}>Open</Text>
                 </View>
 
-                <View style={styles.bottom}>
-                  {people.length ? (
-                    <AvatarStack
+                <Text style={[typography.caption, styles.meta, { color: ink(colors, 70) }]}>
+                  {people.length} {people.length === 1 ? 'member' : 'members'} · {stat.habits} shared{' '}
+                  {stat.habits === 1 ? 'habit' : 'habits'}
+                </Text>
+
+                {people.length ? (
+                  <View style={styles.faces}>
+                    <AvatarRow
                       people={people.map((m) => ({
                         id: m.user_id,
                         name: m.profile?.display_name ?? '?',
                       }))}
                     />
-                  ) : null}
-
-                  <View style={styles.progress}>
-                    <Bar value={stat.done} max={stat.owed} />
-                    <Text style={[typography.caption, { color: colors.textSecondary }]}>
-                      {stat.owed > 0
-                        ? `${stat.done} of ${stat.owed} check-ins this week`
-                        : 'No shared habits yet'}
-                    </Text>
                   </View>
+                ) : null}
+
+                <View style={styles.ratio}>
+                  <View style={styles.grow}>
+                    <Bar value={stat.done} max={stat.owed} />
+                  </View>
+                  <Text style={[typography.figureSmall, tnum, { color: colors.text }]}>
+                    {stat.done} / {stat.owed}
+                  </Text>
                 </View>
-              </Card>
+
+                <Text style={[typography.caption, styles.caption, { color: ink(colors, 70) }]}>
+                  {stat.owed > 0
+                    ? 'Kept this week, of what the group owed'
+                    : 'No shared habits yet'}
+                </Text>
+              </Plate>
             </Pressable>
           );
         })
@@ -147,7 +142,11 @@ export default function GroupsScreen() {
           onPress={() => router.push('/group/new')}
           style={styles.grow}
         />
-        <Button label="Join with code" onPress={() => router.push('/group/join')} style={styles.grow} />
+        <Button
+          label="Join with code"
+          onPress={() => router.push('/group/join')}
+          style={styles.grow}
+        />
       </View>
     </Screen>
   );
@@ -156,19 +155,11 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   loader: { marginTop: space.xxxl },
   top: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  tile: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.button,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glyph: { fontSize: 20, lineHeight: 24 },
-  head: { flex: 1, minWidth: 0, gap: 2 },
-  chevron: { fontSize: 26, lineHeight: 26, marginTop: -2 },
-  bottom: { marginTop: space.lg, gap: space.sm },
-  progress: { gap: space.sm },
+  meta: { marginTop: space.sm },
+  faces: { marginTop: space.lg },
+  ratio: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.lg },
+  caption: { marginTop: space.sm },
   actions: { flexDirection: 'row', gap: space.md },
-  grow: { flex: 1 },
+  grow: { flex: 1, minWidth: 0 },
   pressed: { opacity: 0.7 },
 });

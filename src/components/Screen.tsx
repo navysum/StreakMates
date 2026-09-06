@@ -1,15 +1,17 @@
 import { Pressable, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, radius, space, spacing, typography } from '@/theme/tokens';
+import { hit, ink, radius, space, spacing, typography } from '@/theme/tokens';
 
 type Props = {
   title: string;
-  /** Micro-caps, above the title: the context the title sits in. */
-  eyebrow?: string;
-  /** Sits where the menu would, for a screen that wants its own control. */
+  /** The micro-label above the title: the context the title sits in. */
+  label?: string;
+  /** A back link above everything, e.g. "‹ GROUPS". */
+  back?: { label: string; onPress: () => void };
+  /** Sits opposite the title — an avatar, a close control. */
   trailing?: React.ReactNode;
-  /** Opens a menu for actions that shouldn't sit in the page body. */
+  /** Opens a menu for actions that should not sit in the page body. */
   onMenu?: () => void;
   menuLabel?: string;
   /** Pinned below the scroll, for a screen with one obvious action. */
@@ -19,7 +21,8 @@ type Props = {
 
 export function Screen({
   title,
-  eyebrow,
+  label,
+  back,
   trailing,
   onMenu,
   menuLabel = 'More',
@@ -30,24 +33,36 @@ export function Screen({
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bgPage }]}>
+    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
       <ScrollView
         style={styles.fill}
         contentContainerStyle={[
           styles.content,
           {
-            paddingTop: insets.top + space.sm,
-            paddingBottom: insets.bottom + (footer ? 96 : space.xxxl),
+            paddingTop: Math.max(insets.top, spacing.top - 24) + space.xxl,
+            paddingBottom: insets.bottom + (footer ? 96 : spacing.bottom),
           },
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {back ? (
+          <Pressable
+            onPress={back.onPress}
+            hitSlop={space.md}
+            accessibilityRole="button"
+            accessibilityLabel={back.label}
+            style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+          >
+            <Text style={[typography.label, { color: colors.accent }]}>‹ {back.label}</Text>
+          </Pressable>
+        ) : null}
+
         <View style={styles.headRow}>
           <View style={styles.head}>
-            {eyebrow ? (
-              <Text style={[typography.label, { color: colors.textMuted }]}>{eyebrow}</Text>
+            {label ? (
+              <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
             ) : null}
-            <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
+            <Text style={[typography.screenTitle, { color: colors.text }]}>{title}</Text>
           </View>
 
           {trailing ?? null}
@@ -55,16 +70,17 @@ export function Screen({
           {onMenu ? (
             <Pressable
               onPress={onMenu}
-              hitSlop={space.sm}
+              hitSlop={space.md}
               accessibilityRole="button"
               accessibilityLabel={menuLabel}
               style={({ pressed }) => [
                 styles.menu,
-                { backgroundColor: pressed ? colors.bgHover : colors.bgSurfaceMuted },
+                { borderColor: colors.divider },
+                pressed && styles.pressed,
               ]}
             >
               {[0, 1, 2].map((i) => (
-                <View key={i} style={[styles.pip, { backgroundColor: colors.textSecondary }]} />
+                <View key={i} style={[styles.pip, { backgroundColor: ink(colors, 70) }]} />
               ))}
             </Pressable>
           ) : null}
@@ -78,9 +94,9 @@ export function Screen({
           style={[
             styles.footer,
             {
-              backgroundColor: colors.bgSurface,
-              borderTopColor: colors.borderDefault,
-              paddingBottom: insets.bottom + space.md,
+              backgroundColor: colors.bg,
+              borderTopColor: colors.divider,
+              paddingBottom: insets.bottom + space.lg,
             },
           ]}
         >
@@ -93,31 +109,30 @@ export function Screen({
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  footer: {
-    paddingHorizontal: spacing.page,
-    paddingTop: space.md,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  content: {
-    paddingHorizontal: spacing.page,
-    gap: spacing.section,
-  },
+  content: { paddingHorizontal: spacing.page, gap: spacing.section },
+  back: { marginBottom: -space.md },
   headRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: space.md,
-    marginBottom: -space.xs,
+    gap: space.lg,
   },
-  head: { gap: space.xs, flex: 1, minWidth: 0, paddingTop: space.xs },
+  head: { gap: space.sm, flex: 1, minWidth: 0 },
   menu: {
     width: hit,
     height: hit,
-    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderRadius: radius.none,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
   },
-  pip: { width: 4, height: 4, borderRadius: 2 },
+  pip: { width: 3, height: 3, borderRadius: radius.none },
+  footer: {
+    paddingHorizontal: spacing.page,
+    paddingTop: space.lg,
+    borderTopWidth: 1,
+  },
+  pressed: { opacity: 0.6 },
 });

@@ -1,22 +1,20 @@
 import { View, Text, TextInput, StyleSheet, type TextInputProps } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { space, typography } from '@/theme/tokens';
+import { ink, space, typography } from '@/theme/tokens';
 
 type Props = TextInputProps & { label: string; last?: boolean };
 
+/** A micro-label on the left, the value on the right, a hairline beneath. */
 export function Field({ label, last, style, ...input }: Props) {
   const { colors } = useTheme();
   return (
     <View
-      style={[
-        styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
-      ]}
+      style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
       <TextInput
-        placeholderTextColor={colors.textMuted}
-        style={[styles.input, { color: colors.textPrimary }, style]}
+        placeholderTextColor={ink(colors, 45)}
+        style={[styles.input, typography.body, { color: colors.text }, style]}
         {...input}
       />
     </View>
@@ -36,12 +34,9 @@ export function FieldRow({
   const { colors } = useTheme();
   return (
     <View
-      style={[
-        styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
-      ]}
+      style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
+      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
       <View style={styles.value}>{children}</View>
     </View>
   );
@@ -49,12 +44,12 @@ export function FieldRow({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 56,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: space.lg,
+    gap: space.xl,
   },
-  input: { ...typography.rowName, flex: 1, textAlign: 'right', paddingVertical: space.md },
-  value: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  input: { flex: 1, textAlign: 'right', paddingVertical: space.md },
+  value: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: space.md },
 });

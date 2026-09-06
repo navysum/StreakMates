@@ -3,14 +3,14 @@ import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { Field } from '@/components/Field';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
+import { Tag } from '@/components/Tag';
 import { useAuth } from '@/auth/AuthProvider';
 import { useProfile, useSetUsername, useUsernameAvailable } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, typography } from '@/theme/tokens';
+import { ink, space, spacing, typography } from '@/theme/tokens';
 
 const VALID = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
 
@@ -72,7 +72,7 @@ export default function UsernameScreen() {
 
   return (
     <ScrollView
-      style={{ backgroundColor: colors.bgPage }}
+      style={{ backgroundColor: colors.bg }}
       contentContainerStyle={[
         styles.body,
         { paddingTop: insets.top + (first ? 60 : 24), paddingBottom: insets.bottom + 24 },
@@ -80,17 +80,17 @@ export default function UsernameScreen() {
       keyboardShouldPersistTaps="handled"
     >
       <View style={styles.head}>
-        <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>
+        <Text style={[typography.screenTitle, { color: colors.text }]}>
           {first ? 'Pick a username' : 'Your username'}
         </Text>
-        <Text style={[typography.body, styles.lede, { color: colors.textSecondary }]}>
+        <Text style={[typography.prose, { color: ink(colors, 78) }]}>
           {first
             ? 'This is how friends will recognise you in a group. It has to be yours alone — no two people in the app can share one.'
             : 'Changing this changes how you appear in every group you are in.'}
         </Text>
       </View>
 
-      <Card>
+      <Plate label="Handle">
         <Field
           label="Username"
           value={username}
@@ -102,19 +102,19 @@ export default function UsernameScreen() {
           maxLength={20}
           last
         />
-      </Card>
+      </Plate>
 
       <View style={styles.status}>
         {!username ? null : !wellFormed ? (
-          <Pill label="3–20 chars, start with a letter" tone="warn" />
+          <Tag label="3–20 chars, start with a letter" variant="outline" />
         ) : unchanged ? (
-          <Pill label="Unchanged" />
+          <Tag label="Unchanged" variant="outline" />
         ) : check.isPending || available === null ? (
-          <Pill label="Checking…" />
+          <Tag label="Checking…" variant="outline" />
         ) : available ? (
-          <Pill label={`@${username} is free`} tone="good" />
+          <Tag label={`@${username} is free`} />
         ) : (
-          <Pill label="Already taken" tone="bad" />
+          <Tag label="Already taken" variant="outline" />
         )}
       </View>
 
@@ -126,7 +126,7 @@ export default function UsernameScreen() {
         onPress={onSave}
       />
 
-      {error ? <Notice label="Could not save" tone="bad">{error}</Notice> : null}
+      {error ? <Notice label="Could not save">{error}</Notice> : null}
 
       <Notice label="Why a username">
         {'Display names come from Google and repeat — two friends called Craig look identical on a board. A username is checked against everyone in the app, so yours is only ever yours.'}
@@ -136,8 +136,7 @@ export default function UsernameScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { paddingHorizontal: spacing.page, gap: spacing.card },
-  head: { gap: 8, marginBottom: 4 },
-  lede: {},
-  status: { minHeight: 24, justifyContent: 'center' },
+  body: { paddingHorizontal: spacing.page, gap: spacing.section },
+  head: { gap: space.md },
+  status: { minHeight: 28, flexDirection: 'row', alignItems: 'center' },
 });

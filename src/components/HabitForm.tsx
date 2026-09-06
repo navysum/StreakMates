@@ -1,17 +1,14 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { Button } from './Button';
-import { Card } from './Card';
 import { Choice } from './Choice';
-import { Field, FieldRow } from './Field';
-import { IconPicker } from './IconPicker';
+import { Field } from './Field';
+import { Plate } from './Plate';
 import { Segmented } from './Segmented';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing, typography } from '@/theme/tokens';
+import { ink, radius, space, spacing, typography } from '@/theme/tokens';
 import { WEEKDAY_LABELS } from '@/lib/date';
 import type { Cadence, HabitColor } from '@/lib/types';
-
-const COLORS: HabitColor[] = ['green', 'amber', 'blue', 'purple', 'teal', 'coral'];
 
 /** Accepts 7, 7:5, 0705 and the like; anything unreadable becomes no reminder. */
 export function normaliseTime(input: string): string {
@@ -28,7 +25,13 @@ export function normaliseTime(input: string): string {
 
 export type HabitFormValue = {
   title: string;
+  /**
+   * Kept on the value because the column still exists and old habits still
+   * carry one. The Industry system is non-pictorial, so nothing sets it any
+   * more and nothing renders it.
+   */
   emoji: string;
+  /** Same: one accent only, so this is written but never shown. */
   color: HabitColor;
   cadence: Cadence;
   target_days: number[];
@@ -94,7 +97,7 @@ export function HabitForm({
 
   return (
     <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-      <Card>
+      <Plate label="Habit">
         <Field
           label="Name"
           value={value.title}
@@ -103,34 +106,11 @@ export function HabitForm({
           autoFocus={!initial}
           maxLength={80}
           returnKeyType="done"
+          last
         />
-        <FieldRow label="Colour" last>
-          {COLORS.map((c) => (
-            <Pressable
-              key={c}
-              onPress={() => set('color', c)}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel={c}
-              accessibilityState={{ selected: value.color === c }}
-              style={[
-                styles.swatch,
-                { backgroundColor: colors[c] },
-                value.color === c && {
-                  borderColor: colors.textPrimary,
-                  borderWidth: 2,
-                },
-              ]}
-            />
-          ))}
-        </FieldRow>
-      </Card>
+      </Plate>
 
-      <Card title="Icon">
-        <IconPicker value={value.emoji} onChange={(e) => set('emoji', e)} />
-      </Card>
-
-      <Card title="Schedule">
+      <Plate label="Schedule">
         <View style={styles.stack}>
           <Segmented
             value={value.cadence}
@@ -153,16 +133,20 @@ export function HabitForm({
                     onPress={() => toggleDay(day)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
-                    style={[
+                    style={({ pressed }) => [
                       styles.day,
                       {
-                        borderColor: on ? colors.green : colors.borderDefault,
-                        backgroundColor: on ? colors.greenSoft : colors.bgSurface,
+                        borderColor: on ? colors.accent : colors.divider,
+                        backgroundColor: on ? colors.accents[100] : 'transparent',
                       },
+                      pressed && styles.pressed,
                     ]}
                   >
                     <Text
-                      style={[typography.monoSmall, { color: on ? colors.green : colors.textMuted }]}
+                      style={[
+                        typography.labelSmall,
+                        { color: on ? colors.accents[700] : ink(colors, 60) },
+                      ]}
                     >
                       {label}
                     </Text>
@@ -185,39 +169,39 @@ export function HabitForm({
             value={value.reminder_at}
             onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
             onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
-            placeholder="07:00 — leave blank for none"
+            placeholder="07:00 — none"
             keyboardType="numbers-and-punctuation"
             maxLength={5}
             last
           />
 
-          <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
+          <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>
             {value.cadence === 'daily'
-              ? 'EVERY DAY'
+              ? 'Every day'
               : value.cadence === 'days'
                 ? value.target_days.length
-                  ? `${value.target_days.length} DAYS A WEEK`
-                  : 'PICK AT LEAST ONE DAY'
-                : `${value.target_per_week} TIMES A WEEK, ANY DAYS`}
+                  ? `${value.target_days.length} days a week`
+                  : 'Pick at least one day'
+                : `${value.target_per_week} times a week, any days`}
           </Text>
         </View>
-      </Card>
+      </Plate>
 
       {!lockVisibility && groups.length > 0 ? (
-        <Card title="Who sees it">
+        <Plate label="Who sees it">
           <Choice
             value={value.group_id}
             onChange={(g) => set('group_id', g)}
             options={[
-              { value: null, label: 'Private', hint: 'ONLY YOU' },
+              { value: null, label: 'Private', hint: 'Only you' },
               ...groups.map((g) => ({
                 value: g.id as string | null,
-                label: g.emoji ? `${g.emoji}  ${g.name}` : g.name,
-                hint: 'EVERYONE IN THE GROUP CHECKS IN',
+                label: g.name,
+                hint: 'Everyone in the group checks in',
               })),
             ]}
           />
-        </Card>
+        </Plate>
       ) : null}
 
       <Button
@@ -234,16 +218,16 @@ export function HabitForm({
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.card },
-  stack: { gap: 10 },
-  swatch: { width: 18, height: 18, borderRadius: 9, borderColor: 'transparent', borderWidth: 2 },
+  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  stack: { gap: space.lg },
   days: { flexDirection: 'row', gap: 5 },
   day: {
     flex: 1,
-    height: 30,
+    height: 44,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: radius.button,
+    borderRadius: radius.none,
   },
+  pressed: { opacity: 0.6 },
 });

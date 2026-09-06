@@ -18,7 +18,7 @@ import {
 import { toLocalDate } from '@/lib/date';
 import { describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing } from '@/theme/tokens';
+import { ink, spacing } from '@/theme/tokens';
 
 export default function EditHabitScreen() {
   const { colors } = useTheme();
@@ -42,9 +42,9 @@ export default function EditHabitScreen() {
 
   if (habitQuery.isLoading || !habit) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <ModalHeader title="Habit" />
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       </View>
     );
   }
@@ -124,7 +124,7 @@ export default function EditHabitScreen() {
   const archived = !!habit.archived_at;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader
         title="Edit habit"
         eyebrow={describeProgress(
@@ -145,7 +145,7 @@ export default function EditHabitScreen() {
         groups={groups ?? []}
         footer={
           <View style={styles.footer}>
-            {error ? <Notice label="Something went wrong" tone="bad">{error}</Notice> : null}
+            {error ? <Notice label="Something went wrong">{error}</Notice> : null}
             <Button
               label={archived ? 'Restore habit' : 'Archive habit'}
               busy={setArchived.isPending}
@@ -159,9 +159,11 @@ export default function EditHabitScreen() {
             <Notice label="Archive keeps everything">
               {'Archiving drops the habit off Today but keeps every check-in and the streak record, and you can restore it in one tap. Deleting destroys the history.'}
             </Notice>
+            {/* Industry has no destructive colour, so the weight of this
+                action is carried by the confirmation, not by a red button. */}
             <Button
               label="Delete habit"
-              variant="danger"
+              variant="ghost"
               busy={remove.isPending}
               onPress={confirmDelete}
             />
@@ -174,5 +176,5 @@ export default function EditHabitScreen() {
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  footer: { gap: spacing.card, marginTop: spacing.section },
+  footer: { gap: spacing.section, marginTop: spacing.section },
 });
