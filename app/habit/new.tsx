@@ -42,7 +42,7 @@ export default function NewHabitScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader
         title={inGroup ? 'New shared habit' : 'New habit'}
         eyebrow={
@@ -61,7 +61,7 @@ export default function NewHabitScreen() {
         footer={
           error ? (
             <View style={styles.error}>
-              <Notice label="Could not save" tone="bad">{error}</Notice>
+              <Notice label="Could not save">{error}</Notice>
             </View>
           ) : null
         }
@@ -70,4 +70,4 @@ export default function NewHabitScreen() {
   );
 }
 
-const styles = StyleSheet.create({ error: { marginTop: spacing.card } });
+const styles = StyleSheet.create({ error: { marginTop: spacing.section } });

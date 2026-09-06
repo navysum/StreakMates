@@ -1,12 +1,13 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { font, space, typography } from '@/theme/tokens';
+import { ink, radius, space, typography } from '@/theme/tokens';
 
 type Option<T> = { value: T; label: string; hint?: string };
 
 /**
- * A vertical list of options. Used instead of a segmented control where the
- * number of choices grows — someone can be in any number of groups.
+ * A vertical list of options, for when the number of them grows — someone can
+ * be in any number of groups. The mark is the same square check used
+ * everywhere else.
  */
 export function Choice<T extends string | null>({
   options,
@@ -32,29 +33,29 @@ export function Choice<T extends string | null>({
             style={({ pressed }) => [
               styles.row,
               {
-                borderBottomColor: colors.borderDefault,
+                borderBottomColor: colors.divider,
                 borderBottomWidth: i === options.length - 1 ? 0 : 1,
               },
               pressed && styles.pressed,
             ]}
           >
             <View style={styles.text}>
-              <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
+              <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
                 {opt.label}
               </Text>
               {opt.hint ? (
-                <Text style={[typography.caption, { color: colors.textMuted }]}>{opt.hint}</Text>
+                <Text style={[typography.caption, { color: ink(colors, 70) }]}>{opt.hint}</Text>
               ) : null}
             </View>
             <View
               style={[
-                styles.dot,
+                styles.box,
                 on
-                  ? { backgroundColor: colors.green, borderColor: colors.green }
-                  : { borderColor: colors.borderStrong },
+                  ? { backgroundColor: colors.accent, borderColor: colors.accent }
+                  : { borderColor: colors.divider },
               ]}
             >
-              {on ? <Text style={styles.tick}>✓</Text> : null}
+              {on ? <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text> : null}
             </View>
           </Pressable>
         );
@@ -65,28 +66,22 @@ export function Choice<T extends string | null>({
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 56,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: space.md,
-    paddingVertical: space.sm,
+    gap: space.xl,
+    paddingVertical: space.md,
   },
-  text: { flex: 1, minWidth: 0, gap: 1 },
-  dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
+  text: { flex: 1, minWidth: 0, gap: 2 },
+  box: {
+    width: 22,
+    height: 22,
+    borderWidth: 1,
+    borderRadius: radius.none,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tick: {
-    color: '#ffffff',
-    fontFamily: font.bold,
-    fontSize: 12,
-    includeFontPadding: false,
-    textAlign: 'center',
-  },
+  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 14, includeFontPadding: false },
   pressed: { opacity: 0.6 },
 });

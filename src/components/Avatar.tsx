@@ -1,24 +1,41 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { font, radius } from '@/theme/tokens';
-import type { Palette } from '@/theme/tokens';
+import { font, radius, space, typography } from '@/theme/tokens';
 
 /**
- * Initials on an accent tint. No images anywhere in the app, so nothing to
- * load, nothing to cache, and a member is recognisable the instant a row
- * renders.
+ * Initials on a tinted square.
  *
- * The tint is derived from the user's id, so the same person is the same
- * colour on every screen and across everyone's device.
+ * Squares, not circles, and one tint for everyone rather than a colour per
+ * member — Industry has a single accent, so identity is carried by the letters
+ * rather than by hue. No images anywhere, so nothing to load or cache.
  */
-const TINTS = ['blue', 'purple', 'teal', 'green', 'amber', 'coral'] as const;
+export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+  const { colors } = useTheme();
 
-export function accentFor(id: string, colors: Palette) {
-  let hash = 0;
-  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
-  const tint = TINTS[hash % TINTS.length];
-  const soft = `${tint}Soft` as keyof Palette;
-  return { fg: colors[tint], bg: colors[soft] };
+  return (
+    <View
+      style={[
+        styles.avatar,
+        {
+          width: size,
+          height: size,
+          backgroundColor: colors.accents[100],
+          borderColor: colors.divider,
+        },
+      ]}
+    >
+      <Text
+        style={{
+          fontFamily: font.heading,
+          fontSize: Math.max(11, Math.round(size * 0.4)),
+          letterSpacing: 0.4,
+          color: colors.accents[700],
+        }}
+      >
+        {initials(name)}
+      </Text>
+    </View>
+  );
 }
 
 export function initials(name: string): string {
@@ -28,50 +45,11 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-type Props = {
-  id: string;
-  name: string;
-  size?: number;
-  /** Draws a ring in the card colour, for overlapping stacks. */
-  ringed?: boolean;
-};
-
-export function Avatar({ id, name, size = 32, ringed }: Props) {
-  const { colors } = useTheme();
-  const tint = accentFor(id, colors);
-
-  return (
-    <View
-      style={[
-        styles.avatar,
-        {
-          width: size,
-          height: size,
-          borderRadius: radius.pill,
-          backgroundColor: tint.bg,
-          borderWidth: ringed ? 2 : 1,
-          borderColor: ringed ? colors.bgSurface : colors.borderDefault,
-        },
-      ]}
-    >
-      <Text
-        style={{
-          fontFamily: font.semibold,
-          fontSize: Math.max(10, Math.round(size * 0.4)),
-          color: tint.fg,
-        }}
-      >
-        {initials(name)}
-      </Text>
-    </View>
-  );
-}
-
-/** Overlapping faces, for "who is in this group" at a glance. */
-export function AvatarStack({
+/** A row of faces. Squares sit side by side rather than overlapping. */
+export function AvatarRow({
   people,
-  size = 28,
-  max = 5,
+  size = 30,
+  max = 6,
 }: {
   people: { id: string; name: string }[];
   size?: number;
@@ -82,11 +60,9 @@ export function AvatarStack({
   const rest = people.length - shown.length;
 
   return (
-    <View style={styles.stack}>
+    <View style={styles.row}>
       {shown.map((p) => (
-        <View key={p.id} style={{ marginRight: -8 }}>
-          <Avatar id={p.id} name={p.name} size={size} ringed />
-        </View>
+        <Avatar key={p.id} name={p.name} size={size} />
       ))}
       {rest > 0 ? (
         <View
@@ -95,22 +71,12 @@ export function AvatarStack({
             {
               width: size,
               height: size,
-              borderRadius: radius.pill,
-              backgroundColor: colors.bgSurfaceMuted,
-              borderWidth: 2,
-              borderColor: colors.bgSurface,
+              backgroundColor: 'transparent',
+              borderColor: colors.divider,
             },
           ]}
         >
-          <Text
-            style={{
-              fontFamily: font.semibold,
-              fontSize: Math.max(10, Math.round(size * 0.36)),
-              color: colors.textMuted,
-            }}
-          >
-            +{rest}
-          </Text>
+          <Text style={[typography.labelSmall, { color: colors.accents[700] }]}>+{rest}</Text>
         </View>
       ) : null}
     </View>
@@ -118,6 +84,11 @@ export function AvatarStack({
 }
 
 const styles = StyleSheet.create({
-  avatar: { alignItems: 'center', justifyContent: 'center' },
-  stack: { flexDirection: 'row', alignItems: 'center', paddingRight: 8 },
+  avatar: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderRadius: radius.none,
+  },
+  row: { flexDirection: 'row', gap: space.sm },
 });

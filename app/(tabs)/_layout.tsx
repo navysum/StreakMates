@@ -9,7 +9,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { ensurePermission, syncReminders } from '@/lib/reminders';
 import { useTheme } from '@/theme/ThemeProvider';
-import { typography } from '@/theme/tokens';
+import { border, ink, typography } from '@/theme/tokens';
 
 const TABS: { name: string; title: string; icon: TabName }[] = [
   { name: 'index', title: 'Today', icon: 'today' },
@@ -61,19 +61,20 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        // 49pt of bar above the home indicator is the iOS standard.
-        tabBarActiveTintColor: colors.textPrimary,
-        tabBarInactiveTintColor: colors.textMuted,
+        // Hairline top, page fill, no shadow — the bar is a drawn line, not a
+        // raised surface. Active is the accent; inactive is 70% ink.
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: ink(colors, 70),
         tabBarStyle: {
-          height: 56 + insets.bottom,
-          paddingTop: 8,
+          height: 48 + 12 + insets.bottom,
+          paddingTop: 6,
           paddingBottom: insets.bottom + 6,
-          backgroundColor: colors.bgSurface,
-          borderTopColor: colors.borderDefault,
-          borderTopWidth: StyleSheet.hairlineWidth,
+          backgroundColor: colors.bg,
+          borderTopColor: colors.divider,
+          borderTopWidth: border.hairline,
           elevation: 0,
         },
-        tabBarLabelStyle: { ...typography.tabLabel, marginTop: 3 },
+        tabBarLabelStyle: { ...typography.tabLabel, marginTop: 4 },
         tabBarItemStyle: { gap: 0 },
       }}
     >

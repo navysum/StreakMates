@@ -1,15 +1,23 @@
 import { useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { StatTrio } from '@/components/StatTrio';
 import { WeekStrip } from '@/components/WeekStrip';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
-import { byHabit, useCheckIns, useGroups, useHabit, useToggleCheckIn } from '@/lib/queries';
+import {
+  byHabit,
+  checkInIndex,
+  doneKey,
+  useCheckIns,
+  useGroupMembers,
+  useGroups,
+  useHabit,
+  useToggleCheckIn,
+} from '@/lib/queries';
 import { addDays, toLocalDate, WEEKDAY_LABELS } from '@/lib/date';
 import { gridCells } from '@/lib/week';
 import {
@@ -20,13 +28,14 @@ import {
   weeklyProgress,
 } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, typography } from '@/theme/tokens';
 
 const HISTORY = 40;
 
 export default function HabitDetailScreen() {
   const { colors } = useTheme();
   const { userId } = useAuth();
+  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const habitQuery = useHabit(id);
@@ -37,10 +46,14 @@ export default function HabitDetailScreen() {
   const habit = habitQuery.data;
   const today = toLocalDate();
 
+  // Only fetched for a shared habit; the hook no-ops on an empty id.
+  const members = useGroupMembers(habit?.group_id ?? undefined);
+
   const dates = useMemo(
     () => byHabit(checkIns.data, userId).get(id ?? '') ?? new Set<string>(),
     [checkIns.data, userId, id],
   );
+  const everyone = useMemo(() => checkInIndex(checkIns.data), [checkIns.data]);
 
   const notes = useMemo(
     () =>
@@ -51,10 +64,12 @@ export default function HabitDetailScreen() {
     [checkIns.data, id, userId],
   );
 
+  const back = { label: 'Back', onPress: () => router.back() };
+
   if (habitQuery.isLoading || !habit) {
     return (
-      <Screen title="Habit">
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+      <Screen title="Habit" back={back}>
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       </Screen>
     );
   }
@@ -76,21 +91,26 @@ export default function HabitDetailScreen() {
   const group = groups.data?.find((g) => g.id === habit.group_id);
   const completeToday = dates.has(today);
 
+  // A shared habit's third figure is who is in today, not a rate — it is the
+  // thing you actually open the screen to find out.
+  const roster = members.data ?? [];
+  const inToday = roster.filter((m) => everyone.has(doneKey(habit.id, m.user_id, today))).length;
+  const third = group
+    ? { value: `${inToday}/${roster.length}`, label: 'In today' }
+    : {
+        value: owed.length === 0 ? '—' : `${Math.round((hit / owed.length) * 100)}%`,
+        label: `${HISTORY}-day rate`,
+      };
+
   return (
     <Screen
       title={habit.title}
-      eyebrow={`${group ? group.name : 'Private'} · ${cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}`}
-      trailing={
-        habit.emoji ? (
-          <View style={[styles.tile, { backgroundColor: colors.bgSurfaceMuted }]}>
-            <Text style={styles.tileGlyph}>{habit.emoji}</Text>
-          </View>
-        ) : null
-      }
+      label={`${group ? group.name : 'Private'} · ${cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}`}
+      back={back}
       footer={
         <Button
-          label={completeToday ? '✓  Done today' : 'Check in for today'}
-          variant={completeToday ? 'default' : 'primary'}
+          label={completeToday ? 'Checked in today' : 'Check in for today'}
+          variant={completeToday ? 'secondary' : 'primary'}
           onPress={() =>
             toggle.mutate({ habitId: habit.id, date: today, complete: !completeToday })
           }
@@ -101,52 +121,49 @@ export default function HabitDetailScreen() {
         stats={[
           { value: String(streak), label: 'Streak' },
           { value: String(best), label: 'Best' },
-          {
-            value: owed.length === 0 ? '—' : `${Math.round((hit / owed.length) * 100)}%`,
-            label: `${HISTORY}-day rate`,
-          },
+          third,
         ]}
       />
 
       {habit.cadence === 'weekly' ? (
-        <Card title="This week">
-          <Text style={[typography.stat, { color: colors.textPrimary }]}>
+        <View style={[styles.weekRow, { borderColor: colors.divider }]}>
+          <Text style={[typography.label, { color: ink(colors, 60) }]}>This week</Text>
+          <Text style={[typography.cardTitle, { color: colors.text }]}>
             {week.done} of {week.target}
           </Text>
-        </Card>
+        </View>
       ) : null}
 
-      <Card title="Last 12 weeks">
+      <Plate marks>
+        <Text style={[typography.label, { color: ink(colors, 65) }]}>Last 12 weeks</Text>
         <View style={styles.grid}>
-          {grid.map((week, i) => (
-            <WeekStrip key={i} cells={week} size={20} direction="column" />
+          {grid.map((column, i) => (
+            <WeekStrip key={i} cells={column} size={20} direction="column" />
           ))}
         </View>
-      </Card>
+      </Plate>
 
-      <Card title="Cadence">
+      <Plate label="Cadence">
         <View style={styles.chips}>
           {WEEKDAY_LABELS.map((letter, i) => {
-            const on = habit.cadence === 'days' && habit.target_days.includes(i + 1);
+            // A flexible cadence has no fixed days, so none of the seven is
+            // marked — an even row of neutrals says "any day" without lying.
             const flexible = habit.cadence !== 'days';
+            const on = !flexible && habit.target_days.includes(i + 1);
             return (
               <View
                 key={i}
                 style={[
                   styles.chip,
                   flexible
-                    ? { backgroundColor: colors.bgPage, borderColor: colors.borderDefault }
+                    ? { backgroundColor: colors.neutral[100], borderColor: colors.divider }
                     : on
-                      ? { backgroundColor: colors.greenSoft, borderColor: colors.green }
-                      : { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
+                      ? { backgroundColor: colors.accents[100], borderColor: colors.accent }
+                      : { backgroundColor: 'transparent', borderColor: colors.divider },
                 ]}
               >
                 <Text
-                  style={[
-                    typography.caption,
-                    styles.chipText,
-                    { color: !flexible && on ? colors.green : colors.textMuted },
-                  ]}
+                  style={[typography.labelSmall, { color: on ? colors.accents[700] : ink(colors, 60) }]}
                 >
                   {letter}
                 </Text>
@@ -154,50 +171,57 @@ export default function HabitDetailScreen() {
             );
           })}
         </View>
-        <Text style={[typography.caption, styles.cadenceNote, { color: colors.textSecondary }]}>
+        <Text style={[typography.caption, styles.cadenceNote, { color: ink(colors, 70) }]}>
           {describeProgress(schedule, dates, today)}
         </Text>
-      </Card>
+      </Plate>
 
-      <Card title="Details">
-        <Row label="Cadence" value={cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)} />
+      <Plate label="Details">
+        <Row
+          label="Cadence"
+          value={cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}
+        />
         <Row label="Visibility" value={group ? `Shared · ${group.name}` : 'Private'} />
-        <Row label="Reminder" value={habit.reminder_at ? habit.reminder_at.slice(0, 5) : 'Off'} last />
-      </Card>
+        <Row
+          label="Reminder"
+          value={habit.reminder_at ? habit.reminder_at.slice(0, 5) : 'Off'}
+          last
+        />
+      </Plate>
 
       {notes.length > 0 ? (
-        <Card title="Notes">
+        <Plate label="Notes">
           {notes.map((note, i) => (
             <View
               key={note.id}
               style={[
                 styles.note,
                 {
-                  borderBottomColor: colors.borderDefault,
+                  borderBottomColor: colors.divider,
                   borderBottomWidth: i === notes.length - 1 ? 0 : 1,
                 },
               ]}
             >
-              <Text style={[typography.body, styles.noteText, { color: colors.textPrimary }]}>
+              <Text style={[typography.body, styles.noteText, { color: colors.text }]}>
                 “{note.note}”
               </Text>
-              <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-                {note.local_date === today ? 'TODAY' : note.local_date}
+              <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+                {note.local_date === today ? 'Today' : note.local_date}
               </Text>
             </View>
           ))}
-        </Card>
+        </Plate>
       ) : null}
 
       <Link
         href={{ pathname: '/habit/edit', params: { id: habit.id } }}
-        style={[typography.rowName, styles.edit, { color: colors.green }]}
+        style={[typography.label, styles.edit, { color: colors.accent }]}
       >
         Edit habit
       </Link>
 
       {habit.archived_at ? (
-        <Notice label="Archived" tone="warn">
+        <Notice label="Archived">
           {'This habit is archived, so it no longer appears on Today. Its history is kept and you can restore it from the edit screen.'}
         </Notice>
       ) : null}
@@ -215,50 +239,48 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
   const { colors } = useTheme();
   return (
     <View
-      style={[
-        styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
-      ]}
+      style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
-      <Text style={[typography.rowName, styles.value, { color: colors.textPrimary }]}>{value}</Text>
+      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+      <Text style={[typography.body, styles.value, { color: colors.text }]}>{value}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  tile: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
+  weekRow: {
+    minHeight: 56,
+    borderWidth: 1,
+    borderRadius: radius.none,
+    paddingHorizontal: space.xl,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
   },
-  tileGlyph: { fontSize: 26, lineHeight: 32 },
   // Twelve weeks as columns, Monday at the top: the same strip as everywhere
   // else, turned on its side.
-  grid: { flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
+  grid: { flexDirection: 'row', gap: 4, justifyContent: 'space-between', marginTop: space.lg },
   chips: { flexDirection: 'row', gap: space.sm },
   chip: {
     flex: 1,
     minHeight: 44,
-    borderRadius: radius.chip,
+    borderRadius: radius.none,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipText: { fontFamily: 'DMSans-SemiBold' },
-  cadenceNote: { marginTop: space.md },
+  cadenceNote: { marginTop: space.lg },
   row: {
-    minHeight: 40,
+    minHeight: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.xl,
   },
   value: { flexShrink: 1, textAlign: 'right' },
-  note: { paddingVertical: 9, gap: 2 },
+  note: { paddingVertical: space.md, gap: space.xs },
   noteText: { fontStyle: 'italic' },
   edit: { paddingHorizontal: 2 },
 });

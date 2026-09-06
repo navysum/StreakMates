@@ -1,28 +1,45 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { elevation, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, spacing, typography } from '@/theme/tokens';
 
-export type Stat = { value: string; label: string };
+export type Stat = { value: string; label: string; accent?: boolean };
 
-/** Three figures across, each a card of its own. Mono keeps them aligned. */
-export function StatTrio({ stats }: { stats: Stat[] }) {
-  const { colors, scheme } = useTheme();
+/**
+ * Three figures in one bordered box, divided by hairlines — not three separate
+ * cards. Industry frames a group of related numbers once.
+ */
+export function StatTrio({ stats, labelFirst }: { stats: Stat[]; labelFirst?: boolean }) {
+  const { colors } = useTheme();
 
   return (
-    <View style={styles.row}>
-      {stats.map((stat) => (
+    <View style={[styles.row, { borderColor: colors.divider }]}>
+      {stats.map((stat, i) => (
         <View
           key={stat.label}
           style={[
-            styles.tile,
-            elevation[scheme],
-            { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
+            styles.cell,
+            i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.divider },
           ]}
         >
-          <Text style={[typography.stat, { color: colors.textPrimary }]}>{stat.value}</Text>
-          <Text numberOfLines={2} style={[typography.label, { color: colors.textMuted }]}>
-            {stat.label}
-          </Text>
+          {labelFirst ? (
+            <>
+              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+                {stat.label}
+              </Text>
+              <Text style={[typography.stat, { color: stat.accent ? colors.accent : colors.text }]}>
+                {stat.value}
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={[typography.stat, { color: stat.accent ? colors.accent : colors.text }]}>
+                {stat.value}
+              </Text>
+              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+                {stat.label}
+              </Text>
+            </>
+          )}
         </View>
       ))}
     </View>
@@ -30,13 +47,6 @@ export function StatTrio({ stats }: { stats: Stat[] }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: space.md },
-  tile: {
-    flex: 1,
-    minWidth: 0,
-    padding: space.md,
-    gap: space.xs,
-    borderRadius: radius.card,
-    borderWidth: 1,
-  },
+  row: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.none },
+  cell: { flex: 1, minWidth: 0, padding: spacing.card, gap: space.sm },
 });

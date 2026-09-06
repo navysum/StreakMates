@@ -5,7 +5,7 @@ import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { RampGrid } from '@/components/RampGrid';
 import { StatTrio } from '@/components/StatTrio';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Sheet } from '@/components/Sheet';
@@ -20,11 +20,12 @@ import {
   useHabits,
   useProfile,
 } from '@/lib/queries';
-import { addDays, fromLocalDate, toLocalDate } from '@/lib/date';
+import { addDays, fromLocalDate, monthLabel, toLocalDate } from '@/lib/date';
 import { bestStreak, computeStreak, isScheduled } from '@/lib/streak';
 import { gridCells } from '@/lib/week';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
-import { radius, space, typography } from '@/theme/tokens';
+import { FieldRow } from '@/components/Field';
+import { ink, space, typography } from '@/theme/tokens';
 
 export default function YouScreen() {
   const { colors, mode, setMode, scheme } = useTheme();
@@ -114,7 +115,19 @@ export default function YouScreen() {
       { cadence: 'daily', targetDays: [], targetPerWeek: 7 },
       today,
     );
-    return { weeks, counts };
+    // One label per column, printed only where the month turns over, so the
+    // grid reads MAY … JUL … SEP rather than eighteen repeats.
+    let last = '';
+    const months = weeks.map((column) => {
+      const first = column[0];
+      if (!first) return '';
+      const name = monthLabel(first.date);
+      if (name === last) return '';
+      last = name;
+      return name;
+    });
+
+    return { weeks, counts, months };
   }, [checkIns.data, userId, today]);
 
   function confirmDelete() {
@@ -148,17 +161,17 @@ export default function YouScreen() {
   return (
     <Screen
       title="You"
-      eyebrow="Profile"
+      label="Profile"
       onMenu={() => setMenuOpen(true)}
       menuLabel="Account options"
     >
       <View style={styles.profile}>
-        <Avatar id={userId ?? 'me'} name={profile.data?.display_name ?? '?'} size={56} />
+        <Avatar name={profile.data?.display_name ?? '?'} size={56} />
         <View style={styles.who}>
-          <Text numberOfLines={1} style={[typography.sectionTitle, { color: colors.textPrimary }]}>
+          <Text numberOfLines={1} style={[typography.sectionTitle, { color: colors.text }]}>
             {profile.data?.display_name ?? 'You'}
           </Text>
-          <Text style={[typography.caption, { color: colors.textMuted }]}>
+          <Text style={[typography.caption, { color: ink(colors, 70) }]}>
             {handle(profile.data)}
             {joined ? ` · joined ${joined}` : ''}
           </Text>
@@ -173,40 +186,58 @@ export default function YouScreen() {
         ]}
       />
 
-      <Card title="Last 18 weeks" action={`${totals.checkIns} check-ins`}>
-        <RampGrid weeks={heat.weeks} counts={heat.counts} />
-      </Card>
+      <Plate marks>
+        <View style={styles.plateHead}>
+          <Text style={[typography.label, { color: ink(colors, 65) }]}>Last 18 weeks</Text>
+          <Text style={[typography.label, { color: ink(colors, 65) }]}>
+            {totals.checkIns} check-ins
+          </Text>
+        </View>
+        <View style={styles.grid}>
+          <RampGrid weeks={heat.weeks} counts={heat.counts} />
+        </View>
+        <View style={styles.months}>
+          {heat.months.map((m, i) => (
+            <Text
+              key={`${m}-${i}`}
+              style={[typography.labelSmall, styles.month, { color: ink(colors, 60) }]}
+            >
+              {m}
+            </Text>
+          ))}
+        </View>
+        <Text style={[typography.caption, styles.footnote, { color: ink(colors, 65) }]}>
+          A day you kept five habits reads darker than a day you kept one.
+        </Text>
+      </Plate>
 
       {topStreaks.length > 0 ? (
-        <Card title="Longest streaks" flush>
+        <Plate label="Longest streaks" flush>
           {topStreaks.map((row, i) => (
             <View
               key={row.habit.id}
               style={[
                 styles.streak,
                 {
-                  borderBottomColor: colors.borderDefault,
+                  borderBottomColor: colors.divider,
                   borderBottomWidth: i === topStreaks.length - 1 ? 0 : 1,
                 },
               ]}
             >
-              <View style={[styles.tile, { backgroundColor: colors.bgSurfaceMuted }]}>
-                <Text style={styles.glyph}>{row.habit.emoji ?? '•'}</Text>
-              </View>
               <Text
                 numberOfLines={1}
-                style={[typography.rowName, styles.name, { color: colors.textPrimary }]}
+                style={[typography.body, styles.name, { color: colors.text }]}
               >
                 {row.habit.title}
               </Text>
-              <Text style={[typography.stat, { color: colors.textPrimary }]}>{row.best}</Text>
-              <Text style={[typography.caption, { color: colors.textMuted }]}>days</Text>
+              <Text style={[typography.statSmall, { color: colors.text }]}>{row.best}</Text>
+              <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>Days</Text>
             </View>
           ))}
-        </Card>
+        </Plate>
       ) : null}
 
-      <Card title="Appearance">
+      <Plate label="Appearance">
         <View style={styles.stack}>
           <Segmented<ThemeMode>
             value={mode}
@@ -217,51 +248,46 @@ export default function YouScreen() {
               { value: 'dark', label: 'Dark' },
             ]}
           />
-          <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
+          <Text style={[typography.caption, { color: ink(colors, 70) }]}>
             {mode === 'system'
-              ? `FOLLOWING YOUR DEVICE · CURRENTLY ${scheme.toUpperCase()}`
-              : `ALWAYS ${mode.toUpperCase()}`}
+              ? `Following your device · currently ${scheme}`
+              : `Always ${mode}`}
           </Text>
         </View>
-      </Card>
+      </Plate>
 
-      <Card title="Account">
+      <Plate label="Account">
         <Pressable
           onPress={() => router.push('/username')}
           accessibilityRole="button"
           accessibilityLabel="Change your username"
         >
-          <View
-            style={[styles.row, { borderBottomColor: colors.borderDefault, borderBottomWidth: 1 }]}
-          >
-            <Text style={[typography.label, { color: colors.textMuted }]}>Username</Text>
-            <View style={styles.editable}>
-              <Text style={[typography.rowName, { color: colors.textPrimary }]}>
-                {profile.data?.username ? `@${profile.data.username}` : 'Not set'}
-              </Text>
-              <Text style={[typography.tabLabel, { color: colors.green }]}>Change</Text>
-            </View>
-          </View>
+          <FieldRow label="Username">
+            <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+              {profile.data?.username ? `@${profile.data.username}` : 'Not set'}
+            </Text>
+            <Text style={[typography.label, { color: colors.accent }]}>Change</Text>
+          </FieldRow>
         </Pressable>
         <Row label="Name" value={profile.data?.display_name ?? '—'} />
         <Row label="Email" value={session?.user.email ?? '—'} />
         <Row label="Timezone" value={profile.data?.timezone ?? '—'} last />
-      </Card>
+      </Plate>
 
       <Button label="Sign out" onPress={() => signOut()} />
 
-      {error ? <Notice label="Could not delete" tone="bad">{error}</Notice> : null}
+      {error ? <Notice label="Could not delete">{error}</Notice> : null}
 
       <Sheet
         visible={menuOpen}
         title="Account options"
         onClose={() => setMenuOpen(false)}
         actions={[
-          { label: 'Sign out', hint: 'YOUR DATA STAYS', onPress: () => signOut() },
+          { label: 'Sign out', hint: 'Your data stays', onPress: () => signOut() },
           {
             label: 'Delete account',
             tone: 'danger' as const,
-            hint: 'PERMANENT',
+            hint: 'Permanent',
             onPress: confirmDelete,
           },
         ]}
@@ -273,41 +299,29 @@ export default function YouScreen() {
 function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
   const { colors } = useTheme();
   return (
-    <View
-      style={[
-        styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
-      ]}
-    >
-      <Text style={[typography.label, { color: colors.textMuted }]}>{label}</Text>
-      <Text numberOfLines={1} style={[typography.rowName, styles.value, { color: colors.textPrimary }]}>
+    <FieldRow label={label} last={last}>
+      <Text numberOfLines={1} style={[typography.body, styles.value, { color: colors.text }]}>
         {value}
       </Text>
-    </View>
+    </FieldRow>
   );
 }
 
 const styles = StyleSheet.create({
   profile: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  who: { flex: 1, minWidth: 0, gap: 2 },
-  streak: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: space.md },
-  tile: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  glyph: { fontSize: 18, lineHeight: 22 },
-  name: { flex: 1, minWidth: 0 },
-  stack: { gap: space.md },
-  editable: { flexDirection: 'row', alignItems: 'center', gap: 10, flexShrink: 1 },
-  row: {
-    minHeight: 42,
+  who: { flex: 1, minWidth: 0, gap: space.xs },
+  plateHead: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: space.md,
   },
+  grid: { marginTop: space.lg },
+  months: { flexDirection: 'row', marginTop: space.sm },
+  month: { flex: 1 },
+  footnote: { marginTop: space.lg },
+  streak: { minHeight: 56, flexDirection: 'row', alignItems: 'baseline', gap: space.md },
+  name: { flex: 1, minWidth: 0 },
+  stack: { gap: space.lg },
   value: { flexShrink: 1, textAlign: 'right' },
 });
