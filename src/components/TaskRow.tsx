@@ -1,13 +1,14 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, typography } from '@/theme/tokens';
+import { Tag } from './Tag';
 
 type Props = {
   title: string;
   done: boolean;
   /** Marks the task the timer is currently running against. */
   active?: boolean;
-  /** "done by Dan", or "2 of 3" — whichever the task's kind makes true. */
+  /** "Done by Priya", or "3 of 5 done". */
   meta?: string;
   last?: boolean;
   onToggle: () => void;
@@ -15,13 +16,14 @@ type Props = {
 };
 
 export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: Props) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <View
       style={[
         styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
+        active && { backgroundColor: colors.accents[100] },
+        { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 },
       ]}
     >
       <Pressable
@@ -35,15 +37,11 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
           style={[
             styles.box,
             done
-              ? { backgroundColor: colors.green, borderColor: colors.green }
-              : { borderColor: colors.borderStrong },
+              ? { backgroundColor: colors.accent, borderColor: colors.accent }
+              : { borderColor: colors.divider },
           ]}
         >
-          {done ? (
-            <Text style={[styles.tick, { color: scheme === 'dark' ? colors.bgPage : '#ffffff' }]}>
-              ✓
-            </Text>
-          ) : null}
+          {done ? <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text> : null}
         </View>
       </Pressable>
 
@@ -57,9 +55,9 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
         <Text
           numberOfLines={2}
           style={[
-            typography.rowName,
+            typography.body,
             {
-              color: done ? colors.textMuted : colors.textPrimary,
+              color: done ? ink(colors, 55) : colors.text,
               textDecorationLine: done ? 'line-through' : 'none',
             },
           ]}
@@ -67,15 +65,15 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
           {title}
         </Text>
         {meta ? (
-          <Text numberOfLines={1} style={[typography.caption, { color: colors.textMuted }]}>
+          <Text numberOfLines={1} style={[typography.caption, { color: ink(colors, 70) }]}>
             {meta}
           </Text>
         ) : null}
       </Pressable>
 
       {active ? (
-        <View style={[styles.badge, { backgroundColor: colors.greenSoft }]}>
-          <Text style={[typography.label, { color: colors.green }]}>Now</Text>
+        <View style={styles.badge}>
+          <Tag label="Now" variant="accent" />
         </View>
       ) : null}
     </View>
@@ -84,22 +82,17 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
 
 const styles = StyleSheet.create({
   row: { minHeight: 52, flexDirection: 'row', alignItems: 'center' },
-  check: { width: hit, height: hit, alignItems: 'center', justifyContent: 'center', marginLeft: -space.md },
+  check: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   box: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
-    borderWidth: 2,
+    width: 22,
+    height: 22,
+    borderWidth: 1,
+    borderRadius: radius.none,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tick: { fontFamily: 'DMSans-Bold', fontSize: 13, includeFontPadding: false },
-  text: { flex: 1, minWidth: 0, paddingVertical: space.sm, gap: 2 },
-  badge: {
-    paddingHorizontal: space.sm,
-    paddingVertical: 3,
-    borderRadius: radius.pill,
-    marginLeft: space.sm,
-  },
-  pressed: { opacity: 0.55 },
+  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 14, includeFontPadding: false },
+  text: { flex: 1, minWidth: 0, paddingVertical: space.md, gap: 2 },
+  badge: { paddingRight: space.lg },
+  pressed: { opacity: 0.6 },
 });

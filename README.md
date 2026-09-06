@@ -104,7 +104,7 @@ $99/year Apple Developer account) becomes worth paying for. See
 | `src/lib/ordering.ts` | How your habit lists are arranged — yours alone, per list |
 | `src/lib/queries.ts` | Every read and write, with optimistic check-ins |
 | `src/theme/` | Design tokens, and the theme provider with System / Light / Dark, remembered between launches |
-| `assets/fonts/` | DM Sans and Cascadia Code, static instances + their OFL licences |
+| `assets/fonts/` | Barlow and Barlow Condensed, static instances + the OFL licence |
 
 Before Supabase is connected the app still runs: the sign-in screen shows what to
 set up instead of a Google button.
@@ -159,14 +159,40 @@ reminders are scheduled locally with `expo-notifications` and kept in step with
 the habits on every launch. Server push is only needed for things the server
 knows first — a friend checking in — which is a later problem.
 
+### The design system
+
+The app is drawn in **Industry**, a blueprint language: a light technical ground, one
+accent, square corners, hairline borders, condensed uppercase labels, and `+` registration
+marks at the corners of framed objects. Its steel-blue accent and grey ground are replaced
+by StreakMates' green on cream; nothing else about the system changed.
+
+Two rules drive nearly every decision in `src/theme/tokens.ts`, and both are easy to break
+by accident:
+
+- **Cards are line drawings, not filled surfaces.** A 1px divider border, no fill, no
+  shadow, no radius. The one solid object on a screen is the primary button. This is what
+  `Plate` is; there is no `Card`.
+- **There is only one accent.** No amber, no red, no per-member colour. Rank, tone and
+  emphasis come from steps of the accent ramp and from tag variants — which is why first
+  place is not gold and "needs work" is not red.
+
+The organising idea is a **7-cell week strip**, Monday→Sunday, repeated at four sizes:
+under each habit row on Today, as a member × day matrix on the group board, as a 12-week
+grid on habit detail, and as an 18-week intensity grid on You. You learn to read it once.
+
+The system is non-pictorial, so habit and group emoji are gone and reactions are word tags
+(`CLAP`, `FIRE`, `NICE`) rather than emoji. The database columns are untouched — old rows
+keep their emoji, nothing writes a new one, and nothing renders them.
+
 ### About the fonts
 
-The design system comes from `navysum/life-os-portal`, which ships DM Sans and Cascadia
-Code as *variable* fonts. React Native doesn't handle variable font weights reliably, so
-the weights used here were generated as static instances from those exact same source
-files — same design, one file per weight:
+Barlow Condensed carries everything structural — titles, micro-labels, every figure.
+Barlow carries prose and row names. Figures are condensed with `fontVariant:
+['tabular-nums']` rather than a separate mono face, which is why there is no mono font any
+more. React Native doesn't handle variable font weights reliably, so these are static
+instances, one file per weight:
 
-`DMSans-Regular / Medium / SemiBold / Bold`, `CascadiaCode-Regular / SemiBold`.
+`BarlowCondensed-SemiBold`, `Barlow-Regular`, `Barlow-SemiBold`.
 
 ---
 

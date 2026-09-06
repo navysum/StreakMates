@@ -1,54 +1,90 @@
 import { View, StyleSheet, type ColorValue } from 'react-native';
+import { radius } from '@/theme/tokens';
 
 export type TabName = 'today' | 'groups' | 'focus' | 'you';
 
 /**
- * Drawn rather than imported: the portal uses 19px flat glyphs, and four
- * simple shapes cost less than an icon dependency.
+ * Lucide-style line icons at 1.5 stroke, drawn from views rather than pulled
+ * from a package — four shapes is less than a dependency, and square corners
+ * mean nothing here needs a curve the platform would have to approximate.
  */
 export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
+  const stroke = { borderColor: color, borderWidth: 1.5 };
+
   switch (name) {
     case 'today':
-      return <View style={[styles.box, styles.ring, { borderColor: color }]} />;
+      // A square with a check: the check-in box, which is what Today is for.
+      return (
+        <View style={[styles.box, styles.square, stroke]}>
+          <View style={[styles.tickShort, { backgroundColor: color }]} />
+          <View style={[styles.tickLong, { backgroundColor: color }]} />
+        </View>
+      );
+
     case 'groups':
       return (
         <View style={styles.box}>
-          <View style={[styles.small, styles.left, { borderColor: color }]} />
-          <View style={[styles.small, styles.right, { borderColor: color }]} />
+          <View style={[styles.head, styles.headLeft, stroke]} />
+          <View style={[styles.head, styles.headRight, stroke]} />
+          <View style={[styles.shoulders, stroke]} />
         </View>
       );
+
     case 'focus':
-      // A clock: a ring with a hand, which reads at 19px where a tomato does not.
       return (
-        <View style={[styles.box, styles.ring, { borderColor: color }]}>
+        <View style={[styles.box, styles.clock, stroke]}>
           <View style={[styles.hand, { backgroundColor: color }]} />
         </View>
       );
+
     case 'you':
       return (
-        <View style={[styles.box, styles.person]}>
-          <View style={[styles.head, { borderColor: color }]} />
-          <View style={[styles.body, { borderColor: color }]} />
+        <View style={styles.box}>
+          <View style={[styles.soloHead, stroke]} />
+          <View style={[styles.soloBody, stroke]} />
         </View>
       );
   }
 }
 
 const styles = StyleSheet.create({
-  box: { width: 19, height: 19, alignItems: 'center', justifyContent: 'center' },
-  ring: { borderWidth: 1.6, borderRadius: 9.5, width: 17, height: 17 },
-  hand: { width: 1.6, height: 5, borderRadius: 1, marginBottom: 4 },
-  small: { position: 'absolute', width: 12, height: 12, borderRadius: 6, borderWidth: 1.6 },
-  left: { left: 0 },
-  right: { right: 0 },
-  person: { gap: 1.5 },
-  head: { width: 7.5, height: 7.5, borderRadius: 4, borderWidth: 1.6 },
-  body: {
-    width: 14,
-    height: 8,
-    borderTopLeftRadius: 7,
-    borderTopRightRadius: 7,
-    borderWidth: 1.6,
+  box: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
+
+  square: { width: 18, height: 18, borderRadius: radius.none },
+  tickShort: {
+    position: 'absolute',
+    width: 1.5,
+    height: 5,
+    transform: [{ rotate: '-45deg' }, { translateX: -1 }, { translateY: 2 }],
+  },
+  tickLong: {
+    position: 'absolute',
+    width: 1.5,
+    height: 9,
+    transform: [{ rotate: '45deg' }, { translateX: 1 }],
+  },
+
+  head: { position: 'absolute', width: 6, height: 6, borderRadius: 3, top: 2 },
+  headLeft: { left: 2 },
+  headRight: { right: 2 },
+  shoulders: {
+    position: 'absolute',
+    bottom: 2,
+    left: 1,
+    right: 1,
+    height: 7,
     borderBottomWidth: 0,
+    borderRadius: radius.none,
+  },
+
+  clock: { width: 17, height: 17, borderRadius: 8.5 },
+  hand: { width: 1.5, height: 5, marginBottom: 4 },
+
+  soloHead: { width: 7, height: 7, borderRadius: 3.5, marginBottom: 1.5 },
+  soloBody: {
+    width: 14,
+    height: 7,
+    borderBottomWidth: 0,
+    borderRadius: radius.none,
   },
 });

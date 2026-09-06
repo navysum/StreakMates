@@ -3,14 +3,13 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
 /**
- * A proportion, as a filled track. Used for a group's week and for a standings
- * row, where the bar's length compares people at a glance and the figure beside
- * it gives the exact number.
+ * A proportion, as an outlined track with an accent fill. Outlined rather than
+ * filled-grey, so an empty bar is still a drawn object and not a smudge.
  */
 export function Bar({
   value,
   max,
-  height = 6,
+  height = 8,
   tone,
 }: {
   value: number;
@@ -25,8 +24,9 @@ export function Bar({
     <View
       style={{
         height,
-        borderRadius: radius.pill,
-        backgroundColor: colors.neutralChart,
+        borderWidth: 1,
+        borderColor: colors.divider,
+        borderRadius: radius.none,
         overflow: 'hidden',
       }}
     >
@@ -34,8 +34,7 @@ export function Bar({
         style={{
           width: `${fraction * 100}%`,
           height: '100%',
-          borderRadius: radius.pill,
-          backgroundColor: tone ?? colors.greenMid,
+          backgroundColor: tone ?? colors.accent,
         }}
       />
     </View>

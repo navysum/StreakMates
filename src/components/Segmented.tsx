@@ -1,6 +1,6 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { elevation, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, typography } from '@/theme/tokens';
 
 type Props<T extends string> = {
   options: { value: T; label: string }[];
@@ -9,15 +9,16 @@ type Props<T extends string> = {
 };
 
 /**
- * A track with a raised thumb, rather than a row of outlined boxes. The
- * selected option is the one that looks like it is sitting on top.
+ * A row of options inside one bordered track, divided by hairlines. The
+ * selected one is a solid accent fill — the same treatment as the primary
+ * button, because it is the same statement: this is the live one.
  */
 export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
-  const { colors, scheme } = useTheme();
+  const { colors } = useTheme();
 
   return (
-    <View style={[styles.track, { backgroundColor: colors.bgSurfaceMuted }]}>
-      {options.map((opt) => {
+    <View style={[styles.track, { borderColor: colors.divider }]}>
+      {options.map((opt, i) => {
         const on = opt.value === value;
         return (
           <Pressable
@@ -26,14 +27,15 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
             accessibilityState={{ selected: on }}
             onPress={() => onChange(opt.value)}
             style={({ pressed }) => [
-              styles.seg,
-              on && [{ backgroundColor: colors.bgSurface }, elevation[scheme]],
+              styles.opt,
+              i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.divider },
+              on && { backgroundColor: colors.accent },
               pressed && !on && styles.pressed,
             ]}
           >
             <Text
               numberOfLines={1}
-              style={[typography.action, { color: on ? colors.textPrimary : colors.textMuted }]}
+              style={[typography.action, { color: on ? colors.onAccent : ink(colors, 70) }]}
             >
               {opt.label}
             </Text>
@@ -45,18 +47,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
 }
 
 const styles = StyleSheet.create({
-  track: {
-    flexDirection: 'row',
-    borderRadius: radius.button,
-    padding: space.xs,
-    gap: space.xs,
-  },
-  seg: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: space.sm + 2,
-    borderRadius: radius.chip,
-  },
+  track: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.none },
+  opt: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
 });
