@@ -2,26 +2,25 @@ import { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { Field } from '@/components/Field';
 import { ModalHeader } from '@/components/ModalHeader';
 import { Notice } from '@/components/Notice';
 import { useCreateGroup } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing } from '@/theme/tokens';
+import { space, spacing } from '@/theme/tokens';
 
 export default function NewGroupScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const create = useCreateGroup();
   const [name, setName] = useState('');
-  const [emoji, setEmoji] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   async function onCreate() {
     setError(null);
     try {
-      const group = await create.mutateAsync({ name: name.trim(), emoji: emoji.trim() || null });
+      const group = await create.mutateAsync({ name: name.trim(), emoji: null });
       router.replace(`/group/${group.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create the group.');
@@ -29,10 +28,10 @@ export default function NewGroupScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="New group" eyebrow="You’ll be the owner" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Card>
+        <Plate label="Group">
           <Field
             label="Name"
             value={name}
@@ -40,16 +39,9 @@ export default function NewGroupScreen() {
             placeholder="The Gym Rats"
             autoFocus
             maxLength={60}
-          />
-          <Field
-            label="Icon"
-            value={emoji}
-            onChangeText={setEmoji}
-            placeholder="Optional"
-            maxLength={4}
             last
           />
-        </Card>
+        </Plate>
 
         <Button
           label="Create group"
@@ -59,7 +51,7 @@ export default function NewGroupScreen() {
           onPress={onCreate}
         />
 
-        {error ? <Notice label="Could not create" tone="bad">{error}</Notice> : null}
+        {error ? <Notice label="Could not create">{error}</Notice> : null}
 
         <Notice label="What happens next">
           {'A six-character invite code is generated for you. Share it and anyone with it can join. As owner you can change the code later if it leaks.'}
@@ -69,4 +61,6 @@ export default function NewGroupScreen() {
   );
 }
 
-const styles = StyleSheet.create({ body: { padding: spacing.page, gap: spacing.card } });
+const styles = StyleSheet.create({
+  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+});

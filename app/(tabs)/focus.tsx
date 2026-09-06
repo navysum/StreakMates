@@ -9,7 +9,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
@@ -53,7 +53,8 @@ import { loadTimer, saveTimer } from '@/lib/focus-storage';
 import { cancelFocusAlarm, ensurePermission, scheduleFocusAlarm } from '@/lib/reminders';
 import { toLocalDate } from '@/lib/date';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, space, typography } from '@/theme/tokens';
+import { Bar } from '@/components/Bar';
+import { ink, radius, space, typography } from '@/theme/tokens';
 
 export default function FocusScreen() {
   const { colors } = useTheme();
@@ -250,43 +251,33 @@ export default function FocusScreen() {
   const barFilled = total > 0 ? 1 - left / total : 0;
 
   return (
-    <Screen title="Focus" eyebrow={PHASE_LABEL[timer.phase]}>
-      <Card>
-        <Text style={[typography.label, { color: colors.textMuted }]}>
-          {timer.phase === 'focus'
-            ? activeTask
-              ? 'Working on'
-              : 'Focus'
-            : 'Step away from it'}
+    <Screen title="Focus" label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}>
+      <Plate marks>
+        <Text style={[typography.label, { color: ink(colors, 65) }]}>
+          {timer.phase === 'focus' ? (activeTask ? 'Working on' : 'Focus') : 'Step away from it'}
         </Text>
         {timer.phase === 'focus' && activeTask ? (
-          <Text numberOfLines={1} style={[typography.cardTitle, { color: colors.textPrimary }]}>
+          <Text numberOfLines={1} style={[typography.cardTitle, styles.working, { color: colors.text }]}>
             {activeTask.title}
           </Text>
         ) : null}
 
-        <Text style={[typography.display, styles.clock, { color: colors.textPrimary }]}>
-          {format(left)}
-        </Text>
+        <Text style={[typography.clock, styles.clock, { color: colors.text }]}>{format(left)}</Text>
 
-        <View style={[styles.track, { backgroundColor: colors.neutralChart }]}>
-          <View
-            style={[
-              styles.fill,
-              {
-                width: `${Math.round(Math.min(1, Math.max(0, barFilled)) * 100)}%`,
-                backgroundColor: timer.phase === 'focus' ? colors.green : colors.blue,
-              },
-            ]}
-          />
+        <View style={styles.bar}>
+          <Bar value={Math.min(1, Math.max(0, barFilled))} max={1} />
         </View>
 
         <View style={styles.controls}>
           {timer.state === 'running' ? (
-            <Button label="Pause" onPress={onPause} style={styles.grow} />
+            <Button label="Pause" variant="primary" onPress={onPause} style={styles.grow} />
           ) : (
             <Button
-              label={timer.state === 'paused' ? 'Resume' : `Start ${PHASE_LABEL[timer.phase].toLowerCase()}`}
+              label={
+                timer.state === 'paused'
+                  ? 'Resume'
+                  : `Start ${PHASE_LABEL[timer.phase].toLowerCase()}`
+              }
               variant="primary"
               onPress={onStart}
               style={styles.grow}
@@ -295,12 +286,12 @@ export default function FocusScreen() {
           {timer.state !== 'idle' ? <Button label="Reset" onPress={onReset} /> : null}
         </View>
 
-        <Text style={[typography.caption, { color: colors.textMuted }]}>
+        <Text style={[typography.caption, { color: ink(colors, 65) }]}>
           {timer.done === 0
             ? `${DEFAULTS.focus} minutes on, ${DEFAULTS.short} off. A longer break every ${DEFAULTS.longEvery}.`
             : `${timer.done} ${timer.done === 1 ? 'stretch' : 'stretches'} done today.`}
         </Text>
-      </Card>
+      </Plate>
 
       <StatTrio
         stats={[
@@ -317,41 +308,40 @@ export default function FocusScreen() {
           setError(null);
         }}
         options={[
-          { value: 'mine', label: `Mine${mine.length ? ` (${mine.length})` : ''}` },
-          {
-            value: 'shared',
-            label: `Shared${all.filter((t) => t.group_id).length ? ` (${all.filter((t) => t.group_id).length})` : ''}`,
-          },
+          { value: 'mine', label: `Mine · ${mine.length}` },
+          { value: 'shared', label: `Shared · ${all.filter((t) => t.group_id).length}` },
         ]}
       />
 
-      <Card title={scope === 'mine' ? 'Add a task' : 'Add a shared task'}>
+      <Plate label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}>
         <View style={styles.addRow}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
             placeholder="Add a task"
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={ink(colors, 45)}
             onSubmitEditing={onAdd}
             returnKeyType="done"
             maxLength={140}
             style={[
               styles.input,
-              typography.rowName,
-              {
-                backgroundColor: colors.bgSurfaceMuted,
-                borderColor: colors.borderDefault,
-                color: colors.textPrimary,
-              },
+              typography.body,
+              { borderColor: colors.divider, color: colors.text },
             ]}
             accessibilityLabel="Add a task"
           />
-          <Button label="Add" onPress={onAdd} disabled={!draft.trim()} busy={addTask.isPending} />
+          <Button
+            label="Add"
+            variant="primary"
+            onPress={onAdd}
+            disabled={!draft.trim()}
+            busy={addTask.isPending}
+          />
         </View>
 
         {scope === 'shared' ? (
           groupList.length === 0 ? (
-            <Text style={[typography.caption, styles.hint, { color: colors.textMuted }]}>
+            <Text style={[typography.caption, styles.hint, { color: ink(colors, 70) }]}>
               Join or create a group first, then tasks can be shared with it.
             </Text>
           ) : (
@@ -367,17 +357,17 @@ export default function FocusScreen() {
                       style={[
                         styles.chip,
                         addTo === g.id
-                          ? { backgroundColor: colors.greenSoft, borderColor: colors.green }
-                          : { backgroundColor: colors.bgSurface, borderColor: colors.borderDefault },
+                          ? { backgroundColor: colors.accents[100], borderColor: colors.accent }
+                          : { backgroundColor: 'transparent', borderColor: colors.divider },
                       ]}
                     >
                       <Text
                         style={[
-                          typography.caption,
-                          { color: addTo === g.id ? colors.green : colors.textSecondary },
+                          typography.action,
+                          { color: addTo === g.id ? colors.accents[700] : ink(colors, 70) },
                         ]}
                       >
-                        {g.emoji ? `${g.emoji} ${g.name}` : g.name}
+                        {g.name}
                       </Text>
                     </Pressable>
                   ))}
@@ -392,7 +382,7 @@ export default function FocusScreen() {
                   { value: 'everyone', label: 'Each of us' },
                 ]}
               />
-              <Text style={[typography.caption, { color: colors.textMuted }]}>
+              <Text style={[typography.prose, { color: ink(colors, 78) }]}>
                 {kind === 'once'
                   ? 'Whoever does it ticks it off, and it is done for everyone.'
                   : 'Everyone ticks off their own, and you can see who has not.'}
@@ -402,35 +392,30 @@ export default function FocusScreen() {
         ) : null}
 
         {error ? (
-          <Notice label="Could not add" tone="bad">
-            {error}
-          </Notice>
+          <Notice label="Could not add">{error}</Notice>
         ) : null}
-      </Card>
+      </Plate>
 
       {tasks.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       ) : scope === 'mine' ? (
         mine.length === 0 ? (
           <EmptyState
-            icon="✅"
             title="Nothing on the list"
             body="Add the one thing you keep putting off, then start a stretch of focus on it."
           />
         ) : (
-          <Card
-            title="Your list"
-            subtitle="Tap a task to focus on it"
+          <Plate
+            label="Your list"
             action={clearable(mine).length ? `Clear ${clearable(mine).length}` : undefined}
             onAction={clearable(mine).length ? () => clearDone(mine) : undefined}
             flush
           >
             {mine.map((t, i) => taskRow(t, i === mine.length - 1))}
-          </Card>
+          </Plate>
         )
       ) : sharedByGroup.size === 0 ? (
         <EmptyState
-          icon="🤝"
           title="No shared tasks yet"
           body={
             groupList.length
@@ -442,21 +427,21 @@ export default function FocusScreen() {
         [...sharedByGroup.entries()].map(([groupId, list]) => {
           const group = groupList.find((g) => g.id === groupId);
           return (
-            <Card
+            <Plate
               key={groupId}
-              title={group ? (group.emoji ? `${group.emoji}  ${group.name}` : group.name) : 'Group'}
+              label={group?.name ?? 'Group'}
               action={clearable(list).length ? `Clear ${clearable(list).length}` : undefined}
               onAction={clearable(list).length ? () => clearDone(list) : undefined}
               flush
             >
               {list.map((t, i) => taskRow(t, i === list.length - 1))}
-            </Card>
+            </Plate>
           );
         })
       )}
 
       {open.length === 0 && visible.length > 0 ? (
-        <Notice label="All clear" tone="good">
+        <Notice label="All clear">
           {scope === 'mine'
             ? 'Nothing left on your list.'
             : 'Nothing left for you in any group.'}
@@ -467,27 +452,28 @@ export default function FocusScreen() {
 }
 
 const styles = StyleSheet.create({
-  clock: { fontVariant: ['tabular-nums'], marginTop: space.xs },
-  track: { height: 8, borderRadius: radius.pill, overflow: 'hidden', marginVertical: space.md },
-  fill: { height: '100%', borderRadius: radius.pill },
-  controls: { flexDirection: 'row', gap: space.md, marginBottom: space.md },
+  working: { marginTop: space.sm },
+  clock: { marginTop: space.xl },
+  bar: { marginTop: space.xl, marginBottom: space.xl },
+  controls: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
   grow: { flex: 1 },
   addRow: { flexDirection: 'row', gap: space.md, alignItems: 'stretch' },
   input: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 44,
     borderWidth: 1,
-    borderRadius: radius.input,
+    borderRadius: radius.none,
     paddingHorizontal: space.lg,
   },
   loader: { marginTop: space.xxxl },
-  options: { gap: space.md, marginTop: space.md },
+  options: { gap: space.md, marginTop: space.lg },
   hint: { marginTop: space.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   chip: {
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
-    borderRadius: radius.chip,
+    minHeight: 36,
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
+    borderRadius: radius.none,
     borderWidth: 1,
   },
 });

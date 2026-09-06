@@ -2,8 +2,13 @@ import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, radius, space, spacing, typography } from '@/theme/tokens';
+import { hit, ink, radius, space, spacing, typography } from '@/theme/tokens';
 
+/**
+ * The header on a pushed modal: micro-label above a condensed title, with a
+ * 44px square close control — the same square-outline control the app uses for
+ * the avatar and overflow buttons, so it reads as one family.
+ */
 export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: string }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -12,10 +17,10 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
   return (
     <View style={[styles.bar, { paddingTop: insets.top + space.md }]}>
       <View style={styles.text}>
-        <Text style={[typography.screenTitle, { color: colors.textPrimary }]}>{title}</Text>
         {eyebrow ? (
-          <Text style={[typography.body, { color: colors.textSecondary }]}>{eyebrow}</Text>
+          <Text style={[typography.label, { color: ink(colors, 60) }]}>{eyebrow}</Text>
         ) : null}
+        <Text style={[typography.screenTitle, { color: colors.text }]}>{title}</Text>
       </View>
 
       <Pressable
@@ -24,10 +29,11 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
         accessibilityLabel="Close"
         style={({ pressed }) => [
           styles.close,
-          { backgroundColor: pressed ? colors.bgHover : colors.bgSurfaceMuted },
+          { borderColor: colors.divider },
+          pressed && styles.pressed,
         ]}
       >
-        <Text style={[styles.glyph, { color: colors.textSecondary }]}>✕</Text>
+        <Text style={[typography.action, { color: ink(colors, 70) }]}>✕</Text>
       </Pressable>
     </View>
   );
@@ -36,19 +42,20 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
 const styles = StyleSheet.create({
   bar: {
     paddingHorizontal: spacing.page,
-    paddingBottom: space.lg,
+    paddingBottom: space.xl,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: space.md,
   },
-  text: { gap: space.xs, flex: 1, minWidth: 0, paddingTop: space.xs },
+  text: { gap: space.sm, flex: 1, minWidth: 0 },
   close: {
     width: hit,
     height: hit,
-    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderRadius: radius.none,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glyph: { fontSize: 16, lineHeight: 20 },
+  pressed: { opacity: 0.6 },
 });

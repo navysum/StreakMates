@@ -71,7 +71,7 @@ function AuthGate() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bgPage },
+          contentStyle: { backgroundColor: colors.bg },
         }}
       >
         <Stack.Screen name="(tabs)" />
@@ -93,13 +93,13 @@ function AuthGate() {
 }
 
 export default function RootLayout() {
+  // Barlow Condensed carries everything structural; Barlow carries prose.
+  // Figures are condensed with tabular numerals rather than a separate mono
+  // face, which is why Cascadia Code is gone.
   const [loaded, error] = useFonts({
-    'DMSans-Regular': require('../assets/fonts/DMSans-Regular.ttf'),
-    'DMSans-Medium': require('../assets/fonts/DMSans-Medium.ttf'),
-    'DMSans-SemiBold': require('../assets/fonts/DMSans-SemiBold.ttf'),
-    'DMSans-Bold': require('../assets/fonts/DMSans-Bold.ttf'),
-    'CascadiaCode-Regular': require('../assets/fonts/CascadiaCode-Regular.ttf'),
-    'CascadiaCode-SemiBold': require('../assets/fonts/CascadiaCode-SemiBold.ttf'),
+    'BarlowCondensed-SemiBold': require('../assets/fonts/BarlowCondensed-SemiBold.ttf'),
+    'Barlow-Regular': require('../assets/fonts/Barlow-Regular.ttf'),
+    'Barlow-SemiBold': require('../assets/fonts/Barlow-SemiBold.ttf'),
   });
 
   useEffect(() => {

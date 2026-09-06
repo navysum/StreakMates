@@ -6,9 +6,9 @@ import { Avatar } from '@/components/Avatar';
 import { Board } from '@/components/Board';
 import { HabitRow } from '@/components/HabitRow';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
+import { Tag } from '@/components/Tag';
 import { Screen } from '@/components/Screen';
 import { Sheet } from '@/components/Sheet';
 import { useAuth } from '@/auth/AuthProvider';
@@ -29,7 +29,7 @@ import { toLocalDate } from '@/lib/date';
 import { aggregateCells } from '@/lib/week';
 import { handle } from '@/lib/identity';
 import { useTheme } from '@/theme/ThemeProvider';
-import { space, typography } from '@/theme/tokens';
+import { ink, space, tnum, typography } from '@/theme/tokens';
 
 export default function GroupScreen() {
   const { colors } = useTheme();
@@ -88,22 +88,27 @@ export default function GroupScreen() {
     return {
       weekDone: rows.reduce((n, r) => n + r.kept, 0),
       weekOwed: rows.reduce((n, r) => n + r.owed, 0),
-      top3: [...rows].sort((a, b) => b.kept - a.kept).slice(0, 3),
+      // Ranked on rate, not raw days, so somebody who joined mid-week is not
+      // punished for the days they were never owed.
+      top3: [...rows]
+        .map((r) => ({ ...r, rate: r.owed > 0 ? r.kept / r.owed : 0 }))
+        .sort((a, b) => b.rate - a.rate || b.kept - a.kept)
+        .slice(0, 3),
     };
   }, [groupHabits, list, done, today]);
 
   if (groups.isLoading || members.isLoading) {
     return (
       <Screen title="Group">
-        <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
       </Screen>
     );
   }
 
   if (!group) {
     return (
-      <Screen title="Group" eyebrow="Not found">
-        <Notice label="Gone" tone="warn">
+      <Screen title="Group" label="Not found">
+        <Notice label="Gone">
           {'This group no longer exists, or you are not a member of it.'}
         </Notice>
         <Button label="Back to groups" onPress={() => router.replace('/groups')} />
@@ -146,18 +151,35 @@ export default function GroupScreen() {
 
   return (
     <Screen
-      title={group.emoji ? `${group.emoji}  ${group.name}` : group.name}
-      eyebrow={`${list.length} member${list.length === 1 ? '' : 's'} · ${groupHabits.length} shared ${groupHabits.length === 1 ? 'habit' : 'habits'}`}
+      title={group.name}
+      label={`${list.length} member${list.length === 1 ? '' : 's'} · ${groupHabits.length} shared ${groupHabits.length === 1 ? 'habit' : 'habits'}`}
+      back={{ label: 'Groups', onPress: () => router.replace('/groups') }}
       onMenu={() => setMenuOpen(true)}
       menuLabel="Group options"
     >
-      <Card title="This week" action={`${weekDone} / ${weekOwed}`}>
-        <Board habits={groupHabits} members={list} done={done} date={today} />
-      </Card>
+      <Plate marks>
+        <View style={styles.plateHead}>
+          <Text style={[typography.label, { color: ink(colors, 65) }]}>This week</Text>
+          <Text style={[typography.figure, tnum, { color: colors.text }]}>
+            {weekDone} / {weekOwed}
+          </Text>
+        </View>
+        <View style={styles.board}>
+          <Board habits={groupHabits} members={list} done={done} date={today} userId={userId} />
+        </View>
+        <Text style={[typography.caption, styles.footnote, { color: ink(colors, 65) }]}>
+          A square fills only when that person kept everything owed that day.
+        </Text>
+      </Plate>
 
-      <Card title="Shared habits" action="+ Add" onAction={() => router.push({ pathname: '/habit/new', params: { group: group.id } })} flush>
+      <Plate
+        label="Shared habits"
+        action="+ Add"
+        onAction={() => router.push({ pathname: '/habit/new', params: { group: group.id } })}
+        flush
+      >
         {groupHabits.length === 0 ? (
-          <Text style={[typography.caption, styles.none, { color: colors.textMuted }]}>
+          <Text style={[typography.caption, styles.none, { color: ink(colors, 70) }]}>
             None yet. A shared habit is one habit the whole group checks in against.
           </Text>
         ) : (
@@ -169,7 +191,6 @@ export default function GroupScreen() {
               <HabitRow
                 key={habit.id}
                 name={habit.title}
-                icon={habit.emoji}
                 meta={`${inToday} of ${list.length} in today`}
                 complete={userId ? done.has(doneKey(habit.id, userId, today)) : false}
                 last={i === groupHabits.length - 1}
@@ -188,7 +209,7 @@ export default function GroupScreen() {
             );
           })
         )}
-      </Card>
+      </Plate>
 
       <Pressable
         onPress={() => router.push({ pathname: '/group/leaderboard', params: { id: group.id } })}
@@ -196,79 +217,88 @@ export default function GroupScreen() {
         accessibilityLabel="See all standings"
         style={({ pressed }) => pressed && styles.pressed}
       >
-        <Card title="Standings" action="See all" flush>
+        <Plate label="Standings" action="See all" flush>
           {top3.map((row, i) => (
             <View
               key={row.member.user_id}
               style={[
                 styles.rank,
                 {
-                  borderBottomColor: colors.borderDefault,
+                  borderBottomColor: colors.divider,
                   borderBottomWidth: i === top3.length - 1 ? 0 : 1,
                 },
               ]}
             >
               <Text
                 style={[
-                  typography.stat,
+                  typography.figureSmall,
                   styles.place,
-                  { color: i === 0 ? colors.amber : colors.textMuted },
+                  { color: i === 0 ? colors.accents[700] : ink(colors, 55) },
                 ]}
               >
-                {i + 1}
+                {String(i + 1).padStart(2, '0')}
               </Text>
-              <Avatar
-                id={row.member.user_id}
-                name={row.member.profile?.display_name ?? '?'}
-                size={28}
-              />
+              <Avatar name={row.member.profile?.display_name ?? '?'} size={28} />
               <Text
                 numberOfLines={1}
-                style={[typography.body, styles.name, { color: colors.textPrimary }]}
+                style={[typography.body, styles.name, { color: colors.text }]}
               >
                 {row.member.profile?.display_name ?? 'Someone'}
               </Text>
-              <Text style={[typography.stat, styles.score, { color: colors.textPrimary }]}>
-                {row.kept}
+              <Text style={[typography.figureSmall, styles.score, { color: colors.text }]}>
+                {Math.round(row.rate * 100)}%
               </Text>
             </View>
           ))}
-        </Card>
+        </Plate>
       </Pressable>
 
-      <Card title="Invite code" action={isOwner ? 'Owner' : undefined}>
-        <Pressable onPress={copyCode} accessibilityRole="button" accessibilityLabel="Copy invite code">
-          <Text style={[styles.code, { color: colors.textPrimary }]}>{group.invite_code}</Text>
+      <Plate marks>
+        <View style={styles.plateHead}>
+          <Text style={[typography.label, { color: ink(colors, 65) }]}>Invite code</Text>
+          {isOwner ? <Tag label="Owner" variant="outline" /> : null}
+        </View>
+        <Pressable
+          onPress={copyCode}
+          accessibilityRole="button"
+          accessibilityLabel="Copy invite code"
+        >
+          <Text style={[typography.code, styles.code, { color: colors.text }]}>
+            {group.invite_code}
+          </Text>
         </Pressable>
         <View style={styles.codeActions}>
           <Button label={copied ? 'Copied' : 'Copy'} onPress={copyCode} style={styles.grow} />
           <Button label="Share" variant="primary" onPress={shareCode} style={styles.grow} />
         </View>
-      </Card>
+      </Plate>
 
-      <Card title="Members">
+      <Plate label="Members">
         {list.map((member, i) => (
           <View
             key={member.user_id}
             style={[
               styles.row,
               {
-                borderBottomColor: colors.borderDefault,
+                borderBottomColor: colors.divider,
                 borderBottomWidth: i === list.length - 1 ? 0 : 1,
               },
             ]}
           >
-            <Avatar id={member.user_id} name={member.profile?.display_name ?? '?'} size={28} />
-            <Text numberOfLines={1} style={[typography.rowName, styles.name, { color: colors.textPrimary }]}>
+            <Avatar name={member.profile?.display_name ?? '?'} size={28} />
+            <Text
+              numberOfLines={1}
+              style={[typography.body, styles.name, { color: colors.text }]}
+            >
               {handle(member.profile)}
               {member.user_id === userId ? ' (you)' : ''}
             </Text>
-            {member.role === 'owner' ? <Pill label="Owner" tone="good" /> : null}
+            {member.role === 'owner' ? <Tag label="Owner" /> : null}
           </View>
         ))}
-      </Card>
+      </Plate>
 
-      {error ? <Notice label="Something went wrong" tone="bad">{error}</Notice> : null}
+      {error ? <Notice label="Something went wrong">{error}</Notice> : null}
 
       <Sheet
         visible={menuOpen}
@@ -279,13 +309,13 @@ export default function GroupScreen() {
             ? [
                 {
                   label: 'Group settings',
-                  hint: 'NAME AND ICON',
+                  hint: 'Name and description',
                   onPress: () =>
                     router.push({ pathname: '/group/settings', params: { id: group.id } }),
                 },
                 {
                   label: 'Change the invite code',
-                  hint: 'THE OLD ONE STOPS WORKING',
+                  hint: 'The old one stops working',
                   onPress: () =>
                     rotate.mutate(group.id, {
                       onError: (e: unknown) =>
@@ -297,7 +327,7 @@ export default function GroupScreen() {
           {
             label: 'Leave group',
             tone: 'danger' as const,
-            hint: 'YOU CAN REJOIN WITH THE CODE',
+            hint: 'You can rejoin with the code',
             onPress: confirmLeave,
           },
         ]}
@@ -312,19 +342,28 @@ export default function GroupScreen() {
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  code: {
-    fontFamily: 'CascadiaCode-SemiBold',
-    fontSize: 30,
-    letterSpacing: 5,
-    textAlign: 'center',
-    paddingVertical: 10,
+  plateHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+    minHeight: 24,
   },
-  codeActions: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  board: { marginTop: space.xl },
+  footnote: { marginTop: space.xl },
+  code: {
+    textAlign: 'center',
+    // The tracking hangs off the last character, so the same amount of space
+    // is added back on the left to keep the code optically centred.
+    paddingLeft: 10.6,
+    paddingVertical: space.xxl,
+  },
+  codeActions: { flexDirection: 'row', gap: space.md },
   grow: { flex: 1 },
-  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md },
-  rank: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.md },
-  place: { width: 20 },
-  score: { minWidth: 28, textAlign: 'right' },
+  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  rank: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  place: { width: 22 },
+  score: { minWidth: 40, textAlign: 'right' },
   name: { flex: 1, minWidth: 0 },
   none: { paddingBottom: space.sm },
   pressed: { opacity: 0.7 },

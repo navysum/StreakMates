@@ -1,41 +1,43 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Cell, CellState } from '@/lib/week';
-import { typography, type Palette } from '@/theme/tokens';
+import { radius, typography, ink } from '@/theme/tokens';
 import { WEEKDAY_LABELS } from '@/lib/date';
+import type { Cell, CellState } from '@/lib/week';
+import type { Palette } from '@/theme/tokens';
 
-type Size = 11 | 16 | 20;
+type Size = 12 | 16 | 20;
 
 /**
- * Seven days, Monday first. The one motif the whole app is built on: it is a
- * strip under a habit row, a member's row on the group board, and a column of
- * the twelve-week grid. Learn it once, read it everywhere.
+ * Seven days, Monday first — the motif the whole app is built on. A square
+ * cell, 1px border, no radius.
  *
- * A missed day is drawn as an empty outline rather than a filled colour — the
- * gaps are the information, and colouring failure makes a normal week look
- * alarming.
+ * A missed day is an outline rather than a colour: there is one accent in this
+ * system, and spending it on failure would leave nothing to say "kept".
  */
 export function WeekStrip({
   cells,
-  size = 11,
+  size = 12,
   direction = 'row',
+  flex,
 }: {
   cells: Cell[];
   size?: Size;
   /** 'column' stacks Monday to Sunday downward, for a grid of weeks. */
   direction?: 'row' | 'column';
+  /** Cells share the width instead of taking a fixed size, for the board. */
+  flex?: boolean;
 }) {
   const { colors } = useTheme();
-  const gap = size === 11 ? 3 : 4;
-  const radius = size === 11 ? 3 : 4;
+  const gap = size === 12 ? 3 : size === 16 ? 5 : 4;
 
   return (
-    <View style={{ flexDirection: direction, gap }}>
+    <View style={[{ flexDirection: direction, gap }, flex && styles.grow]}>
       {cells.map((cell) => (
         <View
           key={cell.date}
           style={[
-            { width: size, height: size, borderRadius: radius, borderWidth: 1.5 },
+            flex ? styles.flexCell : { width: size, height: size },
+            styles.cell,
             fill(cell.state, colors),
           ]}
         />
@@ -47,25 +49,30 @@ export function WeekStrip({
 function fill(state: CellState, colors: Palette) {
   switch (state) {
     case 'done':
-      return { backgroundColor: colors.green, borderColor: colors.green };
+      return { backgroundColor: colors.accent, borderColor: colors.accent };
     case 'today':
-      return { backgroundColor: colors.bgSurface, borderColor: colors.green };
+      return { backgroundColor: 'transparent', borderColor: colors.accent };
     case 'missed':
-      return { backgroundColor: colors.bgSurface, borderColor: colors.borderStrong };
+      return { backgroundColor: 'transparent', borderColor: colors.neutral[400] };
     case 'off':
-      return { backgroundColor: colors.neutralChart, borderColor: colors.neutralChart };
+      return { backgroundColor: colors.accents[100], borderColor: colors.accents[100] };
   }
 }
 
 /** The day letters that head a strip, on the same track as its cells. */
-export function WeekLabels({ size = 16 }: { size?: Size }) {
+export function WeekLabels({ flex }: { flex?: boolean }) {
   const { colors } = useTheme();
   return (
-    <View style={[styles.row, { gap: size === 11 ? 3 : 4 }]}>
+    <View style={[styles.labels, flex && styles.grow]}>
       {WEEKDAY_LABELS.map((letter, i) => (
         <Text
           key={i}
-          style={[typography.label, styles.letter, { width: size, color: colors.textMuted }]}
+          style={[
+            typography.labelSmall,
+            styles.letter,
+            flex ? styles.flexLetter : { width: 16 },
+            { color: ink(colors, 60) },
+          ]}
         >
           {letter}
         </Text>
@@ -75,6 +82,10 @@ export function WeekLabels({ size = 16 }: { size?: Size }) {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row' },
+  cell: { borderWidth: 1, borderRadius: radius.none },
+  flexCell: { flex: 1, aspectRatio: 1 },
+  grow: { flex: 1 },
+  labels: { flexDirection: 'row', gap: 5 },
   letter: { textAlign: 'center' },
+  flexLetter: { flex: 1 },
 });

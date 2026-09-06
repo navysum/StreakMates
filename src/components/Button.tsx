@@ -1,35 +1,33 @@
 import { Pressable, Text, StyleSheet, ActivityIndicator, type ViewStyle } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, typography } from '@/theme/tokens';
 
 type Props = {
   label: string;
   onPress?: () => void;
-  variant?: 'primary' | 'default' | 'danger' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost';
   disabled?: boolean;
   busy?: boolean;
   style?: ViewStyle;
 };
 
 /**
- * The primary action is a solid fill, not another outline. When every control
- * on a screen is an outlined box, nothing looks like the thing to press.
+ * The primary button is the one solid object on a screen — everything else in
+ * this system is a line drawing, which is what makes it read as the thing to
+ * press without needing a colour of its own.
  *
- * The accent greens differ between themes — dark on light, light on dark — so
- * the text on a filled button flips with them to stay readable.
+ * Ink on the accent fill is the page colour, never white: dark mode's accent
+ * is light, and a literal '#fff' would be unreadable there.
  */
-export function Button({ label, onPress, variant = 'default', disabled, busy, style }: Props) {
-  const { colors, scheme } = useTheme();
-  const onFill = scheme === 'dark' ? colors.bgPage : '#ffffff';
+export function Button({ label, onPress, variant = 'secondary', disabled, busy, style }: Props) {
+  const { colors } = useTheme();
 
   const tone =
     variant === 'primary'
-      ? { bg: colors.green, border: colors.green, text: onFill }
-      : variant === 'danger'
-        ? { bg: colors.redSoft, border: colors.redSoft, text: colors.red }
-        : variant === 'ghost'
-          ? { bg: 'transparent', border: 'transparent', text: colors.textSecondary }
-          : { bg: colors.bgSurfaceMuted, border: colors.bgSurfaceMuted, text: colors.textPrimary };
+      ? { bg: colors.accent, border: colors.accent, text: colors.onAccent }
+      : variant === 'ghost'
+        ? { bg: 'transparent', border: 'transparent', text: ink(colors, 70) }
+        : { bg: 'transparent', border: colors.divider, text: colors.text };
 
   return (
     <Pressable
@@ -58,12 +56,12 @@ export function Button({ label, onPress, variant = 'default', disabled, busy, st
 
 const styles = StyleSheet.create({
   btn: {
-    minHeight: hit + 4,
+    minHeight: 48,
     paddingHorizontal: space.xl,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: radius.button,
+    borderRadius: radius.none,
   },
   dim: { opacity: 0.4 },
   pressed: { opacity: 0.7 },

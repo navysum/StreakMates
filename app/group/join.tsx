@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { ModalHeader } from '@/components/ModalHeader';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
+import { Tag } from '@/components/Tag';
 import { useJoinGroup, usePreviewGroup } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, spacing, typography } from '@/theme/tokens';
+import { ink, radius, space, spacing, typography } from '@/theme/tokens';
 import type { GroupPreview } from '@/lib/types';
 
 const CODE_LENGTH = 6;
@@ -66,10 +66,10 @@ export default function JoinGroupScreen() {
   const boxes = Array.from({ length: CODE_LENGTH }, (_, i) => code[i] ?? '');
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Join a group" eyebrow="Six characters" />
       <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
-        <Text style={[typography.body, { color: colors.textSecondary }]}>
+        <Text style={[typography.prose, { color: ink(colors, 78) }]}>
           Ask a friend for their group’s code.
         </Text>
 
@@ -85,12 +85,17 @@ export default function JoinGroupScreen() {
               style={[
                 styles.box,
                 {
-                  backgroundColor: char ? colors.greenSoft : colors.bgSurface,
-                  borderColor: char ? colors.green : colors.borderDefault,
+                  backgroundColor: char ? colors.accents[100] : 'transparent',
+                  borderColor: char ? colors.accent : colors.divider,
                 },
               ]}
             >
-              <Text style={[styles.char, { color: char ? colors.green : colors.textMuted }]}>
+              <Text
+                style={[
+                  typography.statSmall,
+                  { color: char ? colors.accents[700] : ink(colors, 45) },
+                ]}
+              >
                 {char}
               </Text>
             </View>
@@ -112,23 +117,23 @@ export default function JoinGroupScreen() {
         />
 
         {lookup.isPending ? (
-          <Text style={[typography.monoSmall, { color: colors.textMuted }]}>CHECKING…</Text>
+          <Text style={[typography.label, { color: ink(colors, 60) }]}>Checking…</Text>
         ) : null}
 
         {preview ? (
-          <Card>
+          <Plate>
             <View style={styles.found}>
               <View style={styles.foundText}>
-                <Text style={[typography.rowName, { color: colors.textPrimary }]}>
-                  {preview.emoji ? `${preview.emoji}  ${preview.name}` : preview.name}
+                <Text numberOfLines={1} style={[typography.cardTitle, { color: colors.text }]}>
+                  {preview.name}
                 </Text>
-                <Text style={[typography.monoSmall, { color: colors.textMuted }]}>
-                  {preview.member_count} MEMBER{Number(preview.member_count) === 1 ? '' : 'S'}
+                <Text style={[typography.caption, { color: ink(colors, 70) }]}>
+                  {preview.member_count} member{Number(preview.member_count) === 1 ? '' : 's'}
                 </Text>
               </View>
-              <Pill label="Found" tone="good" />
+              <Tag label="Found" />
             </View>
-          </Card>
+          </Plate>
         ) : null}
 
         <Button
@@ -139,10 +144,10 @@ export default function JoinGroupScreen() {
           onPress={onJoin}
         />
 
-        {error ? <Notice label="Could not join" tone="bad">{error}</Notice> : null}
+        {error ? <Notice label="Could not join">{error}</Notice> : null}
 
-        <Text style={[typography.monoSmall, styles.fine, { color: colors.textMuted }]}>
-          CODES SKIP 0, O, 1 AND I{'\n'}SO NOBODY MISTYPES THEM
+        <Text style={[typography.caption, styles.fine, { color: ink(colors, 65) }]}>
+          Codes skip 0, O, 1 and I, so nobody mistypes them.
         </Text>
       </ScrollView>
     </View>
@@ -150,19 +155,18 @@ export default function JoinGroupScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.card },
-  boxes: { flexDirection: 'row', gap: 6, justifyContent: 'center', paddingVertical: 6 },
+  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  boxes: { flexDirection: 'row', gap: space.sm, justifyContent: 'center', paddingVertical: space.sm },
   box: {
     width: 44,
     height: 54,
     borderWidth: 1,
-    borderRadius: radius.button,
+    borderRadius: radius.none,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  char: { fontFamily: 'CascadiaCode-SemiBold', fontSize: 24 },
   hidden: { position: 'absolute', opacity: 0, height: 1, width: 1 },
-  found: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  foundText: { flex: 1, gap: 1 },
-  fine: { textAlign: 'center', marginTop: 8 },
+  found: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
+  foundText: { flex: 1, minWidth: 0, gap: space.xs },
+  fine: { textAlign: 'center', marginTop: space.sm },
 });

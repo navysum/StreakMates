@@ -1,17 +1,13 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, radius, space, typography } from '@/theme/tokens';
-import { StatusDot } from './StatusDot';
+import { ink, radius, space, typography } from '@/theme/tokens';
 import { WeekStrip } from './WeekStrip';
 import type { Cell } from '@/lib/week';
 
 type Props = {
   name: string;
-  /** Rendered in its own column so names stay aligned down the list. */
-  icon?: string | null;
   meta?: string;
-  metaTone?: 'muted' | 'warn';
-  /** This week, drawn under the name. The motif that repeats app-wide. */
+  /** This week, drawn beside the meta line. */
   week?: Cell[];
   complete: boolean;
   last?: boolean;
@@ -19,24 +15,21 @@ type Props = {
   onPress?: () => void;
 };
 
-export function HabitRow({
-  name,
-  icon,
-  meta,
-  metaTone = 'muted',
-  week,
-  complete,
-  last,
-  onToggle,
-  onPress,
-}: Props) {
+/**
+ * A habit, with its week beside it and the check divided off into its own
+ * column by a hairline. The rule matters: the row body opens the habit and
+ * the column only toggles, so the two never fight over a tap.
+ *
+ * No emoji column. Industry carries no pictures; the name does the work.
+ */
+export function HabitRow({ name, meta, week, complete, last, onToggle, onPress }: Props) {
   const { colors } = useTheme();
 
   return (
     <View
       style={[
         styles.row,
-        { borderBottomColor: colors.borderDefault, borderBottomWidth: last ? 0 : 1 },
+        { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 },
       ]}
     >
       <Pressable
@@ -46,34 +39,19 @@ export function HabitRow({
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={onPress ? `Open ${name}` : undefined}
       >
-        {icon ? (
-          <View style={[styles.icon, { backgroundColor: colors.bgSurfaceMuted }]}>
-            <Text style={styles.iconGlyph}>{icon}</Text>
+        <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+          {name}
+        </Text>
+        {week || meta ? (
+          <View style={styles.under}>
+            {week ? <WeekStrip cells={week} /> : null}
+            {meta ? (
+              <Text numberOfLines={1} style={[typography.caption, styles.meta, { color: ink(colors, 70) }]}>
+                {meta}
+              </Text>
+            ) : null}
           </View>
         ) : null}
-
-        <View style={styles.text}>
-          <Text numberOfLines={1} style={[typography.rowName, { color: colors.textPrimary }]}>
-            {name}
-          </Text>
-          {week || meta ? (
-            <View style={styles.under}>
-              {week ? <WeekStrip cells={week} /> : null}
-              {meta ? (
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    typography.caption,
-                    styles.meta,
-                    { color: metaTone === 'warn' ? colors.amber : colors.textMuted },
-                  ]}
-                >
-                  {meta}
-                </Text>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
       </Pressable>
 
       <Pressable
@@ -82,48 +60,48 @@ export function HabitRow({
         accessibilityRole="checkbox"
         accessibilityState={{ checked: complete }}
         accessibilityLabel={complete ? `Undo ${name}` : `Check in ${name}`}
-        style={({ pressed }) => [styles.check, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.check,
+          { borderLeftColor: colors.divider },
+          pressed && styles.pressed,
+        ]}
       >
-        <StatusDot complete={complete} />
+        <View
+          style={[
+            styles.box,
+            complete
+              ? { backgroundColor: colors.accent, borderColor: colors.accent }
+              : { borderColor: colors.divider },
+          ]}
+        >
+          {complete ? (
+            <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text>
+          ) : null}
+        </View>
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // 56 rather than 48: with a two-line row (name plus its meta line) this is
-  // what keeps the list from feeling cramped.
-  row: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  info: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-    paddingVertical: space.sm,
-  },
-  text: { flex: 1, minWidth: 0, gap: 4 },
-  under: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+  row: { minHeight: 60, flexDirection: 'row', alignItems: 'stretch' },
+  info: { flex: 1, minWidth: 0, gap: space.sm, justifyContent: 'center', paddingVertical: space.lg },
+  under: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   meta: { flex: 1, minWidth: 0 },
-  icon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.chip,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconGlyph: { fontSize: 18, lineHeight: 22 },
-  // A 44pt target around a 26pt dot, so it is comfortably tappable.
   check: {
-    width: hit,
-    height: hit,
+    width: 56,
+    borderLeftWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: -space.sm,
   },
-  pressed: { opacity: 0.55 },
+  box: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderRadius: radius.none,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 15, includeFontPadding: false },
+  pressed: { opacity: 0.6 },
 });

@@ -1,15 +1,15 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Card } from '@/components/Card';
+import { Plate } from '@/components/Plate';
 import { Notice } from '@/components/Notice';
-import { Pill } from '@/components/Pill';
+import { Tag } from '@/components/Tag';
 import { ModalHeader } from '@/components/ModalHeader';
 import { useAuth } from '@/auth/AuthProvider';
 import { useGroups, useHabitOrder, useHabits, useReorderHabits, useSetArchived } from '@/lib/queries';
 import { reorder, sortHabits } from '@/lib/ordering';
 import { useTheme } from '@/theme/ThemeProvider';
-import { spacing, typography } from '@/theme/tokens';
+import { ink, space, spacing, typography } from '@/theme/tokens';
 import type { Habit } from '@/lib/types';
 
 function cadenceLabel(h: Habit): string {
@@ -44,7 +44,7 @@ export default function ManageScreen() {
     const mine = sortHabits(active.filter((h) => !h.group_id), positions);
     const byGroup = (groups.data ?? []).map((group) => ({
       key: group.id,
-      title: group.emoji ? `${group.emoji}  ${group.name}` : group.name,
+      title: group.name,
       habits: sortHabits(active.filter((h) => h.group_id === group.id), positions),
     }));
     return [{ key: 'private', title: 'Private', habits: mine }, ...byGroup].filter(
@@ -62,31 +62,31 @@ export default function ManageScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgPage }}>
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Manage habits" eyebrow="Reorder, archive, restore" />
       <ScrollView contentContainerStyle={styles.body}>
-        {error ? <Notice label="Something went wrong" tone="bad">{error}</Notice> : null}
+        {error ? <Notice label="Something went wrong">{error}</Notice> : null}
 
         {all.isLoading ? (
-          <ActivityIndicator style={styles.loader} color={colors.textMuted} />
+          <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
         ) : (
           <>
             {lists.length === 0 ? (
-              <Card>
-                <Text style={[typography.body, styles.none, { color: colors.textMuted }]}>
+              <Plate>
+                <Text style={[typography.body, styles.none, { color: ink(colors, 70) }]}>
                   Nothing active. Add a habit from Today.
                 </Text>
-              </Card>
+              </Plate>
             ) : (
               lists.map((list) => (
-                <Card key={list.key} title={list.title} action={`${list.habits.length}`}>
+                <Plate key={list.key} label={list.title} action={`${list.habits.length}`}>
                   {list.habits.map((habit, i) => (
                     <View
                       key={habit.id}
                       style={[
                         styles.row,
                         {
-                          borderBottomColor: colors.borderDefault,
+                          borderBottomColor: colors.divider,
                           borderBottomWidth: i === list.habits.length - 1 ? 0 : 1,
                         },
                       ]}
@@ -113,13 +113,13 @@ export default function ManageScreen() {
                       >
                         <Text
                           numberOfLines={1}
-                          style={[typography.rowName, { color: colors.textPrimary }]}
+                          style={[typography.body, { color: colors.text }]}
                         >
-                          {habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
+                          {habit.title}
                         </Text>
                       </Pressable>
 
-                      <Pill label={cadenceLabel(habit)} />
+                      <Tag label={cadenceLabel(habit)} variant="outline" />
 
                       <Pressable
                         onPress={() => setArchived.mutate({ id: habit.id, archived: true })}
@@ -127,32 +127,32 @@ export default function ManageScreen() {
                         accessibilityRole="button"
                         accessibilityLabel={`Archive ${habit.title}`}
                       >
-                        <Pill label="Archive" tone="warn" />
+                        <Tag label="Archive" variant="outline" />
                       </Pressable>
                     </View>
                   ))}
-                </Card>
+                </Plate>
               ))
             )}
 
             {archived.length > 0 ? (
-              <Card title="Archived" action={`${archived.length}`}>
+              <Plate label="Archived" action={`${archived.length}`}>
                 {archived.map((habit, i) => (
                   <View
                     key={habit.id}
                     style={[
                       styles.row,
                       {
-                        borderBottomColor: colors.borderDefault,
+                        borderBottomColor: colors.divider,
                         borderBottomWidth: i === archived.length - 1 ? 0 : 1,
                       },
                     ]}
                   >
                     <Text
                       numberOfLines={1}
-                      style={[typography.rowName, styles.name, { color: colors.textMuted }]}
+                      style={[typography.body, styles.name, { color: ink(colors, 55) }]}
                     >
-                      {habit.emoji ? `${habit.emoji}  ${habit.title}` : habit.title}
+                      {habit.title}
                     </Text>
                     <Pressable
                       onPress={() => setArchived.mutate({ id: habit.id, archived: false })}
@@ -160,11 +160,11 @@ export default function ManageScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={`Restore ${habit.title}`}
                     >
-                      <Pill label="Restore" tone="good" />
+                      <Tag label="Restore" />
                     </Pressable>
                   </View>
                 ))}
-              </Card>
+              </Plate>
             ) : null}
 
             <Notice label="Your order, not theirs">
@@ -196,7 +196,7 @@ function Arrow({
   return (
     <Pressable onPress={onPress} disabled={disabled} hitSlop={8} accessibilityRole="button" accessibilityLabel={label}>
       <Text
-        style={[typography.monoSmall, { color: disabled ? colors.borderStrong : colors.textMuted }]}
+        style={[typography.labelSmall, { color: ink(colors, disabled ? 30 : 70) }]}
       >
         {glyph}
       </Text>
@@ -205,10 +205,10 @@ function Arrow({
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.card },
+  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
   loader: { marginTop: 32 },
-  row: { minHeight: 44, flexDirection: 'row', alignItems: 'center', gap: 9 },
-  arrows: { gap: 1 },
+  row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: space.md },
+  arrows: { gap: 2 },
   name: { flex: 1, minWidth: 0 },
-  none: { paddingVertical: 8 },
+  none: { paddingVertical: space.sm },
 });
