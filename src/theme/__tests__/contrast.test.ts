@@ -7,7 +7,7 @@ import {
   palettes,
   streakColor,
   type Palette,
-} from '../tokens.ts';
+} from '../palette.ts';
 
 /**
  * The palette's accessibility claims, as tests rather than as comments.

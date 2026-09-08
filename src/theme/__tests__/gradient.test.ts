@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { gradient, sampleGradient } from '../tokens.ts';
+import { gradient, sampleGradient } from '../palette.ts';
 
 test('sampleGradient: the ends are the stops themselves', () => {
   assert.equal(sampleGradient(gradient, 0), gradient[0]);
