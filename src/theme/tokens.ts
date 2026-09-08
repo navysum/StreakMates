@@ -242,6 +242,39 @@ export const gradientStreak = ['#4b61f8', '#6a81fb', '#8b67f5', '#c56ae9', '#f7a
  */
 export const gradientAction = ['#3348d6', '#6548df', '#9332b6'] as const;
 
+/**
+ * One colour, part-way along a set of stops.
+ *
+ * For the places that need a gradient spread across several separate objects
+ * rather than drawn inside one. The day's progress is the case that prompted
+ * it: filling each tick with the whole four-stop sweep gave a row of tiny
+ * identical rainbows instead of one gradient crossing the row, which is the
+ * opposite of a brand moment.
+ *
+ * `t` is clamped, so a caller need not special-case a single tick.
+ */
+export function sampleGradient(stops: readonly string[], t: number): string {
+  if (stops.length === 0) throw new Error('sampleGradient needs at least one stop');
+  if (stops.length === 1) return stops[0];
+
+  const at = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
+  const span = at * (stops.length - 1);
+  const i = Math.min(Math.floor(span), stops.length - 2);
+  const f = span - i;
+
+  const channels = (hex: string) =>
+    [0, 2, 4].map((o) => parseInt(hex.slice(1 + o, 3 + o), 16));
+  const a = channels(stops[i]);
+  const b = channels(stops[i + 1]);
+
+  return (
+    '#' +
+    a
+      .map((v, k) => Math.round(v + (b[k] - v) * f).toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
 /** Left-to-right, so a gradient reads the way the wordmark does. */
 export const gradientDirection = { start: { x: 0, y: 0 }, end: { x: 1, y: 0 } } as const;
 

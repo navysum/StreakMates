@@ -44,7 +44,8 @@
     "typecheck": "tsc --noEmit",
     "tunnel": "expo start --tunnel",
     "test": "node --experimental-strip-types --test \"src/**/__tests__/*.test.ts\"",
-    "build:web": "expo export --platform web --output-dir dist"
+    "build:web": "expo export --platform web --output-dir dist",
+    "preview:screens": "node scripts/preview/screens.mjs"
   },
   "private": true
 }
