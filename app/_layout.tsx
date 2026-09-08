@@ -98,6 +98,29 @@ function AuthGate() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: colors.bg },
+          /**
+           * Swipe back.
+           *
+           * Enabled by default on iOS, but only from the very edge of the
+           * screen — a target most people never find, which is why the app
+           * felt like a website on a phone. `fullScreenGestureEnabled` lets
+           * the swipe start anywhere, which is what every native app does.
+           *
+           * Safe here because nothing in the app scrolls horizontally: the
+           * week strips and the group board are grids, not carousels, so
+           * there is no sideways gesture for this to fight with. If a
+           * horizontal list is ever added, that screen will need to opt out.
+           *
+           * Android is not covered by this. It has the system back gesture,
+           * which already works; `predictiveBackGestureEnabled` stays off in
+           * app.json because the predictive animation needs testing on a real
+           * device before it is worth the risk of the gesture closing the app.
+           *
+           * The header's own back control stays on every screen. The gesture
+           * is a shortcut, never the only way out.
+           */
+          gestureEnabled: true,
+          fullScreenGestureEnabled: true,
         }}
       >
         <Stack.Screen name="(tabs)" />

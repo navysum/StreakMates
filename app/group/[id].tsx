@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
@@ -22,9 +22,11 @@ import {
   useHabits,
   useLeaveGroup,
   useRotateInviteCode,
+  useSetArchived,
   useToggleCheckIn,
   doneKey,
 } from '@/lib/queries';
+import type { Habit } from '@/lib/types';
 import { toLocalDate } from '@/lib/date';
 import { aggregateCells } from '@/lib/week';
 import { confirm } from '@/lib/confirm';
@@ -44,6 +46,22 @@ export default function GroupScreen() {
   const habits = useHabits();
   const checkIns = useCheckIns();
   const order = useHabitOrder(userId);
+  const setArchived = useSetArchived();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        groups.refetch(),
+        members.refetch(),
+        habits.refetch(),
+        checkIns.refetch(),
+        order.refetch(),
+      ]),
+    [groups, members, habits, checkIns, order],
+  );
   const leave = useLeaveGroup(userId);
   const rotate = useRotateInviteCode();
   const toggle = useToggleCheckIn(userId);
@@ -51,6 +69,9 @@ export default function GroupScreen() {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The shared habit whose contextual actions are open. Kept separate from
+  // menuOpen: two sheets, never both at once.
+  const [habitMenu, setHabitMenu] = useState<Habit | null>(null);
 
   const today = toLocalDate();
   const group = useMemo(() => groups.data?.find((g) => g.id === id), [groups.data, id]);
@@ -157,6 +178,7 @@ export default function GroupScreen() {
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title={group.name}
       label={`${list.length} member${list.length === 1 ? '' : 's'} · ${groupHabits.length} shared ${groupHabits.length === 1 ? 'habit' : 'habits'}`}
       back={{ label: 'Groups', onPress: () => router.replace('/groups') }}
@@ -211,6 +233,7 @@ export default function GroupScreen() {
                     : undefined
                 }
                 onPress={() => router.push(`/habit/${habit.id}`)}
+                onLongPress={() => setHabitMenu(habit)}
               />
             );
           })
@@ -305,6 +328,40 @@ export default function GroupScreen() {
       </Plate>
 
       {error ? <Notice label="Something went wrong">{error}</Notice> : null}
+
+      {/* Same shortcut as Today, and the same rule: Open is the row's tap,
+          Edit is on the detail screen, Archive is on the edit screen. Nothing
+          here is only reachable by holding, and Delete is not here at all. */}
+      <Sheet
+        visible={habitMenu !== null}
+        title={habitMenu?.title}
+        onClose={() => setHabitMenu(null)}
+        actions={
+          habitMenu
+            ? [
+                {
+                  label: 'Open',
+                  hint: 'History, streak and details',
+                  onPress: () => router.push(`/habit/${habitMenu.id}`),
+                },
+                {
+                  label: 'Edit',
+                  hint: 'Name, cadence and sharing',
+                  onPress: () =>
+                    router.push({ pathname: '/habit/edit', params: { id: habitMenu.id } }),
+                },
+                {
+                  label: habitMenu.archived_at ? 'Restore' : 'Archive',
+                  hint: habitMenu.archived_at
+                    ? 'Put it back on the board'
+                    : 'Off the board, but every check-in is kept',
+                  onPress: () =>
+                    setArchived.mutate({ id: habitMenu.id, archived: !habitMenu.archived_at }),
+                },
+              ]
+            : []
+        }
+      />
 
       <Sheet
         visible={menuOpen}
