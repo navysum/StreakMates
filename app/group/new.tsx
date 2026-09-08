@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
+import { KeyboardSafe } from '@/components/KeyboardSafe';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
@@ -32,36 +33,38 @@ export default function NewGroupScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="New group" eyebrow="You’ll be the owner" />
-      <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Plate label="Group">
-          <Field
-            label="Name"
-            value={name}
-            onChangeText={setName}
-            placeholder="The Gym Rats"
-            autoFocus
-            maxLength={60}
-            last
+      <KeyboardSafe>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Plate label="Group">
+            <Field
+              label="Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="The Gym Rats"
+              autoFocus
+              maxLength={60}
+              last
+            />
+          </Plate>
+
+          <Button
+            label="Create group"
+            variant="primary"
+            busy={create.isPending}
+            disabled={!name.trim()}
+            onPress={onCreate}
           />
-        </Plate>
 
-        <Button
-          label="Create group"
-          variant="primary"
-          busy={create.isPending}
-          disabled={!name.trim()}
-          onPress={onCreate}
-        />
+          {error ? <Notice label="Could not create">{error}</Notice> : null}
 
-        {error ? <Notice label="Could not create">{error}</Notice> : null}
-
-        <Notice label="What happens next">
-          {'A six-character invite code is generated for you. Share it and anyone with it can join. As owner you can change the code later if it leaks.'}
-        </Notice>
-      </ScrollView>
+          <Notice label="What happens next">
+            {'A six-character invite code is generated for you. Share it and anyone with it can join. As owner you can change the code later if it leaks.'}
+          </Notice>
+        </ScrollView>
+      </KeyboardSafe>
     </View>
   );
 }

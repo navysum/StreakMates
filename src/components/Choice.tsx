@@ -1,6 +1,7 @@
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { ink, space, typography } from '@/theme/tokens';
+import { Tick } from './Tick';
 
 type Option<T> = { value: T; label: string; hint?: string };
 
@@ -47,16 +48,7 @@ export function Choice<T extends string | null>({
                 <Text style={[typography.caption, { color: ink(colors, 70) }]}>{opt.hint}</Text>
               ) : null}
             </View>
-            <View
-              style={[
-                styles.box,
-                on
-                  ? { backgroundColor: colors.accent, borderColor: colors.accent }
-                  : { borderColor: colors.divider },
-              ]}
-            >
-              {on ? <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text> : null}
-            </View>
+            <Tick checked={on} size={22} />
           </Pressable>
         );
       })}
@@ -74,14 +66,5 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   text: { flex: 1, minWidth: 0, gap: 2 },
-  box: {
-    width: 22,
-    height: 22,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 14, includeFontPadding: false },
   pressed: { opacity: 0.6 },
 });
