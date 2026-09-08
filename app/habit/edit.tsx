@@ -155,8 +155,9 @@ export default function EditHabitScreen() {
             <Notice label="Archive keeps everything">
               {'Archiving drops the habit off Today but keeps every check-in and the streak record, and you can restore it in one tap. Deleting destroys the history.'}
             </Notice>
-            {/* Industry has no destructive colour, so the weight of this
-                action is carried by the confirmation, not by a red button. */}
+            {/* There is no destructive colour in this system, so the weight of
+                this action is carried by the confirmation, not by a red
+                button. */}
             <Button
               label="Delete habit"
               variant="ghost"

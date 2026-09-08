@@ -77,7 +77,7 @@ export default function TabsLayout() {
         headerShown: false,
         // Hairline top, page fill, no shadow — the bar is a drawn line, not a
         // raised surface. Active is the accent; inactive is 70% ink.
-        tabBarActiveTintColor: colors.accent,
+        tabBarActiveTintColor: colors.meaning.action,
         tabBarInactiveTintColor: ink(colors, 70),
         tabBarStyle: {
           /**

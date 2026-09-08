@@ -7,8 +7,8 @@ import { REACTIONS, type ReactionEmoji } from '@/lib/types';
 /**
  * Reactions as words, not pictures.
  *
- * Industry is a typographic system with no pictorial vocabulary, so an emoji
- * row reads as a different app. What is *stored* is unchanged — the same five
+ * The interface has no pictorial vocabulary, so an emoji row reads as a
+ * different app. What is *stored* is unchanged — the same five
  * values the check constraint allows — so this is a rendering decision and
  * needs no migration. Change the word, not the column.
  */
@@ -49,8 +49,8 @@ export function ReactionBar({ counts, onToggle }: Props) {
             style={({ pressed }) => [
               styles.chip,
               {
-                borderColor: entry.mine ? colors.accent : colors.divider,
-                backgroundColor: entry.mine ? colors.accents[100] : 'transparent',
+                borderColor: entry.mine ? colors.meaningSoft.social : colors.divider,
+                backgroundColor: entry.mine ? colors.meaningSoft.social : 'transparent',
               },
               pressed && styles.pressed,
             ]}
@@ -58,7 +58,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
             <Text
               style={[
                 typography.labelSmall,
-                { color: entry.mine ? colors.accents[700] : ink(colors, 62) },
+                { color: entry.mine ? colors.meaning.social : ink(colors, 62) },
               ]}
             >
               {WORD[emoji]}
@@ -66,7 +66,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
             <Text
               style={[
                 typography.labelSmall,
-                { color: entry.mine ? colors.accents[700] : ink(colors, 62) },
+                { color: entry.mine ? colors.meaning.social : ink(colors, 62) },
               ]}
             >
               {entry.count}
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     gap: space.sm,
     paddingHorizontal: space.md,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.pill,
   },
   dashed: { borderStyle: 'dashed' },
   pressed: { opacity: 0.6 },

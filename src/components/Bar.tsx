@@ -3,8 +3,13 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { radius } from '@/theme/tokens';
 
 /**
- * A proportion, as an outlined track with an accent fill. Outlined rather than
- * filled-grey, so an empty bar is still a drawn object and not a smudge.
+ * A proportion. Blue by default, because a bar is always progress toward
+ * something — pass `tone` to say otherwise (a streak's own colour, a group
+ * member's rank).
+ *
+ * The track is a soft fill rather than an outline: on a dark card an outlined
+ * empty bar reads as a stray box, while a filled track reads as a thing with
+ * nothing in it yet.
  */
 export function Bar({
   value,
@@ -24,9 +29,10 @@ export function Bar({
     <View
       style={{
         height,
+        backgroundColor: colors.raised,
         borderWidth: 1,
         borderColor: colors.divider,
-        borderRadius: radius.none,
+        borderRadius: radius.pill,
         overflow: 'hidden',
       }}
     >
@@ -34,7 +40,8 @@ export function Bar({
         style={{
           width: `${fraction * 100}%`,
           height: '100%',
-          backgroundColor: tone ?? colors.accent,
+          borderRadius: radius.pill,
+          backgroundColor: tone ?? colors.meaning.progress,
         }}
       />
     </View>

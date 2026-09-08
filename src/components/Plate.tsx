@@ -1,6 +1,16 @@
 import { Pressable, View, Text, StyleSheet, type ViewStyle } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, ink, radius, space, spacing, typography } from '@/theme/tokens';
+import {
+  gradient,
+  gradientDirection,
+  hit,
+  ink,
+  radius,
+  space,
+  spacing,
+  typography,
+} from '@/theme/tokens';
 
 type Props = {
   /** The micro-label above the content, uppercase and condensed. */
@@ -9,11 +19,16 @@ type Props = {
   action?: string;
   onAction?: () => void;
   /**
-   * The four `+` registration marks. Used sparingly — day progress, the group
-   * board, the invite code, most improved, the heatmaps, the focus timer.
-   * Everything else is a plain bordered box. Never half-apply them.
+   * Marks this as the one object on the screen that matters — the day's
+   * progress, the group board, the invite code, the focus timer — with a
+   * 2px gradient rule across its top edge.
+   *
+   * This replaces the `+` registration marks the previous system drew in the
+   * corners. Same job, same restraint: it is the brand appearing where an
+   * accomplishment lives, and putting it on every card would make it mean
+   * nothing. Never more than one per screen.
    */
-  marks?: boolean;
+  feature?: boolean;
   /** Drops the inner padding, for a plate that is only a list of rows. */
   flush?: boolean;
   style?: ViewStyle;
@@ -21,18 +36,35 @@ type Props = {
 };
 
 /**
- * A framed object: 1px divider border, no fill, no shadow, no radius.
+ * A card: a surface fill, a hairline, a soft radius. No shadow, no gloss, no
+ * glass — depth is the surface step, never lighting.
  *
- * This replaces the old Card wholesale. Industry draws containers as line
- * drawings — the only solid thing on a screen is the primary button — so a
- * background or a shadow here would read as a different system.
+ * The fill is the change from the previous system, which drew cards as pure
+ * line drawings on the page. The brand palette names a card colour distinct
+ * from the page (white on lavender-white in light, #0F1328 on #050611 in
+ * dark), and that separation is what lets a dark screen have structure
+ * without anything glowing.
  */
-export function Plate({ label, action, onAction, marks, flush, style, children }: Props) {
+export function Plate({ label, action, onAction, feature, flush, style, children }: Props) {
   const { colors } = useTheme();
 
   return (
-    <View style={[styles.plate, { borderColor: colors.divider }, style]}>
-      {marks ? <Marks /> : null}
+    <View
+      style={[
+        styles.plate,
+        { backgroundColor: colors.surface, borderColor: colors.divider },
+        style,
+      ]}
+    >
+      {feature ? (
+        <LinearGradient
+          colors={gradient}
+          start={gradientDirection.start}
+          end={gradientDirection.end}
+          style={styles.rule}
+          pointerEvents="none"
+        />
+      ) : null}
 
       <View style={[styles.inner, flush && styles.flush]}>
         {label || action ? (
@@ -51,7 +83,7 @@ export function Plate({ label, action, onAction, marks, flush, style, children }
                   accessibilityLabel={action}
                   style={({ pressed }) => pressed && styles.pressed}
                 >
-                  <Text style={[typography.label, { color: colors.accent }]}>{action}</Text>
+                  <Text style={[typography.label, { color: colors.meaning.action }]}>{action}</Text>
                 </Pressable>
               ) : (
                 <Text style={[typography.label, { color: ink(colors, 62) }]}>{action}</Text>
@@ -66,29 +98,10 @@ export function Plate({ label, action, onAction, marks, flush, style, children }
   );
 }
 
-/**
- * The `+` at each corner, drawn as two crossing hairlines. Sits outside the
- * padding and does not take part in layout, so it cannot push content around.
- */
-function Marks() {
-  const { colors } = useTheme();
-  const tint = { backgroundColor: ink(colors, 40) };
-  return (
-    <>
-      {(['tl', 'tr', 'bl', 'br'] as const).map((corner) => (
-        <View key={corner} pointerEvents="none" style={[styles.mark, styles[corner]]}>
-          <View style={[styles.markH, tint]} />
-          <View style={[styles.markV, tint]} />
-        </View>
-      ))}
-    </>
-  );
-}
-
-const MARK = 9;
-
 const styles = StyleSheet.create({
-  plate: { borderWidth: 1, borderRadius: radius.none },
+  plate: { borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
+  /** Sits inside the clipped corners, so the gradient follows the radius. */
+  rule: { height: 2, width: '100%' },
   inner: { padding: spacing.card },
   flush: { paddingVertical: space.sm },
   header: {
@@ -98,18 +111,5 @@ const styles = StyleSheet.create({
     gap: space.lg,
     marginBottom: space.lg,
   },
-  mark: {
-    position: 'absolute',
-    width: MARK,
-    height: MARK,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markH: { position: 'absolute', width: MARK, height: 1 },
-  markV: { position: 'absolute', width: 1, height: MARK },
-  tl: { top: -1, left: -1 },
-  tr: { top: -1, right: -1 },
-  bl: { bottom: -1, left: -1 },
-  br: { bottom: -1, right: -1 },
   pressed: { opacity: 0.55 },
 });
