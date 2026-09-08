@@ -193,8 +193,20 @@ export function useDeleteHabit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await db().from('habits').delete().eq('id', id);
+      // `.select()` matters. A DELETE that matches no rows is not an error in
+      // PostgREST, and RLS makes "no rows" the normal outcome for anyone who
+      // is not allowed to do this — a group member deleting a shared habit
+      // only the group owner may delete. Without the select the client is told
+      // nothing came back, calls that success, and navigates away from a habit
+      // that is still there. Asking for the deleted rows turns a silent no-op
+      // into something we can check.
+      const { data, error } = await db().from('habits').delete().eq('id', id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error(
+          'That habit was not deleted. A shared habit can only be deleted by whoever owns the group.',
+        );
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.habits });
