@@ -97,7 +97,20 @@ function completedCount(
   // days they were owed, so an unscheduled extra is not worth more than a
   // scheduled one.
   const countable = habit.cadence === 'weekly' ? days : expectedDays(habit, member, days);
-  return countable.filter((day) => done.has(key(habit.id, member.userId, day))).length;
+  const kept = countable.filter((day) => done.has(key(habit.id, member.userId, day))).length;
+
+  // A weekly habit can be kept more often than it was owed, and before this
+  // that produced rates above 100% — a gym habit at three a week, done most
+  // days, showed as 106% on the leaderboard and dragged the group rate up with
+  // it. Over a 30-day window it owes ceil(3 x 30 / 7) = 13 and can count 30,
+  // so the ceiling was 231%.
+  //
+  // Doing more than you owed is 100%, not more: the board measures whether
+  // people did what they signed up for, and letting one person's enthusiasm
+  // score above the maximum makes every other number on the screen mean less.
+  // A dated habit cannot exceed its own owed days, so this only binds weekly.
+  if (habit.cadence !== 'weekly') return kept;
+  return Math.min(kept, expectedCount(habit, member, days));
 }
 
 /** One row per member, best first. Members owed nothing are listed last. */

@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import * as outbox from './outbox';
 import { positionsFor, type Positions } from './ordering';
+import { assertChanged } from './writes';
 import { addDays, toLocalDate } from './date';
 import type {
   CheckIn,
@@ -166,8 +167,12 @@ export function useUpdateHabit() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...patch }: Partial<Habit> & { id: string }) => {
-      const { error } = await db().from('habits').update(patch).eq('id', id);
+      const { data, error } = await db().from('habits').update(patch).eq('id', id).select('id');
       if (error) throw error;
+      assertChanged(
+        data,
+        'Those changes were not saved. The habit may have been deleted on another device.',
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.habits }),
   });
@@ -178,11 +183,16 @@ export function useSetArchived() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, archived }: { id: string; archived: boolean }) => {
-      const { error } = await db()
+      const { data, error } = await db()
         .from('habits')
         .update({ archived_at: archived ? new Date().toISOString() : null })
-        .eq('id', id);
+        .eq('id', id)
+        .select('id');
       if (error) throw error;
+      assertChanged(
+        data,
+        'That habit was not changed. It may have been deleted on another device.',
+      );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.habits }),
   });
@@ -202,11 +212,10 @@ export function useDeleteHabit() {
       // into something we can check.
       const { data, error } = await db().from('habits').delete().eq('id', id).select('id');
       if (error) throw error;
-      if (!data || data.length === 0) {
-        throw new Error(
-          'That habit was not deleted. A shared habit can only be deleted by whoever owns the group.',
-        );
-      }
+      assertChanged(
+        data,
+        'That habit was not deleted. A shared habit can only be deleted by whoever owns the group.',
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.habits });
@@ -313,6 +322,9 @@ async function writeCheckIn(
   } else {
     const { error } = await db()
       .from('check_ins')
+    // Un-checking. No assertChanged: if the check-in is already gone, the end
+    // state is the one the person asked for, and raising here would turn a
+    // double tap into an error. See src/lib/writes.ts.
       .delete()
       .eq('habit_id', habitId)
       .eq('user_id', userId!)
@@ -549,6 +561,8 @@ export function useToggleReaction(userId: string | null) {
       } else {
         const { error } = await db()
           .from('reactions')
+        // Removing your own reaction — already-gone is success. See
+        // src/lib/writes.ts.
           .delete()
           .eq('check_in_id', checkInId)
           .eq('user_id', userId!)
@@ -732,8 +746,16 @@ export function useUpdateGroup() {
       name: string;
       emoji: string | null;
     }) => {
-      const { error } = await db().from('groups').update({ name, emoji }).eq('id', id);
+      const { data, error } = await db()
+        .from('groups')
+        .update({ name, emoji })
+        .eq('id', id)
+        .select('id');
       if (error) throw error;
+      // The screen is only offered to owners, but /group/settings?id=... is a
+      // plain URL on the web — any member can reach the form, fill it in and,
+      // before this, be told it saved.
+      assertChanged(data, 'Only the group owner can change its name.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.groups }),
   });
@@ -745,6 +767,8 @@ export function useLeaveGroup(userId: string | null) {
     mutationFn: async (groupId: string) => {
       const { error } = await db()
         .from('group_members')
+      // Leaving. Not being a member is exactly what was asked for, so an
+      // already-left row is not a failure. See src/lib/writes.ts.
         .delete()
         .eq('group_id', groupId)
         .eq('user_id', userId!);
@@ -861,6 +885,8 @@ export function useToggleTask(userId: string | null) {
       }
       const { error } = await db()
         .from('task_completions')
+        // Clearing completions — already-clear is success. See
+        // src/lib/writes.ts.
         .delete()
         .eq('task_id', taskId)
         .in('user_id', removeUsers);
@@ -886,8 +912,13 @@ export function useRenameTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, title }: { id: string; title: string }) => {
-      const { error } = await db().from('tasks').update({ title: title.trim() }).eq('id', id);
+      const { data, error } = await db()
+        .from('tasks')
+        .update({ title: title.trim() })
+        .eq('id', id)
+        .select('id');
       if (error) throw error;
+      assertChanged(data, 'That task was not renamed. It may have already been deleted.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
   });
@@ -897,8 +928,9 @@ export function useDeleteTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await db().from('tasks').delete().eq('id', id);
+      const { data, error } = await db().from('tasks').delete().eq('id', id).select('id');
       if (error) throw error;
+      assertChanged(data, 'That task was not deleted. It may have already been removed.');
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.tasks }),
   });

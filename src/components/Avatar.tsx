@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { font, ink, space, typography } from '@/theme/tokens';
+import { initials } from '@/lib/identity';
 
 /**
  * Initials on a tinted disc.
@@ -41,12 +42,7 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   );
 }
 
-export function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
+
 
 /** A row of faces. Discs sit side by side rather than overlapping. */
 export function AvatarRow({
@@ -95,3 +91,11 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', gap: space.sm },
 });
+
+/**
+ * Re-exported so a call site that already has the Avatar does not need a
+ * second import. The function itself lives in lib/identity, beside `handle`,
+ * which is what produces most of its input — and, unlike a .tsx file, can be
+ * loaded by the test runner.
+ */
+export { initials };
