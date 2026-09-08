@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, Share, Text, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import { Avatar } from '@/components/Avatar';
@@ -27,7 +27,9 @@ import {
 } from '@/lib/queries';
 import { toLocalDate } from '@/lib/date';
 import { aggregateCells } from '@/lib/week';
+import { confirm } from '@/lib/confirm';
 import { handle } from '@/lib/identity';
+import { shareText } from '@/lib/share';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ink, space, tnum, typography } from '@/theme/tokens';
 
@@ -125,30 +127,32 @@ export default function GroupScreen() {
   }
 
   async function shareCode() {
-    await Share.share({
-      message: `Join ${group!.name} on StreakMates — the code is ${group!.invite_code}`,
-    });
+    const shared = await shareText(
+      `Join ${group!.name} on StreakMates — the code is ${group!.invite_code}`,
+    );
+    // Desktop browsers have no share sheet. Falling back to the clipboard is
+    // the same outcome by a different route, so it says so rather than failing.
+    if (shared === 'copied') {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }
   }
 
-  function confirmLeave() {
-    Alert.alert(
-      `Leave ${group!.name}?`,
-      isOwner
+  async function confirmLeave() {
+    const yes = await confirm({
+      title: `Leave ${group!.name}?`,
+      message: isOwner
         ? 'You are the owner. Leaving does not delete the group, but nobody will be able to change its code afterwards.'
         : 'You can rejoin later with the code.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Leave',
-          style: 'destructive',
-          onPress: () =>
-            leave.mutate(group!.id, {
-              onSuccess: () => router.replace('/groups'),
-              onError: (e) => setError(e instanceof Error ? e.message : 'Could not leave.'),
-            }),
-        },
-      ],
-    );
+      confirmLabel: 'Leave',
+      destructive: true,
+    });
+    if (!yes) return;
+
+    leave.mutate(group!.id, {
+      onSuccess: () => router.replace('/groups'),
+      onError: (e) => setError(e instanceof Error ? e.message : 'Could not leave.'),
+    });
   }
 
   return (
@@ -330,7 +334,7 @@ export default function GroupScreen() {
             label: 'Leave group',
             tone: 'danger' as const,
             hint: 'You can rejoin with the code',
-            onPress: confirmLeave,
+            onPress: () => void confirmLeave(),
           },
         ]}
       />

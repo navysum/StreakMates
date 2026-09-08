@@ -25,6 +25,14 @@ The Supabase session is kept in **SecureStore** — the iOS Keychain and the
 Android Keystore — not AsyncStorage, which is plain text in the app sandbox and
 readable from a rooted or jailbroken device.
 
+**On the web there is no Keychain**, so the session lives in `localStorage`,
+where any script running on the page can read it. That is the standard position
+for every browser-based Supabase app, and it is genuinely weaker than the phone:
+the mitigation is that the site serves no third-party script, and the headers in
+`vercel.json` (`X-Frame-Options: DENY` among them) keep it from being framed or
+sniffed. Someone on a shared computer should sign out rather than close the tab.
+See `docs/web.md`.
+
 SecureStore's per-value limit is smaller than a session, so `chunked-store.ts`
 splits values across numbered chunks with the count under the key. The count is
 written **last**, so an interrupted write reads back as absent rather than as a

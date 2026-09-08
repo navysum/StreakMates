@@ -24,7 +24,15 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "output": "single",
+      "name": "StreakMates",
+      "shortName": "StreakMates",
+      "description": "Building better habits, together.",
+      "themeColor": "#3f6248",
+      "backgroundColor": "#f2efe6",
+      "lang": "en-GB"
     },
     "plugins": [
       "expo-router",

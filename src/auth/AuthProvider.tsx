@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
@@ -66,6 +67,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       async signInWithGoogle() {
         if (!supabase) throw new Error('Supabase is not configured yet.');
+
+        /**
+         * Two genuinely different flows, not one with a branch bolted on.
+         *
+         * On web the page itself navigates to Google and Google navigates it
+         * back, so there is no in-app browser to open and no code to exchange
+         * by hand — `detectSessionInUrl` finishes the job on the way back in.
+         * Trying to run the native flow here opens a popup that most browsers
+         * block, and `openAuthSessionAsync` cannot return a URL to a page that
+         * has already been replaced.
+         */
+        if (Platform.OS === 'web') {
+          // Back to wherever the app is actually served from, so the same
+          // build works on localhost, a Vercel preview and the real domain
+          // without any of them being hard-coded.
+          const redirectTo = `${window.location.origin}/`;
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo },
+          });
+          if (error) throw error;
+          return; // the page is on its way to Google; nothing follows this
+        }
 
         // In Expo Go this is an exp:// URL whose host changes per tunnel, so
         // Supabase needs a wildcard redirect entry. A development build uses

@@ -159,6 +159,14 @@ reminders are scheduled locally with `expo-notifications` and kept in step with
 the habits on every launch. Server push is only needed for things the server
 knows first — a friend checking in — which is a later problem.
 
+### On the web
+
+The same codebase also exports a static site — `npm run build:web` — which is
+deployed to Vercel. Reminders are the one feature that cannot follow it there,
+and the web build says so rather than accepting a time no browser can honour.
+**[`docs/web.md`](./docs/web.md)** covers deploying, the two OAuth allowlists
+that sign-in needs, and what differs between the phone and the browser.
+
 ### The design system
 
 The app is drawn in **Industry**, a blueprint language: a light technical ground, one
