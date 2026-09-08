@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+
+    <!--
+      Expo's own template stops at `shrink-to-fit=no`. Two additions matter on a
+      phone, and StreakMates is mostly opened on one.
+
+      viewport-fit=cover  makes `env(safe-area-inset-*)` report real numbers.
+                          Without it every inset is 0, so the tab bar had no
+                          bottom clearance at all and its labels were sliced in
+                          half by Safari's address bar.
+
+      user-scalable is deliberately left alone. Pinch-zoom is an accessibility
+      feature and disabling it to make an app feel more native is not a trade
+      worth making.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+    />
+
+    <title>%WEB_TITLE%</title>
+
+    <!-- Added to a home screen this runs with no browser chrome at all, which
+         is the best version of this on a phone: nothing to hide behind. -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="StreakMates" />
+
+    <!-- The `react-native-web` recommended style reset, with the height rule
+         changed — see below. -->
+    <style id="expo-reset">
+      /*
+        Expo's template uses `height: 100%`, which on a phone browser resolves
+        against the *large* viewport: the height the page would have if the
+        browser's chrome were hidden. Safari draws its address bar over the
+        bottom of that, so the last 40-odd pixels of the app — the tab bar —
+        sat underneath it.
+
+        100svh is the *small* viewport height: the visible area with the chrome
+        showing. `dvh` would be exact but re-lays-out every time the address bar
+        slides away, which makes a fixed tab bar jump around as you scroll. svh
+        gives up a sliver of height and never hides anything.
+
+        The `100%` line stays first as a fallback for browsers without svh.
+      */
+      html,
+      body {
+        height: 100%;
+        height: 100svh;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        margin: 0;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        height: 100svh;
+        flex: 1;
+      }
+
+      /* The page colour, so an overscroll bounce shows the app's own ground
+         rather than a band of white. These two are bg from src/theme/tokens.ts;
+         if the palette changes, they change with it. */
+      body {
+        background-color: #f2efe6;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #0f120f;
+        }
+      }
+
+      /* This is an app, not a document: a tap should not flash a grey box over
+         the control, and text should not be re-sized on rotation. */
+      body {
+        -webkit-tap-highlight-color: transparent;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+    </style>
+  </head>
+
+  <body>
+    <noscript> You need to enable JavaScript to run this app. </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  </body>
+</html>
