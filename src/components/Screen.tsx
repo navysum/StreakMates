@@ -1,4 +1,12 @@
-import { Pressable, ScrollView, View, Text, StyleSheet } from 'react-native';
+import { useCallback, useState } from 'react';
+import {
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  View,
+  Text,
+  StyleSheet,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 import { KeyboardSafe } from './KeyboardSafe';
@@ -17,6 +25,11 @@ type Props = {
   menuLabel?: string;
   /** Pinned below the scroll, for a screen with one obvious action. */
   footer?: React.ReactNode;
+  /**
+   * Enables pull to refresh. Awaited, so the spinner reflects the real fetch
+   * rather than a fixed guess.
+   */
+  onRefresh?: () => Promise<unknown>;
   children?: React.ReactNode;
 };
 
@@ -28,15 +41,56 @@ export function Screen({
   onMenu,
   menuLabel = 'More',
   footer,
+  onRefresh,
   children,
 }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const [refreshing, setRefreshing] = useState(false);
+
+  /**
+   * Pull to refresh.
+   *
+   * The one gesture that needs no visible alternative, because it is not an
+   * action: the data refetches on its own and this only asks for it sooner.
+   * Every other gesture in the app is a shortcut to something that is also
+   * reachable by tapping.
+   *
+   * The spinner is held for a beat past the refetch. A refresh that resolves
+   * from cache in 20ms otherwise flickers, and a person who pulled and saw
+   * nothing happen assumes it did not work and pulls again.
+   */
+  const refresh = useCallback(async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    const started = Date.now();
+    try {
+      await onRefresh();
+    } finally {
+      const held = Date.now() - started;
+      if (held < 400) await new Promise((r) => setTimeout(r, 400 - held));
+      setRefreshing(false);
+    }
+  }, [onRefresh]);
 
   return (
     <KeyboardSafe style={{ backgroundColor: colors.bg }}>
       <ScrollView
         style={styles.fill}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+              // The spinner is drawn by the platform, so it needs telling what
+              // it is sitting on. Left at the default it is a grey wheel on a
+              // midnight page in dark mode.
+              tintColor={ink(colors, 62)}
+              colors={[colors.meaning.progress]}
+              progressBackgroundColor={colors.surface}
+            />
+          ) : undefined
+        }
         contentContainerStyle={[
           styles.content,
           {

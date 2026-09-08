@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { Link, useLocalSearchParams, useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
@@ -41,6 +41,19 @@ export default function HabitDetailScreen() {
   const habitQuery = useHabit(id);
   const checkIns = useCheckIns();
   const groups = useGroups();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        habitQuery.refetch(),
+        checkIns.refetch(),
+        groups.refetch(),
+      ]),
+    [habitQuery, checkIns, groups],
+  );
   const toggle = useToggleCheckIn(userId);
 
   const habit = habitQuery.data;
@@ -124,6 +137,7 @@ export default function HabitDetailScreen() {
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title={habit.title}
       label={`${group ? group.name : 'Private'} · ${cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}`}
       back={back}

@@ -66,6 +66,20 @@ export default function FocusScreen() {
   const groups = useGroups();
   const members = useAllMembers();
   const sessions = useFocusSessions();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        tasks.refetch(),
+        completions.refetch(),
+        groups.refetch(),
+        sessions.refetch(),
+      ]),
+    [tasks, completions, groups, sessions],
+  );
   const addTask = useAddTask(userId);
   const toggleTask = useToggleTask(userId);
   const deleteTask = useDeleteTask();
@@ -268,7 +282,8 @@ export default function FocusScreen() {
   const barFilled = total > 0 ? 1 - left / total : 0;
 
   return (
-    <Screen title="Focus" label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}>
+    <Screen
+      onRefresh={onRefresh} title="Focus" label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}>
       <Plate feature>
         <Text style={[typography.label, { color: ink(colors, 65) }]}>
           {timer.phase === 'focus' ? (activeTask ? 'Working on' : 'Focus') : 'Step away from it'}

@@ -14,6 +14,12 @@ type Props = {
   last?: boolean;
   onToggle?: () => void;
   onPress?: () => void;
+  /**
+   * Long press opens the row's contextual actions. Every one of them is also
+   * reachable by tapping through, so this is a shortcut and never the only
+   * way — which is the rule for gestures in this app.
+   */
+  onLongPress?: () => void;
 };
 
 /**
@@ -24,7 +30,16 @@ type Props = {
  * The check is a violet fill, not a violet card — a completed habit marks
  * itself, it does not repaint the row around it.
  */
-export function HabitRow({ name, meta, week, complete, last, onToggle, onPress }: Props) {
+export function HabitRow({
+  name,
+  meta,
+  week,
+  complete,
+  last,
+  onToggle,
+  onPress,
+  onLongPress,
+}: Props) {
   const { colors } = useTheme();
 
   return (
@@ -37,9 +52,15 @@ export function HabitRow({ name, meta, week, complete, last, onToggle, onPress }
       <Pressable
         style={({ pressed }) => [styles.info, pressed && onPress ? styles.pressed : null]}
         onPress={onPress}
-        disabled={!onPress}
+        onLongPress={onLongPress}
+        // The default 500ms reads as a lag before anything happens. 350 is
+        // past an accidental press and short enough to feel deliberate.
+        delayLongPress={350}
+        disabled={!onPress && !onLongPress}
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={onPress ? `Open ${name}` : undefined}
+        // Announced by a screen reader, so the shortcut is not sighted-only.
+        accessibilityHint={onLongPress ? 'Double tap and hold for options' : undefined}
       >
         <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
           {name}
