@@ -1,7 +1,8 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { hit, ink, space, typography } from '@/theme/tokens';
 import { Tag } from './Tag';
+import { Tick } from './Tick';
 
 type Props = {
   title: string;
@@ -33,16 +34,7 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
         accessibilityLabel={done ? `Mark ${title} unfinished` : `Finish ${title}`}
         style={({ pressed }) => [styles.check, pressed && styles.pressed]}
       >
-        <View
-          style={[
-            styles.box,
-            done
-              ? { backgroundColor: colors.accent, borderColor: colors.accent }
-              : { borderColor: colors.divider },
-          ]}
-        >
-          {done ? <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text> : null}
-        </View>
+        <Tick checked={done} size={22} />
       </Pressable>
 
       <Pressable
@@ -81,18 +73,13 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
 }
 
 const styles = StyleSheet.create({
-  row: { minHeight: 52, flexDirection: 'row', alignItems: 'center' },
-  check: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-  box: {
-    width: 22,
-    height: 22,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 14, includeFontPadding: false },
-  text: { flex: 1, minWidth: 0, paddingVertical: space.md, gap: 2 },
-  badge: { paddingRight: space.lg },
+  row: { minHeight: hit + 8, flexDirection: 'row', alignItems: 'stretch' },
+  check: { width: 52, alignItems: 'center', justifyContent: 'center' },
+  // `alignItems: 'stretch'` on the row plus `justifyContent: 'center'` here
+  // makes both halves fill the row's full height. With `center` and a fixed
+  // padding the label's own pressable came out 40pt tall — under the minimum,
+  // and with dead space either side of it inside a row that looked tappable.
+  text: { flex: 1, minWidth: 0, justifyContent: 'center', paddingVertical: space.md, gap: 2 },
+  badge: { paddingRight: space.lg, justifyContent: 'center' },
   pressed: { opacity: 0.6 },
 });

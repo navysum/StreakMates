@@ -1,7 +1,8 @@
 import { Pressable, ScrollView, View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
-import { hit, ink, radius, space, spacing, typography } from '@/theme/tokens';
+import { KeyboardSafe } from './KeyboardSafe';
+import { hit, ink, radius, space, spacing, tapPadding, typography } from '@/theme/tokens';
 
 type Props = {
   title: string;
@@ -33,7 +34,7 @@ export function Screen({
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.bg }]}>
+    <KeyboardSafe style={{ backgroundColor: colors.bg }}>
       <ScrollView
         style={styles.fill}
         contentContainerStyle={[
@@ -48,10 +49,13 @@ export function Screen({
         {back ? (
           <Pressable
             onPress={back.onPress}
-            hitSlop={space.md}
             accessibilityRole="button"
             accessibilityLabel={back.label}
-            style={({ pressed }) => [styles.back, pressed && styles.pressed]}
+            style={({ pressed }) => [
+              styles.back,
+              tapPadding(typography.label.lineHeight),
+              pressed && styles.pressed,
+            ]}
           >
             <Text style={[typography.label, { color: colors.accent }]}>‹ {back.label}</Text>
           </Pressable>
@@ -70,7 +74,6 @@ export function Screen({
           {onMenu ? (
             <Pressable
               onPress={onMenu}
-              hitSlop={space.md}
               accessibilityRole="button"
               accessibilityLabel={menuLabel}
               style={({ pressed }) => [
@@ -103,7 +106,7 @@ export function Screen({
           {footer}
         </View>
       ) : null}
-    </View>
+    </KeyboardSafe>
   );
 }
 

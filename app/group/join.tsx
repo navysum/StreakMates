@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View, StyleSheet, Pressable } from 'react-native';
+import { KeyboardSafe } from '@/components/KeyboardSafe';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
@@ -70,91 +71,93 @@ export default function JoinGroupScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Join a group" eyebrow="Six characters" />
-      <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Text style={[typography.prose, { color: ink(colors, 78) }]}>
-          Ask a friend for their group’s code.
-        </Text>
-
-        <Pressable
-          onPress={() => input.current?.focus()}
-          style={styles.boxes}
-          accessibilityRole="button"
-          accessibilityLabel="Enter invite code"
+      <KeyboardSafe>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+          keyboardShouldPersistTaps="handled"
         >
-          {boxes.map((char, i) => (
-            <View
-              key={i}
-              style={[
-                styles.box,
-                {
-                  backgroundColor: char ? colors.accents[100] : 'transparent',
-                  borderColor: char ? colors.accent : colors.divider,
-                },
-              ]}
-            >
-              <Text
+          <Text style={[typography.prose, { color: ink(colors, 78) }]}>
+            Ask a friend for their group’s code.
+          </Text>
+
+          <Pressable
+            onPress={() => input.current?.focus()}
+            style={styles.boxes}
+            accessibilityRole="button"
+            accessibilityLabel="Enter invite code"
+          >
+            {boxes.map((char, i) => (
+              <View
+                key={i}
                 style={[
-                  typography.statSmall,
-                  { color: char ? colors.accents[700] : ink(colors, 45) },
+                  styles.box,
+                  {
+                    backgroundColor: char ? colors.accents[100] : 'transparent',
+                    borderColor: char ? colors.accent : colors.divider,
+                  },
                 ]}
               >
-                {char}
-              </Text>
-            </View>
-          ))}
-        </Pressable>
-
-        <TextInput
-          ref={input}
-          value={code}
-          onChangeText={(t) =>
-            setCode((t.toUpperCase().match(ALLOWED) ?? []).join('').slice(0, CODE_LENGTH))
-          }
-          autoCapitalize="characters"
-          autoCorrect={false}
-          autoFocus
-          maxLength={CODE_LENGTH}
-          style={styles.hidden}
-          accessibilityLabel="Invite code"
-        />
-
-        {lookup.isPending ? (
-          <Text style={[typography.label, { color: ink(colors, 62) }]}>Checking…</Text>
-        ) : null}
-
-        {preview ? (
-          <Plate>
-            <View style={styles.found}>
-              <View style={styles.foundText}>
-                <Text numberOfLines={1} style={[typography.cardTitle, { color: colors.text }]}>
-                  {preview.name}
-                </Text>
-                <Text style={[typography.caption, { color: ink(colors, 70) }]}>
-                  {preview.member_count} member{Number(preview.member_count) === 1 ? '' : 's'}
+                <Text
+                  style={[
+                    typography.statSmall,
+                    { color: char ? colors.accents[700] : ink(colors, 45) },
+                  ]}
+                >
+                  {char}
                 </Text>
               </View>
-              <Tag label="Found" />
-            </View>
-          </Plate>
-        ) : null}
+            ))}
+          </Pressable>
 
-        <Button
-          label="Join group"
-          variant="primary"
-          disabled={!preview}
-          busy={join.isPending}
-          onPress={onJoin}
-        />
+          <TextInput
+            ref={input}
+            value={code}
+            onChangeText={(t) =>
+              setCode((t.toUpperCase().match(ALLOWED) ?? []).join('').slice(0, CODE_LENGTH))
+            }
+            autoCapitalize="characters"
+            autoCorrect={false}
+            autoFocus
+            maxLength={CODE_LENGTH}
+            style={styles.hidden}
+            accessibilityLabel="Invite code"
+          />
 
-        {error ? <Notice label="Could not join">{error}</Notice> : null}
+          {lookup.isPending ? (
+            <Text style={[typography.label, { color: ink(colors, 62) }]}>Checking…</Text>
+          ) : null}
 
-        <Text style={[typography.caption, styles.fine, { color: ink(colors, 65) }]}>
-          Codes skip 0, O, 1 and I, so nobody mistypes them.
-        </Text>
-      </ScrollView>
+          {preview ? (
+            <Plate>
+              <View style={styles.found}>
+                <View style={styles.foundText}>
+                  <Text numberOfLines={1} style={[typography.cardTitle, { color: colors.text }]}>
+                    {preview.name}
+                  </Text>
+                  <Text style={[typography.caption, { color: ink(colors, 70) }]}>
+                    {preview.member_count} member{Number(preview.member_count) === 1 ? '' : 's'}
+                  </Text>
+                </View>
+                <Tag label="Found" />
+              </View>
+            </Plate>
+          ) : null}
+
+          <Button
+            label="Join group"
+            variant="primary"
+            disabled={!preview}
+            busy={join.isPending}
+            onPress={onJoin}
+          />
+
+          {error ? <Notice label="Could not join">{error}</Notice> : null}
+
+          <Text style={[typography.caption, styles.fine, { color: ink(colors, 65) }]}>
+            Codes skip 0, O, 1 and I, so nobody mistypes them.
+          </Text>
+        </ScrollView>
+      </KeyboardSafe>
     </View>
   );
 }

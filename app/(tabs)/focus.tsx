@@ -8,6 +8,7 @@ import {
   View,
   StyleSheet,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { Plate } from '@/components/Plate';
 import { EmptyState } from '@/components/EmptyState';
@@ -75,7 +76,11 @@ export default function FocusScreen() {
   const [ready, setReady] = useState(false);
   const [taskId, setTaskId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
+  // The composer is a contextual action, not furniture. See the note on the
+  // Plate below.
+  const [composing, setComposing] = useState(false);
   const [scope, setScope] = useState<'mine' | 'shared'>('mine');
   const [addTo, setAddTo] = useState<string | null>(null);
   const [kind, setKind] = useState<TaskCompletionKind>('once');
@@ -173,6 +178,9 @@ export default function FocusScreen() {
       const highest = siblings.reduce((n, t) => Math.max(n, t.position), -1);
       await addTask.mutateAsync({ title, position: highest + 1, groupId, completion: kind });
       setDraft('');
+      // Closes on success only. A failed add keeps the composer open with the
+      // reason showing, so nothing typed is lost to a dismissed form.
+      setComposing(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not add that.');
     }
@@ -302,19 +310,15 @@ export default function FocusScreen() {
         </Text>
       </Plate>
 
-      <StatTrio
-        stats={[
-          { value: `${stats.todayMinutes}m`, label: 'Focused today' },
-          { value: `${Math.round(stats.weekMinutes / 6) / 10}h`, label: 'This week' },
-          { value: String(open.length), label: 'Still to do' },
-        ]}
-      />
-
       <Segmented
         value={scope}
         onChange={(v) => {
           setScope(v);
           setError(null);
+          // The composer means something different on each tab — a shared task
+          // needs a group — so it does not survive the switch.
+          setComposing(false);
+          setDraft('');
         }}
         options={[
           { value: 'mine', label: `Mine · ${mine.length}` },
@@ -322,7 +326,29 @@ export default function FocusScreen() {
         ]}
       />
 
-      <Plate label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}>
+      {/* A permanently open creation form is desktop thinking: it sat between
+          the timer and the list, taking the best space on the screen for
+          something most visits never use, and on a phone the keyboard covered
+          the list it was adding to. It is an action now, and the screen has
+          one job again — decide what to work on, and start. */}
+      {!composing ? (
+        <Button
+          label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
+          onPress={() => {
+            setError(null);
+            setComposing(true);
+          }}
+        />
+      ) : (
+      <Plate
+        label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
+        action="Cancel"
+        onAction={() => {
+          setDraft('');
+          setError(null);
+          setComposing(false);
+        }}
+      >
         <View style={styles.addRow}>
           <TextInput
             value={draft}
@@ -404,6 +430,7 @@ export default function FocusScreen() {
           <Notice label="Could not add">{error}</Notice>
         ) : null}
       </Plate>
+      )}
 
       {tasks.isLoading ? (
         <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
@@ -412,6 +439,11 @@ export default function FocusScreen() {
           <EmptyState
             title="Nothing on the list"
             body="Add the one thing you keep putting off, then start a stretch of focus on it."
+            actionLabel="Add a task"
+            onAction={() => {
+              setError(null);
+              setComposing(true);
+            }}
           />
         ) : (
           <Plate
@@ -428,8 +460,20 @@ export default function FocusScreen() {
           title="No shared tasks yet"
           body={
             groupList.length
-              ? 'Add one above. Either one of you does it, or all of you do — you choose when you add it.'
+              ? 'Either one of you does it, or all of you do — you choose when you add it.'
               : 'Join or create a group first, then tasks can be shared with it.'
+          }
+          // The action depends on why it is empty: with no group there is
+          // nothing to share *to*, so sending someone to a composer they
+          // cannot submit would be a dead end.
+          actionLabel={groupList.length ? 'Add a shared task' : 'Go to groups'}
+          onAction={
+            groupList.length
+              ? () => {
+                  setError(null);
+                  setComposing(true);
+                }
+              : () => router.push('/groups')
           }
         />
       ) : (
@@ -456,6 +500,17 @@ export default function FocusScreen() {
             : 'Nothing left for you in any group.'}
         </Notice>
       ) : null}
+
+      {/* Below the list, not above it. These are how the day went, which is
+          worth knowing but is not what the screen is for — between the timer
+          and the tasks they interrupted the one flow the screen has. */}
+      <StatTrio
+        stats={[
+          { value: `${stats.todayMinutes}m`, label: 'Focused today' },
+          { value: `${Math.round(stats.weekMinutes / 6) / 10}h`, label: 'This week' },
+          { value: String(open.length), label: 'Still to do' },
+        ]}
+      />
     </Screen>
   );
 }

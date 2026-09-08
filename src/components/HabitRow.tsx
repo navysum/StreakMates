@@ -1,7 +1,8 @@
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { ink, space, typography } from '@/theme/tokens';
 import { WeekStrip } from './WeekStrip';
+import { Tick } from './Tick';
 import type { Cell } from '@/lib/week';
 
 type Props = {
@@ -67,18 +68,7 @@ export function HabitRow({ name, meta, week, complete, last, onToggle, onPress }
           pressed && styles.pressed,
         ]}
       >
-        <View
-          style={[
-            styles.box,
-            complete
-              ? { backgroundColor: colors.accent, borderColor: colors.accent }
-              : { borderColor: colors.divider },
-          ]}
-        >
-          {complete ? (
-            <Text style={[styles.tick, { color: colors.onAccent }]}>✓</Text>
-          ) : null}
-        </View>
+        <Tick checked={complete} size={24} />
       </Pressable>
     </View>
   );
@@ -95,14 +85,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  box: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tick: { fontFamily: 'BarlowCondensed-SemiBold', fontSize: 15, includeFontPadding: false },
   pressed: { opacity: 0.6 },
 });
