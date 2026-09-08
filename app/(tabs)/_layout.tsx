@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon, type TabName } from '@/components/TabIcon';
@@ -10,6 +10,20 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ensurePermission, syncReminders } from '@/lib/reminders';
 import { useTheme } from '@/theme/ThemeProvider';
 import { border, ink, typography } from '@/theme/tokens';
+
+/**
+ * What the bar needs above the safe area: the icon, the gap, the label and the
+ * item's own padding, plus slack so the label is never the thing that gives.
+ */
+const CONTENT = 56;
+
+/**
+ * A phone browser reports no bottom inset even with `viewport-fit=cover`, since
+ * its address bar is chrome rather than a safe area — `100svh` in
+ * public/index.html is what keeps the bar above that. This floor is only so the
+ * labels do not sit flush against the very bottom edge.
+ */
+const BOTTOM = (inset: number) => Math.max(inset, Platform.OS === 'web' ? 10 : 6);
 
 const TABS: { name: string; title: string; icon: TabName }[] = [
   { name: 'index', title: 'Today', icon: 'today' },
@@ -66,16 +80,35 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: ink(colors, 70),
         tabBarStyle: {
-          height: 48 + 12 + insets.bottom,
+          /**
+           * The label is a flex child with `flex-shrink: 1` and
+           * `overflow: hidden`, so when the bar is even a pixel short of what
+           * its contents need, the label — not the icon — absorbs it and
+           * silently clips its own text. Measured in a browser: a 13px line
+           * squeezed into a 5px box, which is why the words were sliced through
+           * the middle.
+           *
+           * So the bar is sized from its parts with room to spare rather than
+           * from a round number: 20 icon + 3 gap + 13 label + 8 item padding is
+           * 44, and CONTENT is 56. The slack is the point.
+           */
+          height: CONTENT + BOTTOM(insets.bottom) + 6,
           paddingTop: 6,
-          paddingBottom: insets.bottom + 6,
+          paddingBottom: BOTTOM(insets.bottom),
           backgroundColor: colors.bg,
           borderTopColor: colors.divider,
           borderTopWidth: border.hairline,
           elevation: 0,
         },
-        tabBarLabelStyle: { ...typography.tabLabel, marginTop: 4 },
-        tabBarItemStyle: { gap: 0 },
+        // flexShrink: 0 is the actual guard. The height above gives it room;
+        // this stops it being compressed again by any future change.
+        tabBarLabelStyle: {
+          ...typography.tabLabel,
+          marginTop: 3,
+          flexShrink: 0,
+          includeFontPadding: false,
+        },
+        tabBarItemStyle: { gap: 0, paddingVertical: 4 },
       }}
     >
       {TABS.map((tab) => (
