@@ -115,3 +115,47 @@ test('a realistic session survives the round trip', async () => {
   await s.setItem('sb-project-auth-token', session);
   assert.equal(await s.getItem('sb-project-auth-token'), session);
 });
+
+// --------------------------------------------------------------- utf-8
+
+test('splitting counts bytes, not characters', () => {
+  // Each 'é' is two bytes in UTF-8, so five of them fill a ten-byte chunk.
+  const parts = split('é'.repeat(12), 10);
+  for (const part of parts) {
+    assert.ok(Buffer.byteLength(part, 'utf8') <= 10, `chunk was ${Buffer.byteLength(part, 'utf8')} bytes`);
+  }
+  assert.equal(parts.join(''), 'é'.repeat(12));
+});
+
+test('a three-byte script stays inside the limit', () => {
+  const name = 'ありがとうございます'.repeat(4);
+  const parts = split(name, 10);
+  for (const part of parts) assert.ok(Buffer.byteLength(part, 'utf8') <= 10);
+  assert.equal(parts.join(''), name);
+});
+
+test('a surrogate pair is never split down the middle', () => {
+  // Four bytes each, so a ten-byte chunk holds two with two bytes to spare.
+  const parts = split('🔥'.repeat(6), 10);
+  for (const part of parts) {
+    assert.ok(Buffer.byteLength(part, 'utf8') <= 10);
+    assert.ok(!/[\uD800-\uDBFF]$/.test(part), 'chunk ended on a lone high surrogate');
+    assert.ok(!/^[\uDC00-\uDFFF]/.test(part), 'chunk began with a lone low surrogate');
+  }
+  assert.equal(parts.join(''), '🔥'.repeat(6));
+});
+
+test('a mixed session-shaped value round-trips through the store', async () => {
+  const { store } = fake();
+  const s = chunked(store, 10);
+  const value = JSON.stringify({ token: 'x'.repeat(40), name: 'Zoë 日本 🔥', email: 'a@b.co' });
+  await s.setItem('session', value);
+  assert.equal(await s.getItem('session'), value);
+});
+
+test('a single character larger than the limit still round-trips', async () => {
+  const { store } = fake();
+  const s = chunked(store, 2); // smaller than one emoji
+  await s.setItem('k', '🔥a');
+  assert.equal(await s.getItem('k'), '🔥a');
+});

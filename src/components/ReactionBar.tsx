@@ -58,7 +58,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
             <Text
               style={[
                 typography.labelSmall,
-                { color: entry.mine ? colors.accents[700] : ink(colors, 60) },
+                { color: entry.mine ? colors.accents[700] : ink(colors, 62) },
               ]}
             >
               {WORD[emoji]}
@@ -66,7 +66,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
             <Text
               style={[
                 typography.labelSmall,
-                { color: entry.mine ? colors.accents[700] : ink(colors, 60) },
+                { color: entry.mine ? colors.accents[700] : ink(colors, 62) },
               ]}
             >
               {entry.count}
@@ -92,7 +92,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
               pressed && styles.pressed,
             ]}
           >
-            <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>{WORD[emoji]}</Text>
+            <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>{WORD[emoji]}</Text>
           </Pressable>
         ))
       ) : unused.length > 0 ? (
@@ -108,7 +108,7 @@ export function ReactionBar({ counts, onToggle }: Props) {
             pressed && styles.pressed,
           ]}
         >
-          <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>+ REACT</Text>
+          <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>+ REACT</Text>
         </Pressable>
       ) : null}
     </View>

@@ -78,7 +78,7 @@ export default function ActivityScreen() {
       }
     >
       {loading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       ) : feed.length === 0 ? (
         <EmptyState
           title="Nothing yet"

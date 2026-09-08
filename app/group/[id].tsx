@@ -71,6 +71,7 @@ export default function GroupScreen() {
         targetDays: h.target_days,
         targetPerWeek: h.target_per_week,
       },
+      startsOn: h.created_at.slice(0, 10),
     }));
     const rows = list.map((member) => {
       const cells = aggregateCells(
@@ -78,6 +79,7 @@ export default function GroupScreen() {
         schedules,
         (habitId, day) => done.has(doneKey(habitId, member.user_id, day)),
         today,
+        member.joined_at.slice(0, 10),
       );
       return {
         member,
@@ -100,7 +102,7 @@ export default function GroupScreen() {
   if (groups.isLoading || members.isLoading) {
     return (
       <Screen title="Group">
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       </Screen>
     );
   }
@@ -233,7 +235,7 @@ export default function GroupScreen() {
                 style={[
                   typography.figureSmall,
                   styles.place,
-                  { color: i === 0 ? colors.accents[700] : ink(colors, 55) },
+                  { color: i === 0 ? colors.accents[700] : ink(colors, 62) },
                 ]}
               >
                 {String(i + 1).padStart(2, '0')}

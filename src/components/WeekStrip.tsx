@@ -71,7 +71,7 @@ export function WeekLabels({ flex }: { flex?: boolean }) {
             typography.labelSmall,
             styles.letter,
             flex ? styles.flexLetter : { width: 16 },
-            { color: ink(colors, 60) },
+            { color: ink(colors, 62) },
           ]}
         >
           {letter}

@@ -159,6 +159,38 @@ select tests.allowed('leave the group himself',
   'delete from public.group_members where group_id = ' || quote_literal(:'gid') || ' and user_id = auth.uid()');
 
 \echo ''
+\echo '=== 3b. A group owner may rename, and nothing else ==='
+-- The policy says who may update the row, not which columns. Without the
+-- column grant in 0012 an owner could rewrite the invite code the CSPRNG
+-- generated — reproduced as a one-character code — and forge who created the
+-- group.
+select tests.as_user(:'alice');
+select tests.allowed('alice renames her own group',
+  'update public.groups set name = ''Sunrise Club'' where id = ' || quote_literal(:'gid'));
+select tests.denied('but cannot weaken the invite code',
+  'update public.groups set invite_code = ''a'' where id = ' || quote_literal(:'gid'));
+select tests.denied('nor set a well-formed one of her choosing',
+  'update public.groups set invite_code = ''AAAAAA'' where id = ' || quote_literal(:'gid'));
+select tests.denied('nor forge who created it',
+  'update public.groups set created_by = ' || quote_literal(:'bob') || ' where id = ' || quote_literal(:'gid'));
+select tests.denied('nor move the row to another id',
+  'update public.groups set id = gen_random_uuid() where id = ' || quote_literal(:'gid'));
+
+-- The column itself refuses a malformed code however it is written, so a
+-- future code path cannot reintroduce this.
+reset role;
+select tests.denied('the column rejects a short code even as the table owner',
+  'update public.groups set invite_code = ''a'' where id = ' || quote_literal(:'gid'));
+select tests.denied('and one outside the alphabet',
+  'update public.groups set invite_code = ''AB0OIL'' where id = ' || quote_literal(:'gid'));
+set role authenticated;
+
+-- Rotation still works: it runs as the definer, so the grant does not bind it.
+select tests.as_user(:'alice');
+select tests.allowed('alice can still rotate the code properly',
+  'select public.rotate_invite_code(' || quote_literal(:'gid') || ')');
+
+\echo ''
 \echo '=== 4. Signed out entirely ==='
 select tests.as_user(null);
 select tests.invisible('any profile',   'select * from public.profiles');

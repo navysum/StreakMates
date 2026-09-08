@@ -158,6 +158,15 @@ export default function FocusScreen() {
     const title = draft.trim();
     if (!title) return;
     setError(null);
+
+    // Adding on the shared tab with nowhere to share to used to fall through
+    // to groupId = null: the task was written as a private one and vanished
+    // from the list you were looking at. Refuse instead of guessing.
+    if (scope === 'shared' && !addTo) {
+      setError('Pick a group first — a shared task has to belong to one.');
+      return;
+    }
+
     try {
       const groupId = scope === 'shared' ? addTo : null;
       const siblings = (tasks.data ?? []).filter((t) => t.group_id === groupId);
@@ -334,7 +343,7 @@ export default function FocusScreen() {
             label="Add"
             variant="primary"
             onPress={onAdd}
-            disabled={!draft.trim()}
+            disabled={!draft.trim() || (scope === 'shared' && !addTo)}
             busy={addTask.isPending}
           />
         </View>
@@ -397,7 +406,7 @@ export default function FocusScreen() {
       </Plate>
 
       {tasks.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       ) : scope === 'mine' ? (
         mine.length === 0 ? (
           <EmptyState

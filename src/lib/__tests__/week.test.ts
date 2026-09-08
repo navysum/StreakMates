@@ -151,3 +151,39 @@ test('aggregate: the future is never missed', () => {
   assert.equal(cells[5].state, 'off');
   assert.equal(cells[6].state, 'off');
 });
+
+test('aggregate: a habit owes nothing before it existed', () => {
+  // Created on the Wednesday, so Monday and Tuesday are not misses.
+  const habits = [{ id: 'a', schedule: daily, startsOn: '2026-09-02' }];
+  const cells = aggregateCells(TODAY, habits, () => false, TODAY);
+  assert.deepEqual(
+    cells.map((c) => c.state),
+    ['off', 'off', 'missed', 'missed', 'today', 'off', 'off'],
+  );
+});
+
+test('aggregate: someone who joined on Wednesday did not miss Monday', () => {
+  const habits = [H('a', daily)];
+  const cells = aggregateCells(TODAY, habits, () => false, TODAY, '2026-09-02');
+  assert.deepEqual(
+    cells.map((c) => c.state),
+    ['off', 'off', 'missed', 'missed', 'today', 'off', 'off'],
+  );
+});
+
+test('aggregate: a group made today opens on no failures at all', () => {
+  const habits = [{ id: 'a', schedule: daily, startsOn: TODAY }];
+  const cells = aggregateCells(TODAY, habits, () => false, TODAY, TODAY);
+  assert.deepEqual(
+    cells.map((c) => c.state),
+    ['off', 'off', 'off', 'off', 'today', 'off', 'off'],
+  );
+});
+
+test('aggregate: without the dates nothing changes', () => {
+  const habits = [H('a', daily)];
+  assert.deepEqual(
+    aggregateCells(TODAY, habits, () => false, TODAY).map((c) => c.state),
+    ['missed', 'missed', 'missed', 'missed', 'today', 'off', 'off'],
+  );
+});

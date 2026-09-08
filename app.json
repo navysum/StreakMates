@@ -15,7 +15,7 @@
     "android": {
       "package": "com.navysum.streakmates",
       "adaptiveIcon": {
-        "backgroundColor": "#FDFAF2",
+        "backgroundColor": "#f2efe6",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -34,11 +34,22 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#FDFAF2",
-          "dark": { "backgroundColor": "#0A0B0A" }
+          "backgroundColor": "#f2efe6",
+          "dark": {
+            "backgroundColor": "#0f120f"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#3f6248"
         }
       ]
     ],
-    "experiments": { "typedRoutes": true }
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }
