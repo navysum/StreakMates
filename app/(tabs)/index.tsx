@@ -193,7 +193,7 @@ export default function TodayScreen() {
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       ) : tab === 'mine' ? (
         mine.length === 0 ? (
           <EmptyState

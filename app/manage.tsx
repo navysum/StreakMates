@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plate } from '@/components/Plate';
 import { Notice } from '@/components/Notice';
 import { Tag } from '@/components/Tag';
@@ -23,6 +24,7 @@ export default function ManageScreen() {
   const { colors } = useTheme();
   const { userId } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const all = useHabits(true);
   const groups = useGroups();
@@ -64,11 +66,11 @@ export default function ManageScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Manage habits" eyebrow="Reorder, archive, restore" />
-      <ScrollView contentContainerStyle={styles.body}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}>
         {error ? <Notice label="Something went wrong">{error}</Notice> : null}
 
         {all.isLoading ? (
-          <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+          <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
         ) : (
           <>
             {lists.length === 0 ? (
@@ -150,7 +152,7 @@ export default function ManageScreen() {
                   >
                     <Text
                       numberOfLines={1}
-                      style={[typography.body, styles.name, { color: ink(colors, 55) }]}
+                      style={[typography.body, styles.name, { color: ink(colors, 62) }]}
                     >
                       {habit.title}
                     </Text>
@@ -205,7 +207,7 @@ function Arrow({
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  body: { padding: spacing.page, gap: spacing.section },
   loader: { marginTop: 32 },
   row: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: space.md },
   arrows: { gap: 2 },

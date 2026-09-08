@@ -34,7 +34,9 @@ export function reminderFor(habit: Habit): Reminder | null {
 
   return {
     habitId: habit.id,
-    title: habit.emoji ? `${habit.emoji} ${habit.title}` : habit.title,
+    // No emoji: nothing else in the app shows one any more, and a habit
+    // created before that still carries whatever it was given.
+    title: habit.title,
     at: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
     // A weekly habit has no fixed days, so it is reminded every day and the
     // person decides which ones to use.

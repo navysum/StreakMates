@@ -32,6 +32,7 @@ export function Board({ habits, members, done, date, userId }: Props) {
       targetDays: h.target_days,
       targetPerWeek: h.target_per_week,
     },
+    startsOn: h.created_at.slice(0, 10),
   }));
 
   const rows = members
@@ -41,6 +42,7 @@ export function Board({ habits, members, done, date, userId }: Props) {
         schedules,
         (habitId, day) => done.has(doneKey(habitId, member.user_id, day)),
         date,
+        member.joined_at.slice(0, 10),
       );
       const owed = cells.filter((c) => c.state !== 'off').length;
       const kept = cells.filter((c) => c.state === 'done').length;

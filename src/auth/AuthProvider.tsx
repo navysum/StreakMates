@@ -69,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // In Expo Go this is an exp:// URL whose host changes per tunnel, so
         // Supabase needs a wildcard redirect entry. A development build uses
-        // the habits:// scheme instead.
+        // the streakmates:// scheme from app.json instead.
         const redirectTo = Linking.createURL('/auth-callback');
 
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -82,7 +82,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
         if (result.type !== 'success') return; // cancelled or dismissed
 
-        const code = new URL(result.url).searchParams.get('code');
+        const params = new URL(result.url).searchParams;
+
+        // Google reports a refusal by redirecting back with an error rather
+        // than by failing the request, so without this it surfaces as the
+        // generic "no code" below and reads like a bug in the app.
+        const denied = params.get('error_description') ?? params.get('error');
+        if (denied) throw new Error(denied);
+
+        const code = params.get('code');
         if (!code) throw new Error('Sign-in finished without a code.');
 
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);

@@ -38,7 +38,7 @@ export function Plate({ label, action, onAction, marks, flush, style, children }
         {label || action ? (
           <View style={styles.header}>
             {label ? (
-              <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+              <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
             ) : (
               <View />
             )}
@@ -54,7 +54,7 @@ export function Plate({ label, action, onAction, marks, flush, style, children }
                   <Text style={[typography.label, { color: colors.accent }]}>{action}</Text>
                 </Pressable>
               ) : (
-                <Text style={[typography.label, { color: ink(colors, 60) }]}>{action}</Text>
+                <Text style={[typography.label, { color: ink(colors, 62) }]}>{action}</Text>
               )
             ) : null}
           </View>

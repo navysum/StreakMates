@@ -57,7 +57,7 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
           style={[
             typography.body,
             {
-              color: done ? ink(colors, 55) : colors.text,
+              color: done ? ink(colors, 62) : colors.text,
               textDecorationLine: done ? 'line-through' : 'none',
             },
           ]}

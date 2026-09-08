@@ -13,7 +13,9 @@ import { chunked } from './chunked-store';
  * in the iOS Keychain and the Android Keystore instead.
  */
 
-const LIMIT = 1800; // headroom under SecureStore's 2048-byte guidance
+/** Bytes, not characters — `split` measures in UTF-8. Headroom under
+ *  SecureStore's 2048-byte guidance. */
+const LIMIT = 1800;
 
 const secureStore = {
   get: (key: string) => SecureStore.getItemAsync(key),

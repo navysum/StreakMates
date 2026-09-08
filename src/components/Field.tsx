@@ -11,7 +11,7 @@ export function Field({ label, last, style, ...input }: Props) {
     <View
       style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+      <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
       <TextInput
         placeholderTextColor={ink(colors, 45)}
         style={[styles.input, typography.body, { color: colors.text }, style]}
@@ -36,7 +36,7 @@ export function FieldRow({
     <View
       style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+      <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
       <View style={styles.value}>{children}</View>
     </View>
   );

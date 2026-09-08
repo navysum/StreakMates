@@ -23,7 +23,7 @@ export function StatTrio({ stats, labelFirst }: { stats: Stat[]; labelFirst?: bo
         >
           {labelFirst ? (
             <>
-              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 62) }]}>
                 {stat.label}
               </Text>
               <Text style={[typography.stat, { color: stat.accent ? colors.accent : colors.text }]}>
@@ -35,7 +35,7 @@ export function StatTrio({ stats, labelFirst }: { stats: Stat[]; labelFirst?: bo
               <Text style={[typography.stat, { color: stat.accent ? colors.accent : colors.text }]}>
                 {stat.value}
               </Text>
-              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 62) }]}>
                 {stat.label}
               </Text>
             </>

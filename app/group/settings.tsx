@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Plate } from '@/components/Plate';
 import { Field } from '@/components/Field';
@@ -13,6 +14,7 @@ import { space, spacing } from '@/theme/tokens';
 export default function GroupSettingsScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const groups = useGroups();
@@ -43,7 +45,10 @@ export default function GroupSettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Group settings" eyebrow="Everyone in the group sees this" />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Plate label="Group">
           <Field
             label="Name"
@@ -74,5 +79,5 @@ export default function GroupSettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  body: { padding: spacing.page, gap: spacing.section },
 });

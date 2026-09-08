@@ -72,6 +72,24 @@ that must not move are held by **grant** instead:
 | `habits` | title, emoji, colour, cadence, targets, reminder, order, group, archived | `id`, `owner_id`, `created_at` |
 | `check_ins` | note | `habit_id`, `user_id`, `local_date` |
 | `profiles` | username, display name, avatar, timezone | `id` |
+| `groups` | name, emoji | `id`, `invite_code`, `created_by`, `created_at` |
+| `tasks` | title, done_at, position, group, completion kind | `id`, `user_id`, `created_at` |
+| `focus_sessions`, `task_completions` | nothing — they are written once | every column |
+
+`groups` was missed when the others were done, and the gap was real: its owner
+could write
+
+```sql
+update public.groups set invite_code = 'a' where id = ...;
+```
+
+and reduce a code generated from `gen_random_uuid()` with rejection sampling to
+a single character — one guess in 31, against a limit of ten an hour. The same
+statement could point `created_by` at somebody who had never seen the group.
+Both are now refused by the grant, and `invite_code` additionally carries a
+check constraint matching the generator's own shape, so no future code path can
+put a weak value there either. Rotation is unaffected: `rotate_invite_code` is
+`SECURITY DEFINER`, so it does not run under the client's grants.
 
 `profiles` has no INSERT policy at all: creating a profile row is something the
 database does, through `handle_new_user` on signup or `set_username` for an
@@ -93,6 +111,9 @@ was meant to help.
   policy against a row that no longer exists, so a delete broadcasts the primary
   key. A subscriber learns that some check-in id disappeared and nothing else —
   no user, no habit, no date.
+- **An owner can rename their own group and change nothing else.** Members
+  cannot rename it at all; there is no UPDATE policy on `group_members`, so
+  nobody can promote themselves to owner.
 - **Two moderate advisories** sit in Expo's own build tooling
   (`@expo/prebuild-config` → `decode-uri-component`, `uuid`). Neither is
   reachable from the shipped bundle, and `npm audit fix --force` downgrades

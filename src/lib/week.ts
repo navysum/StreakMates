@@ -79,17 +79,29 @@ export function weekDoneCount(date: string, done: Set<string>): number {
  * A day is done only when everything owed that day was done — a half-kept day
  * is not a kept day. Today is never "missed" while it is still today, and a day
  * that owed nothing cannot be failed.
+ *
+ * Nothing is owed before it existed. A habit created on Thursday was not owed
+ * on Monday, and a person who joined on Thursday was not in the group on
+ * Monday — without `startsOn` and `from` a group made today opens on three
+ * missed days for everybody in it, which is both untrue and a miserable first
+ * screen. This is the same rule `leaderboard.ts` already applies; the board
+ * used to disagree with the standings sitting underneath it.
  */
 export function aggregateCells(
   date: string,
-  habits: { id: string; schedule: Schedule }[],
+  habits: { id: string; schedule: Schedule; /** ISO date it was created. */ startsOn?: string }[],
   isDone: (habitId: string, day: string) => boolean,
   today: string,
+  /** ISO date this person joined. Days before it are nobody's failure. */
+  from?: string,
 ): Cell[] {
   return weekOf(date).map((day) => {
     if (day > today) return { date: day, state: 'off' as const };
+    if (from && day < from) return { date: day, state: 'off' as const };
 
-    const owed = habits.filter((h) => isScheduled(h.schedule, day));
+    const owed = habits.filter(
+      (h) => isScheduled(h.schedule, day) && !(h.startsOn && day < h.startsOn),
+    );
     if (owed.length === 0) return { date: day, state: 'off' as const };
 
     const kept = owed.filter((h) => isDone(h.id, day)).length;

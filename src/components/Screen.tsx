@@ -60,7 +60,7 @@ export function Screen({
         <View style={styles.headRow}>
           <View style={styles.head}>
             {label ? (
-              <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+              <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
             ) : null}
             <Text style={[typography.screenTitle, { color: colors.text }]}>{title}</Text>
           </View>

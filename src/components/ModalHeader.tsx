@@ -18,7 +18,7 @@ export function ModalHeader({ title, eyebrow }: { title: string; eyebrow?: strin
     <View style={[styles.bar, { paddingTop: insets.top + space.md }]}>
       <View style={styles.text}>
         {eyebrow ? (
-          <Text style={[typography.label, { color: ink(colors, 60) }]}>{eyebrow}</Text>
+          <Text style={[typography.label, { color: ink(colors, 62) }]}>{eyebrow}</Text>
         ) : null}
         <Text style={[typography.screenTitle, { color: colors.text }]}>{title}</Text>
       </View>

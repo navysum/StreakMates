@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, Text, TextInput, View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Plate } from '@/components/Plate';
 import { ModalHeader } from '@/components/ModalHeader';
@@ -19,6 +20,7 @@ const ALLOWED = /[23456789ABCDEFGHJKMNPQRSTUVWXYZ]/g;
 export default function JoinGroupScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const input = useRef<TextInput>(null);
 
   const [code, setCode] = useState('');
@@ -68,7 +70,10 @@ export default function JoinGroupScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Join a group" eyebrow="Six characters" />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={[typography.prose, { color: ink(colors, 78) }]}>
           Ask a friend for their group’s code.
         </Text>
@@ -117,7 +122,7 @@ export default function JoinGroupScreen() {
         />
 
         {lookup.isPending ? (
-          <Text style={[typography.label, { color: ink(colors, 60) }]}>Checking…</Text>
+          <Text style={[typography.label, { color: ink(colors, 62) }]}>Checking…</Text>
         ) : null}
 
         {preview ? (
@@ -155,7 +160,7 @@ export default function JoinGroupScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  body: { padding: spacing.page, gap: spacing.section },
   boxes: { flexDirection: 'row', gap: space.sm, justifyContent: 'center', paddingVertical: space.sm },
   box: {
     width: 44,
