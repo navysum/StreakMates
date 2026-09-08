@@ -313,8 +313,8 @@ additive migration.
 ## 12. Before switching it on
 
 - **It has not run against the real VPS.** The tailnet makes it unreachable from
-  a development session, so the logic is unit tested and the integration run is
-  yours. `--dry-run` reports what it would change without touching either side.
+  the environment this was written in, so the logic is unit tested and the
+  integration run is yours. `--dry-run` reports what it would change without touching either side.
 - **Start with one habit and `from-lifeos`** for a few days. That is a safer
   first run than eight habits bidirectional, and it exercises the whole path.
 - **Back up the state file with the vault.** Losing it costs one run of
