@@ -79,11 +79,18 @@ $$;
 -- what the suite asserts.
 -- ----------------------------------------------------------------------------
 
-revoke execute on function public.username_available(text)              from anon;
-revoke execute on function public.preview_group_by_code(text)           from anon;
-revoke execute on function public.join_group_with_code(text)            from anon;
-revoke execute on function public.create_group(text, text)              from anon;
-revoke execute on function public.rotate_invite_code(uuid)              from anon;
+-- From `public` as well as `anon`, and that is the whole point: Postgres grants
+-- EXECUTE on a new function to PUBLIC by default, and `anon` inherits it that
+-- way rather than by a grant of its own. Revoking from `anon` alone leaves the
+-- PUBLIC grant standing and changes nothing at all — which is exactly what
+-- happened on the first attempt at this migration, and what running it caught.
+-- 0007 already had this right for generate_invite_code.
+
+revoke execute on function public.username_available(text)    from public, anon;
+revoke execute on function public.preview_group_by_code(text) from public, anon;
+revoke execute on function public.join_group_with_code(text)  from public, anon;
+revoke execute on function public.create_group(text, text)    from public, anon;
+revoke execute on function public.rotate_invite_code(uuid)    from public, anon;
 
 -- The revoke above removes what default privileges granted; this re-states the
 -- grant the app actually needs, so the intent is readable in one place.
