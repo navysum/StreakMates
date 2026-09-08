@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './Button';
 import { Choice } from './Choice';
 import { Field } from './Field';
@@ -80,6 +81,7 @@ export function HabitForm({
   lockVisibility,
 }: Props) {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
   const [value, setValue] = useState<HabitFormValue>(initial ?? emptyHabit);
 
   const set = <K extends keyof HabitFormValue>(key: K, v: HabitFormValue[K]) =>
@@ -96,7 +98,10 @@ export function HabitForm({
   const canSubmit = value.title.trim().length > 0 && !busy;
 
   return (
-    <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+      keyboardShouldPersistTaps="handled"
+    >
       <Plate label="Habit">
         <Field
           label="Name"
@@ -145,7 +150,7 @@ export function HabitForm({
                     <Text
                       style={[
                         typography.labelSmall,
-                        { color: on ? colors.accents[700] : ink(colors, 60) },
+                        { color: on ? colors.accents[700] : ink(colors, 62) },
                       ]}
                     >
                       {label}
@@ -175,7 +180,7 @@ export function HabitForm({
             last
           />
 
-          <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+          <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
             {value.cadence === 'daily'
               ? 'Every day'
               : value.cadence === 'days'
@@ -218,7 +223,8 @@ export function HabitForm({
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  // The bottom padding is added at render time from the safe-area inset.
+  body: { padding: spacing.page, gap: spacing.section },
   stack: { gap: space.lg },
   days: { flexDirection: 'row', gap: 5 },
   day: {

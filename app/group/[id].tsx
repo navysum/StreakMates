@@ -100,7 +100,7 @@ export default function GroupScreen() {
   if (groups.isLoading || members.isLoading) {
     return (
       <Screen title="Group">
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       </Screen>
     );
   }
@@ -233,7 +233,7 @@ export default function GroupScreen() {
                 style={[
                   typography.figureSmall,
                   styles.place,
-                  { color: i === 0 ? colors.accents[700] : ink(colors, 55) },
+                  { color: i === 0 ? colors.accents[700] : ink(colors, 62) },
                 ]}
               >
                 {String(i + 1).padStart(2, '0')}

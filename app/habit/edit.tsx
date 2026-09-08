@@ -44,7 +44,7 @@ export default function EditHabitScreen() {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <ModalHeader title="Habit" />
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       </View>
     );
   }

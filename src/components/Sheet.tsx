@@ -45,7 +45,7 @@ export function Sheet({
       <View style={styles.dock} pointerEvents="box-none">
         <View style={[styles.sheet, { backgroundColor: colors.bg, borderColor: colors.divider }]}>
           {title ? (
-            <Text style={[typography.label, styles.title, { color: ink(colors, 60) }]}>{title}</Text>
+            <Text style={[typography.label, styles.title, { color: ink(colors, 62) }]}>{title}</Text>
           ) : null}
 
           {actions.map((action, i) => (

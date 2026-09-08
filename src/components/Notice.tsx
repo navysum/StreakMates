@@ -15,7 +15,7 @@ export function Notice({ label, children }: { label?: string; children: string }
   return (
     <View style={[styles.box, { borderLeftColor: colors.accent }]}>
       {label ? (
-        <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+        <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
       ) : null}
       <Text style={[typography.prose, { color: ink(colors, 78) }]}>{children}</Text>
     </View>

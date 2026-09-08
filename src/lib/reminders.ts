@@ -7,6 +7,7 @@
  * a later problem.
  */
 import * as Notifications from 'expo-notifications';
+import { Platform } from 'react-native';
 import type { Habit } from './types';
 import {
   remindersFor,
@@ -16,6 +17,39 @@ import {
 } from './reminders-pure';
 
 export * from './reminders-pure';
+
+/**
+ * Android puts every notification in a channel, and the channel — not the
+ * notification — owns whether it makes a sound and whether it comes forward.
+ * Post without one and Android files it under a default low-importance
+ * channel: no sound, no banner. `sound: true` on the focus alarm is simply
+ * ignored. That is the whole reason a timer that works on an iPhone appears
+ * broken on a Pixel, so the channels are created before anything is scheduled.
+ *
+ * Two of them, because a person may reasonably want the end of a focus stretch
+ * to make a noise and a habit reminder not to. Android shows them separately
+ * in system settings and remembers what they choose.
+ *
+ * Creating a channel that already exists updates it, so this is safe to call
+ * on every launch. It is a no-op on iOS.
+ */
+export const CHANNEL = { reminders: 'reminders', focus: 'focus' } as const;
+
+export async function ensureChannels(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync(CHANNEL.reminders, {
+    name: 'Habit reminders',
+    description: 'The nudge at the time you asked for.',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'default',
+  });
+  await Notifications.setNotificationChannelAsync(CHANNEL.focus, {
+    name: 'Focus timer',
+    description: 'The end of a stretch of focus, and the end of a break.',
+    importance: Notifications.AndroidImportance.HIGH,
+    sound: 'default',
+  });
+}
 
 export async function ensurePermission(): Promise<boolean> {
   const existing = await Notifications.getPermissionsAsync();
@@ -33,6 +67,8 @@ export async function ensurePermission(): Promise<boolean> {
  * costs a permission-visible churn on every app open, so this diffs first.
  */
 export async function syncReminders(habits: Habit[]): Promise<{ added: number; removed: number }> {
+  await ensureChannels();
+
   const wanted = new Map<string, { reminder: Reminder; weekday: number | null }>();
   for (const reminder of remindersFor(habits)) {
     if (reminder.weekdays.length === 0) {
@@ -69,14 +105,21 @@ export async function syncReminders(habits: Habit[]): Promise<{ added: number; r
         body: 'Still to do today.',
         data: { key, habitId: reminder.habitId },
       },
+      // channelId lives on the trigger, not the request, and is ignored on iOS.
       trigger:
         weekday === null
-          ? { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute }
+          ? {
+              type: Notifications.SchedulableTriggerInputTypes.DAILY,
+              hour,
+              minute,
+              channelId: CHANNEL.reminders,
+            }
           : {
               type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
               weekday: toSchedulerWeekday(weekday),
               hour,
               minute,
+              channelId: CHANNEL.reminders,
             },
     });
     added++;
@@ -104,6 +147,7 @@ const FOCUS_ALARM = 'streakmates.focus-alarm';
 
 export async function scheduleFocusAlarm(finishesAt: number, phase: string): Promise<void> {
   await cancelFocusAlarm();
+  await ensureChannels();
 
   const seconds = Math.round((finishesAt - Date.now()) / 1000);
   if (seconds <= 0) return; // already over; nothing to announce
@@ -121,6 +165,7 @@ export async function scheduleFocusAlarm(finishesAt: number, phase: string): Pro
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds,
         repeats: false,
+        channelId: CHANNEL.focus,
       },
     });
   } catch {

@@ -68,7 +68,7 @@ export default function GroupsScreen() {
       ) : null}
 
       {groups.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       ) : list.length === 0 ? (
         <EmptyState
           title="No groups yet"

@@ -49,8 +49,11 @@ test('a weekly habit reminds daily, since it has no fixed days', () => {
   assert.deepEqual(r.weekdays, []);
 });
 
-test('the emoji rides along in the title when there is one', () => {
-  assert.equal(reminderFor(habit({ emoji: '🏃' }))!.title, '🏃 Morning run');
+test('the title is the habit name, emoji or not', () => {
+  // The column still holds whatever habits made before the redesign were
+  // given. Nothing in the app renders one now, and a notification is not the
+  // one place to bring them back.
+  assert.equal(reminderFor(habit({ emoji: '🏃' }))!.title, 'Morning run');
   assert.equal(reminderFor(habit())!.title, 'Morning run');
 });
 
