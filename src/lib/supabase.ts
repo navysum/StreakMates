@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { sessionStorage } from './secure-storage';
 
@@ -43,11 +44,19 @@ export const supabase: SupabaseClient | null =
           storage: sessionStorage,
           autoRefreshToken: true,
           persistSession: true,
-          // There is no URL to read a session back from on native.
-          detectSessionInUrl: false,
-          // The OAuth code is exchanged by hand in AuthProvider after the
-          // in-app browser redirects back, which needs PKCE rather than the
-          // implicit flow.
+          /**
+           * On native there is no URL to read a session back from: the in-app
+           * browser hands the code to AuthProvider, which exchanges it by hand.
+           *
+           * On web there is. Google redirects the whole page back to the site
+           * with `?code=...`, and this is what picks it up and clears the query
+           * string afterwards. Left false — as it was — web sign-in completes
+           * at Google and then lands on a signed-out app, with the code sitting
+           * unused in the address bar.
+           */
+          detectSessionInUrl: Platform.OS === 'web',
+          // PKCE either way: on native because the code is exchanged by hand,
+          // on web because a public client should never use the implicit flow.
           flowType: 'pkce',
         },
       })

@@ -10,6 +10,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { useProfile } from '@/lib/queries';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { WebShell } from '@/components/WebShell';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   /* already hidden — nothing to do */
@@ -141,7 +142,9 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
           <AuthProvider>
-            <AuthGate />
+            <WebShell>
+              <AuthGate />
+            </WebShell>
           </AuthProvider>
         </ThemeProvider>
       </QueryClientProvider>

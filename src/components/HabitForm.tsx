@@ -3,12 +3,13 @@ import { Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './Button';
 import { Choice } from './Choice';
-import { Field } from './Field';
+import { Field, FieldRow } from './Field';
 import { Plate } from './Plate';
 import { Segmented } from './Segmented';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ink, radius, space, spacing, typography } from '@/theme/tokens';
 import { WEEKDAY_LABELS } from '@/lib/date';
+import { CAN_SCHEDULE } from '@/lib/reminders';
 import type { Cadence, HabitColor } from '@/lib/types';
 
 /** Accepts 7, 7:5, 0705 and the like; anything unreadable becomes no reminder. */
@@ -169,16 +170,25 @@ export function HabitForm({
             />
           ) : null}
 
-          <Field
-            label="Remind me"
-            value={value.reminder_at}
-            onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
-            onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
-            placeholder="07:00 — none"
-            keyboardType="numbers-and-punctuation"
-            maxLength={5}
-            last
-          />
+          {CAN_SCHEDULE ? (
+            <Field
+              label="Remind me"
+              value={value.reminder_at}
+              onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
+              onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
+              placeholder="07:00 — none"
+              keyboardType="numbers-and-punctuation"
+              maxLength={5}
+              last
+            />
+          ) : (
+            // A browser cannot wake itself at 07:00, so offering the field
+            // would be taking a time it can never honour. A reminder set on
+            // the phone still works, and still shows on the habit's own screen.
+            <FieldRow label="Remind me" last>
+              <Text style={[typography.body, { color: ink(colors, 62) }]}>On the phone app</Text>
+            </FieldRow>
+          )}
 
           <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
             {value.cadence === 'daily'
