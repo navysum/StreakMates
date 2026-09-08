@@ -395,6 +395,33 @@ export const border = { hairline: 1 } as const;
 export const hit = 44;
 
 /**
+ * Real padding that brings a line of text up to `hit`, rather than hitSlop.
+ *
+ * hitSlop is the obvious tool and it is the wrong one here: react-native-web
+ * does not implement it at all, so every text control in this app measured
+ * 14px tall in a browser — the exact height of its own glyphs — while looking
+ * correct on a phone. "See all", "+ Add", "Clear", "Edit habit" and every
+ * back arrow were affected.
+ *
+ * Padding works on all three platforms and is visible to a layout inspector,
+ * which is the other half of why it is better. Spread it into a Pressable's
+ * style; `marginVertical` cancels the space it adds so surrounding layout is
+ * unchanged.
+ *
+ *   line height 14  ->  15 above and below  ->  44
+ */
+export function tapPadding(lineHeight: number) {
+  const pad = Math.max(0, Math.ceil((hit - lineHeight) / 2));
+  return { paddingVertical: pad, marginVertical: -pad } as const;
+}
+
+/** The same idea horizontally, for a short label like "+ Add". */
+export function tapPaddingX(width: number) {
+  const pad = Math.max(0, Math.ceil((hit - width) / 2));
+  return { paddingHorizontal: pad, marginHorizontal: -pad } as const;
+}
+
+/**
  * Type. Condensed for structure, Barlow for prose, nothing below 11.
  * Letter-spacing is in points here rather than em, so 0.10em on a 12px label
  * becomes 1.2.

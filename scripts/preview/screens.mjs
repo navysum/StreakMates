@@ -106,6 +106,7 @@ const problems = [];
 for (const scheme of ['light', 'dark']) {
   const ctx = await browser.newContext({
     viewport: { width: 402, height: 850 }, deviceScaleFactor: 2, colorScheme: scheme,
+    reducedMotion: process.env.REDUCED ? 'reduce' : 'no-preference',
   });
 
   await ctx.route('**/*.supabase.co/**', async (route) => {

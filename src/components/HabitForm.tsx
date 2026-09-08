@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, View, StyleSheet } from 'react-native';
+import { KeyboardSafe } from './KeyboardSafe';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from './Button';
 import { Choice } from './Choice';
@@ -99,136 +100,138 @@ export function HabitForm({
   const canSubmit = value.title.trim().length > 0 && !busy;
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
-      keyboardShouldPersistTaps="handled"
-    >
-      <Plate label="Habit">
-        <Field
-          label="Name"
-          value={value.title}
-          onChangeText={(t) => set('title', t)}
-          placeholder="Morning run"
-          autoFocus={!initial}
-          maxLength={80}
-          returnKeyType="done"
-          last
-        />
-      </Plate>
-
-      <Plate label="Schedule">
-        <View style={styles.stack}>
-          <Segmented
-            value={value.cadence}
-            onChange={(c) => set('cadence', c)}
-            options={[
-              { value: 'daily', label: 'Daily' },
-              { value: 'days', label: 'Days' },
-              { value: 'weekly', label: 'Weekly' },
-            ]}
-          />
-
-          {value.cadence === 'days' ? (
-            <View style={styles.days}>
-              {WEEKDAY_LABELS.map((label, i) => {
-                const day = i + 1;
-                const on = value.target_days.includes(day);
-                return (
-                  <Pressable
-                    key={day}
-                    onPress={() => toggleDay(day)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    style={({ pressed }) => [
-                      styles.day,
-                      {
-                        borderColor: on ? colors.accent : colors.divider,
-                        backgroundColor: on ? colors.accents[100] : 'transparent',
-                      },
-                      pressed && styles.pressed,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        typography.labelSmall,
-                        { color: on ? colors.accents[700] : ink(colors, 62) },
-                      ]}
-                    >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-
-          {value.cadence === 'weekly' ? (
-            <Segmented
-              value={String(value.target_per_week)}
-              onChange={(n) => set('target_per_week', Number(n))}
-              options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: String(n), label: `${n}×` }))}
-            />
-          ) : null}
-
-          {CAN_SCHEDULE ? (
-            <Field
-              label="Remind me"
-              value={value.reminder_at}
-              onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
-              onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
-              placeholder="07:00 — none"
-              keyboardType="numbers-and-punctuation"
-              maxLength={5}
-              last
-            />
-          ) : (
-            // A browser cannot wake itself at 07:00, so offering the field
-            // would be taking a time it can never honour. A reminder set on
-            // the phone still works, and still shows on the habit's own screen.
-            <FieldRow label="Remind me" last>
-              <Text style={[typography.body, { color: ink(colors, 62) }]}>On the phone app</Text>
-            </FieldRow>
-          )}
-
-          <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
-            {value.cadence === 'daily'
-              ? 'Every day'
-              : value.cadence === 'days'
-                ? value.target_days.length
-                  ? `${value.target_days.length} days a week`
-                  : 'Pick at least one day'
-                : `${value.target_per_week} times a week, any days`}
-          </Text>
-        </View>
-      </Plate>
-
-      {!lockVisibility && groups.length > 0 ? (
-        <Plate label="Who sees it">
-          <Choice
-            value={value.group_id}
-            onChange={(g) => set('group_id', g)}
-            options={[
-              { value: null, label: 'Private', hint: 'Only you' },
-              ...groups.map((g) => ({
-                value: g.id as string | null,
-                label: g.name,
-                hint: 'Everyone in the group checks in',
-              })),
-            ]}
+    <KeyboardSafe>
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Plate label="Habit">
+          <Field
+            label="Name"
+            value={value.title}
+            onChangeText={(t) => set('title', t)}
+            placeholder="Morning run"
+            autoFocus={!initial}
+            maxLength={80}
+            returnKeyType="done"
+            last
           />
         </Plate>
-      ) : null}
 
-      <Button
-        label={submitLabel}
-        variant="primary"
-        busy={busy}
-        disabled={!canSubmit}
-        onPress={() => onSubmit({ ...value, title: value.title.trim() })}
-      />
+        <Plate label="Schedule">
+          <View style={styles.stack}>
+            <Segmented
+              value={value.cadence}
+              onChange={(c) => set('cadence', c)}
+              options={[
+                { value: 'daily', label: 'Daily' },
+                { value: 'days', label: 'Days' },
+                { value: 'weekly', label: 'Weekly' },
+              ]}
+            />
 
-      {footer}
-    </ScrollView>
+            {value.cadence === 'days' ? (
+              <View style={styles.days}>
+                {WEEKDAY_LABELS.map((label, i) => {
+                  const day = i + 1;
+                  const on = value.target_days.includes(day);
+                  return (
+                    <Pressable
+                      key={day}
+                      onPress={() => toggleDay(day)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                      style={({ pressed }) => [
+                        styles.day,
+                        {
+                          borderColor: on ? colors.accent : colors.divider,
+                          backgroundColor: on ? colors.accents[100] : 'transparent',
+                        },
+                        pressed && styles.pressed,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          typography.labelSmall,
+                          { color: on ? colors.accents[700] : ink(colors, 62) },
+                        ]}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+
+            {value.cadence === 'weekly' ? (
+              <Segmented
+                value={String(value.target_per_week)}
+                onChange={(n) => set('target_per_week', Number(n))}
+                options={[1, 2, 3, 4, 5, 6, 7].map((n) => ({ value: String(n), label: `${n}×` }))}
+              />
+            ) : null}
+
+            {CAN_SCHEDULE ? (
+              <Field
+                label="Remind me"
+                value={value.reminder_at}
+                onChangeText={(text) => set('reminder_at', text.replace(/[^0-9:]/g, '').slice(0, 5))}
+                onBlur={() => set('reminder_at', normaliseTime(value.reminder_at))}
+                placeholder="07:00 — none"
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+                last
+              />
+            ) : (
+              // A browser cannot wake itself at 07:00, so offering the field
+              // would be taking a time it can never honour. A reminder set on
+              // the phone still works, and still shows on the habit's own screen.
+              <FieldRow label="Remind me" last>
+                <Text style={[typography.body, { color: ink(colors, 62) }]}>On the phone app</Text>
+              </FieldRow>
+            )}
+
+            <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
+              {value.cadence === 'daily'
+                ? 'Every day'
+                : value.cadence === 'days'
+                  ? value.target_days.length
+                    ? `${value.target_days.length} days a week`
+                    : 'Pick at least one day'
+                  : `${value.target_per_week} times a week, any days`}
+            </Text>
+          </View>
+        </Plate>
+
+        {!lockVisibility && groups.length > 0 ? (
+          <Plate label="Who sees it">
+            <Choice
+              value={value.group_id}
+              onChange={(g) => set('group_id', g)}
+              options={[
+                { value: null, label: 'Private', hint: 'Only you' },
+                ...groups.map((g) => ({
+                  value: g.id as string | null,
+                  label: g.name,
+                  hint: 'Everyone in the group checks in',
+                })),
+              ]}
+            />
+          </Plate>
+        ) : null}
+
+        <Button
+          label={submitLabel}
+          variant="primary"
+          busy={busy}
+          disabled={!canSubmit}
+          onPress={() => onSubmit({ ...value, title: value.title.trim() })}
+        />
+
+        {footer}
+      </ScrollView>
+    </KeyboardSafe>
   );
 }
 
