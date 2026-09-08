@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar, initials } from '@/components/Avatar';
@@ -9,6 +9,7 @@ import { HabitRow } from '@/components/HabitRow';
 import { Notice } from '@/components/Notice';
 import { Plate } from '@/components/Plate';
 import { Screen } from '@/components/Screen';
+import { Sheet } from '@/components/Sheet';
 import { Segmented } from '@/components/Segmented';
 import { useAuth } from '@/auth/AuthProvider';
 import {
@@ -19,6 +20,7 @@ import {
   useHabits,
   usePeople,
   useProfile,
+  useSetArchived,
   useToggleCheckIn,
   peopleById,
 } from '@/lib/queries';
@@ -43,6 +45,9 @@ export default function TodayScreen() {
   const [tab, setTab] = useState<'mine' | 'shared'>('mine');
 
   const today = toLocalDate();
+  // The habit whose contextual actions are open. Null when the sheet is shut.
+  const [menuFor, setMenuFor] = useState<Habit | null>(null);
+  const setArchived = useSetArchived();
   const habitsQuery = useHabits();
   const checkInsQuery = useCheckIns();
   const groupsQuery = useGroups();
@@ -70,6 +75,21 @@ export default function TodayScreen() {
   const doneToday = owed.filter((h) => completed.get(h.id)?.has(today)).length;
 
   const profile = useProfile(userId);
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        habitsQuery.refetch(),
+        checkInsQuery.refetch(),
+        groupsQuery.refetch(),
+        order.refetch(),
+        profile.refetch(),
+      ]),
+    [habitsQuery, checkInsQuery, groupsQuery, order, profile],
+  );
 
   // The longest run going among the habits on screen, as the one extra fact
   // the progress plate carries.
@@ -141,12 +161,14 @@ export default function TodayScreen() {
         last={last}
         onToggle={() => toggle.mutate({ habitId: habit.id, date: today, complete: !complete })}
         onPress={() => router.push(`/habit/${habit.id}`)}
+        onLongPress={() => setMenuFor(habit)}
       />
     );
   }
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title="Today"
       label={formatDayLabel(today)}
       trailing={
@@ -273,6 +295,44 @@ export default function TodayScreen() {
         />
         <Button label="Manage" onPress={() => router.push('/manage')} />
       </View>
+      {/* Contextual actions. Nothing here is exclusive to the gesture:
+          Open is the row's own tap, Edit is a link on the detail screen, and
+          Archive is a button on the edit screen. Delete is deliberately absent
+          — an accidental long press must not be two taps from destroying a
+          year of check-ins. */}
+      <Sheet
+        visible={menuFor !== null}
+        title={menuFor?.title}
+        onClose={() => setMenuFor(null)}
+        actions={
+          menuFor
+            ? [
+                {
+                  label: 'Open',
+                  hint: 'History, streak and details',
+                  onPress: () => router.push(`/habit/${menuFor.id}`),
+                },
+                {
+                  label: 'Edit',
+                  hint: 'Name, cadence and sharing',
+                  onPress: () =>
+                    router.push({ pathname: '/habit/edit', params: { id: menuFor.id } }),
+                },
+                {
+                  label: menuFor.archived_at ? 'Restore' : 'Archive',
+                  hint: menuFor.archived_at
+                    ? 'Put it back on Today'
+                    : 'Off Today, but every check-in is kept',
+                  onPress: () =>
+                    setArchived.mutate({
+                      id: menuFor.id,
+                      archived: !menuFor.archived_at,
+                    }),
+                },
+              ]
+            : []
+        }
+      />
     </Screen>
   );
 }

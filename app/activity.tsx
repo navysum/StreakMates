@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
@@ -35,6 +35,20 @@ export default function ActivityScreen() {
   const people = usePeople();
   const groups = useGroups();
   const reactions = useReactions();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        habits.refetch(),
+        checkIns.refetch(),
+        groups.refetch(),
+        reactions.refetch(),
+      ]),
+    [habits, checkIns, groups, reactions],
+  );
   const toggle = useToggleReaction(userId);
 
   const names = useMemo(() => peopleById(people.data), [people.data]);
@@ -60,6 +74,7 @@ export default function ActivityScreen() {
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title="Activity"
       label={feed.length ? `Last ${FEED_DAYS} days` : 'Nothing yet'}
       trailing={
