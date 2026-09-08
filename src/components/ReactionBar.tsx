@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Pressable, Text, View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, typography, hit } from '@/theme/tokens';
 import { REACTIONS, type ReactionEmoji } from '@/lib/types';
 
 /**
@@ -118,7 +118,9 @@ export function ReactionBar({ counts, onToggle }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
   chip: {
-    minHeight: 32,
+    // 44, not 32: these are the smallest controls in the app and they sit in
+    // a wrapping row where a mis-tap hits the neighbouring reaction.
+    minHeight: hit,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,

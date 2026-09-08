@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
+import { KeyboardSafe } from '@/components/KeyboardSafe';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
@@ -45,35 +46,37 @@ export default function GroupSettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="Group settings" eyebrow="Everyone in the group sees this" />
-      <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Plate label="Group">
-          <Field
-            label="Name"
-            value={name}
-            onChangeText={setName}
-            placeholder="The Gym Rats"
-            maxLength={60}
-            last
+      <KeyboardSafe>
+        <ScrollView
+          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Plate label="Group">
+            <Field
+              label="Name"
+              value={name}
+              onChangeText={setName}
+              placeholder="The Gym Rats"
+              maxLength={60}
+              last
+            />
+          </Plate>
+
+          <Button
+            label="Save changes"
+            variant="primary"
+            busy={update.isPending}
+            disabled={!changed || !name.trim()}
+            onPress={onSave}
           />
-        </Plate>
 
-        <Button
-          label="Save changes"
-          variant="primary"
-          busy={update.isPending}
-          disabled={!changed || !name.trim()}
-          onPress={onSave}
-        />
+          {error ? <Notice label="Could not save">{error}</Notice> : null}
 
-        {error ? <Notice label="Could not save">{error}</Notice> : null}
-
-        <Notice label="Owners only">
-          {'Only the group owner can rename a group. The invite code is changed from the group menu.'}
-        </Notice>
-      </ScrollView>
+          <Notice label="Owners only">
+            {'Only the group owner can rename a group. The invite code is changed from the group menu.'}
+          </Notice>
+        </ScrollView>
+      </KeyboardSafe>
     </View>
   );
 }
