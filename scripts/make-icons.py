@@ -1,24 +1,45 @@
 #!/usr/bin/env python3
 """
-Regenerate every app icon from the StreakMates mark.
+Regenerate every app icon from the StreakMates master logo.
 
     python3 scripts/make-icons.py
 
-The mark is drawn here rather than stored, so a palette change is a one-line
-edit and every size stays in step. It is a geometric reading of the logo: an
-"S" built from two circular bowls, swept with the brand gradient, on midnight.
+The master is assets/brand/logo-source.png — the artwork as supplied: a
+squircle tile on midnight, a gradient "S" formed from two figures, and the
+wordmark beneath. Everything the app ships is cut from that one file, so the
+logo has exactly one home and a new version of it is a drop-in replacement.
 
-REPLACING IT WITH THE REAL ARTWORK
-----------------------------------
-Drop the master logo in as a square PNG with a transparent background:
+WHAT EACH OUTPUT NEEDS, AND WHY THEY DIFFER
+-------------------------------------------
+The platforms want genuinely different things, which is why this is a script
+and not a resize:
 
-    assets/brand/logo-source.png
+  icon.png       Full-bleed square. iOS and Android apply their OWN corner
+                 mask, so shipping the artwork's rounded corners with black
+                 outside them shows as dark slivers in the four corners of the
+                 installed icon. The corners are filled with the tile's own
+                 ground instead, and the mask lands where the artwork's
+                 already-rounded edge is.
 
-and run the script again. It is used verbatim from then on — scaled, padded to
-each platform's safe zone, and flattened to white for the monochrome and
-notification variants — and nothing below is drawn. That is the intended end
-state; the drawn mark is a stand-in so the app is never shipping the old green
-icons while waiting for a file.
+  splash-icon    Rounded, with real transparency outside the curve, so it sits
+  favicon        correctly on the light sign-in screen as well as the midnight
+                 splash.
+
+  android-icon-* An adaptive icon is two layers the launcher moves relative to
+                 one another, so the foreground has to be the mark ALONE on
+                 transparency, and only the middle 66% of it survives the crop.
+
+  notification   Android keeps only the alpha channel and tints the result, so
+  monochrome     this must be a silhouette. A colour version renders as a
+                 white blob.
+
+The mark is lifted off its ground by luminance, not by a rectangular crop:
+the ground sits around luminance 15 and the mark runs far brighter, so the
+ramp below keeps the soft outer glow as partial alpha instead of cutting a
+hard edge around it. The dark figures inside the S drop out too — which is
+correct. On the adaptive icon they fall through to the background layer, which
+is the same colour, and on the monochrome they are the negative space that
+makes the mark read as two people rather than as a letter.
 """
 
 from pathlib import Path
@@ -28,97 +49,81 @@ ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "assets"
 SOURCE = ASSETS / "brand" / "logo-source.png"
 
-MIDNIGHT = (8, 12, 31, 255)
+# Measured off the master rather than assumed: the tile's straight edge starts
+# about 300px down a 1254px square, and its ground samples at (10, 14, 36).
+CORNER = 0.239
+GROUND = (10, 14, 36, 255)
 
-# The official gradient: electric blue → violet → orchid → soft pink.
-STOPS = [(0x4B, 0x61, 0xF8), (0x8B, 0x67, 0xF5), (0xC5, 0x6A, 0xE9), (0xF7, 0xA4, 0xE2)]
+# The mark's bounding box in the master, found by looking for bright pixels
+# inside the glowing border and above the wordmark. Padded to a square so the
+# mark keeps its proportions at every size.
+MARK_BOX = (396, 182, 874, 774)
 
-# Everything is drawn at 4x and downsampled, which is cheaper than antialiasing
-# an arc by hand and gives a cleaner edge than PIL's own.
-SS = 4
-
-
-def gradient_image(size, stops=STOPS):
-    """A diagonal sweep, top-left to bottom-right, the way the wordmark runs."""
-    img = Image.new("RGB", (size, size))
-    px = img.load()
-    n = len(stops) - 1
-    for y in range(size):
-        for x in range(size):
-            t = (x + y) / (2 * (size - 1))
-            seg = min(int(t * n), n - 1)
-            f = t * n - seg
-            a, b = stops[seg], stops[seg + 1]
-            px[x, y] = tuple(round(a[i] + (b[i] - a[i]) * f) for i in range(3))
-    return img
+SS = 4  # supersample, then downsample — cleaner than antialiasing by hand
 
 
-def mark_mask(size):
-    """
-    The S, as a mask.
+def master() -> Image.Image:
+    if not SOURCE.exists():
+        raise SystemExit(
+            f"Missing {SOURCE.relative_to(ROOT)}.\n"
+            "Drop the master logo in as a square PNG and run this again."
+        )
+    return Image.open(SOURCE).convert("RGB")
 
-    Drawn as a spine rather than as two PIL arcs. Two arcs of equal radius,
-    stacked and each swept past the halfway point so they overlap through the
-    waist, is what makes an S; two arcs that merely touch read as a C above a
-    reversed C, and two that touch at a single point leave a visible break.
-    The overlap is the letter.
 
-    The stroke is laid down as a dense run of discs along the spine, which
-    gives round caps and round joins for free — a polyline with a width would
-    give mitred corners at every sample.
-    """
-    from math import cos, sin, radians
-
+def rounded_mask(size: int, radius_fraction: float = CORNER) -> Image.Image:
     n = size * SS
-    mask = Image.new("L", (n, n), 0)
-    d = ImageDraw.Draw(mask)
-
-    r = n * 0.205
-    stroke = n * 0.115
-    cx = n / 2
-
-    def sweep(cy, a0, a1):
-        steps = 720
-        for i in range(steps + 1):
-            th = radians(a0 + (a1 - a0) * i / steps)
-            x = cx + r * cos(th)
-            y = cy + r * sin(th)
-            d.ellipse(
-                [x - stroke / 2, y - stroke / 2, x + stroke / 2, y + stroke / 2], fill=255
-            )
-
-    # Upper bowl: open at the top right, round over the top and down the left,
-    # finishing past centre. Lower bowl: picks up past centre, round the right
-    # and the bottom, finishing open at the lower left.
-    sweep(n / 2 - r, 300, 100)
-    sweep(n / 2 + r, 280, 530)
-
-    return mask.resize((size, size), Image.LANCZOS)
+    m = Image.new("L", (n, n), 0)
+    ImageDraw.Draw(m).rounded_rectangle(
+        [0, 0, n - 1, n - 1], radius=round(n * radius_fraction), fill=255
+    )
+    return m.resize((size, size), Image.LANCZOS)
 
 
-def source_mask(size):
-    """The alpha channel of the supplied artwork, as a mask."""
-    art = Image.open(SOURCE).convert("RGBA").resize((size, size), Image.LANCZOS)
-    return art.split()[3]
-
-
-def mark(size, scale=1.0, white=False):
+def tile(size: int, bleed: bool) -> Image.Image:
     """
-    The mark on a transparent square.
+    The whole lockup.
 
-    `scale` shrinks it inside the square, for Android's safe zone. `white`
-    flattens it for the monochrome and notification variants, which Android
-    tints itself and which must therefore be a silhouette, not a picture.
+    `bleed` fills the corners with the tile's own ground for the installed app
+    icon, where the OS rounds it; otherwise the corners are transparent.
     """
+    art = master().resize((size, size), Image.LANCZOS)
+    out = Image.new("RGBA", (size, size), GROUND if bleed else (0, 0, 0, 0))
+    out.paste(art, (0, 0), rounded_mask(size))
+    return out
+
+
+def mark(size: int, scale: float = 1.0, white: bool = False) -> Image.Image:
+    """The S alone, lifted off its ground by luminance."""
+    left, top, right, bottom = MARK_BOX
+    side = max(right - left, bottom - top)
+    cx, cy = (left + right) // 2, (top + bottom) // 2
+    half = side // 2 + 12  # a little air, so the glow is not clipped
+    art = master().crop((cx - half, cy - half, cx + half, cy + half))
+
     inner = max(1, round(size * scale))
-    mask = source_mask(inner) if SOURCE.exists() else mark_mask(inner)
-    body = Image.new("RGB", (inner, inner), (255, 255, 255)) if white else gradient_image(inner)
+    art = art.resize((inner, inner), Image.LANCZOS)
 
-    if SOURCE.exists() and not white:
-        body = Image.open(SOURCE).convert("RGBA").resize((inner, inner), Image.LANCZOS).convert("RGB")
+    # alpha = how far above the ground this pixel is. The ramp is what keeps
+    # the outer glow soft instead of cutting a hard edge around the mark.
+    #
+    # The silhouettes need a higher, steeper ramp. Android throws the colour
+    # away and paints whatever has alpha, so the mark's soft outer glow — which
+    # reads as depth in colour — comes back as a grey smudge trailing off the
+    # bottom-right of an otherwise crisp white shape. Cutting nearer the solid
+    # body of the mark leaves the silhouette and drops the glow.
+    LOW, HIGH = (64, 96) if white else (22, 78)
+    alpha = Image.new("L", (inner, inner))
+    src, dst = art.load(), alpha.load()
+    for y in range(inner):
+        for x in range(inner):
+            r, g, b = src[x, y]
+            lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+            dst[x, y] = max(0, min(255, round((lum - LOW) / (HIGH - LOW) * 255)))
 
+    body = Image.new("RGB", (inner, inner), (255, 255, 255)) if white else art
     layer = Image.new("RGBA", (inner, inner), (0, 0, 0, 0))
-    layer.paste(body, (0, 0), mask)
+    layer.paste(body, (0, 0), alpha)
 
     out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
     off = (size - inner) // 2
@@ -126,48 +131,22 @@ def mark(size, scale=1.0, white=False):
     return out
 
 
-def on_midnight(size, scale=1.0, radius=None):
-    """The mark on the brand's own ground, optionally with rounded corners."""
-    plate = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    ground = Image.new("RGBA", (size, size), MIDNIGHT)
-    if radius:
-        corner = Image.new("L", (size * SS, size * SS), 0)
-        ImageDraw.Draw(corner).rounded_rectangle(
-            [0, 0, size * SS - 1, size * SS - 1], radius=radius * SS, fill=255
-        )
-        ground.putalpha(corner.resize((size, size), Image.LANCZOS))
-    plate.alpha_composite(ground)
-    plate.alpha_composite(mark(size, scale))
-    return plate
-
-
-def write(img, name):
-    path = ASSETS / name
-    img.save(path)
+def write(img: Image.Image, name: str) -> None:
+    img.save(ASSETS / name)
     print(f"  {name:34} {img.size[0]}x{img.size[1]}")
 
 
-def main():
-    print("Source:", "assets/brand/logo-source.png" if SOURCE.exists() else "drawn from brand geometry")
+def main() -> None:
+    print(f"Source: {SOURCE.relative_to(ROOT)}")
 
-    # Full-bleed square. iOS applies its own corner mask, so drawing one here
-    # would show as a dark ring inside the real one.
-    write(on_midnight(1024, scale=0.72), "icon.png")
+    write(tile(1024, bleed=True), "icon.png")
+    write(tile(512, bleed=False), "splash-icon.png")
+    write(tile(64, bleed=False), "favicon.png")
 
-    # The sign-in mark and the splash, on transparent so both themes work.
-    write(mark(512, scale=0.92), "splash-icon.png")
-
-    # Android's adaptive icon: the outer 1/6 on every side is cropped away by
-    # the launcher's own shape, so the mark only gets the inner 66%.
-    write(Image.new("RGBA", (432, 432), MIDNIGHT), "android-icon-background.png")
-    write(mark(432, scale=0.46), "android-icon-foreground.png")
-    write(mark(432, scale=0.46, white=True), "android-icon-monochrome.png")
-
-    # Android tints the notification icon itself and keeps only the alpha, so
-    # this has to be a white silhouette.
-    write(mark(96, scale=0.86, white=True), "notification-icon.png")
-
-    write(on_midnight(64, scale=0.72, radius=14), "favicon.png")
+    write(Image.new("RGBA", (432, 432), GROUND), "android-icon-background.png")
+    write(mark(432, scale=0.60), "android-icon-foreground.png")
+    write(mark(432, scale=0.60, white=True), "android-icon-monochrome.png")
+    write(mark(96, scale=0.92, white=True), "notification-icon.png")
 
 
 if __name__ == "__main__":
