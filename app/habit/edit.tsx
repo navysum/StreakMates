@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button } from '@/components/Button';
 import { HabitForm, type HabitFormValue } from '@/components/HabitForm';
@@ -15,6 +15,7 @@ import {
   useSetArchived,
   useUpdateHabit,
 } from '@/lib/queries';
+import { confirm } from '@/lib/confirm';
 import { toLocalDate } from '@/lib/date';
 import { describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -80,45 +81,40 @@ export default function EditHabitScreen() {
     }
   }
 
-  function onSubmit(value: HabitFormValue) {
+  async function onSubmit(value: HabitFormValue) {
     const goingPublic = !habit!.group_id && value.group_id;
     if (!goingPublic) return void save(value);
 
     // Sharing cannot be un-seen, so it is never a silent side effect of Save.
     const group = groups?.find((g) => g.id === value.group_id);
-    Alert.alert(
-      'Share this habit?',
-      `Everyone in ${group?.name ?? 'the group'} will see ${habit!.title}, including the ${dates.size} check-in${dates.size === 1 ? '' : 's'} already against it. You can make it private again, but they will have seen it.`,
-      [
-        { text: 'Keep private', style: 'cancel' },
-        { text: 'Share it', onPress: () => void save(value) },
-      ],
-    );
+    const yes = await confirm({
+      title: 'Share this habit?',
+      message: `Everyone in ${group?.name ?? 'the group'} will see ${habit!.title}, including the ${dates.size} check-in${dates.size === 1 ? '' : 's'} already against it. You can make it private again, but they will have seen it.`,
+      confirmLabel: 'Share it',
+      cancelLabel: 'Keep private',
+    });
+    if (yes) await save(value);
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     const count = dates.size;
-    Alert.alert(
-      `Delete ${habit!.title}?`,
-      count > 0
-        ? `This deletes the habit and all ${count} check-in${count === 1 ? '' : 's'} against it. It cannot be undone — archiving keeps the history instead.`
-        : 'This deletes the habit. It cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await remove.mutateAsync(habit!.id);
-              router.back();
-            } catch (e) {
-              setError(e instanceof Error ? e.message : 'Could not delete the habit.');
-            }
-          },
-        },
-      ],
-    );
+    const yes = await confirm({
+      title: `Delete ${habit!.title}?`,
+      message:
+        count > 0
+          ? `This deletes the habit and all ${count} check-in${count === 1 ? '' : 's'} against it. It cannot be undone — archiving keeps the history instead.`
+          : 'This deletes the habit. It cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!yes) return;
+
+    try {
+      await remove.mutateAsync(habit!.id);
+      router.back();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the habit.');
+    }
   }
 
   const archived = !!habit.archived_at;
@@ -141,7 +137,7 @@ export default function EditHabitScreen() {
         initial={initial}
         submitLabel="Save changes"
         busy={update.isPending}
-        onSubmit={onSubmit}
+        onSubmit={(v) => void onSubmit(v)}
         groups={groups ?? []}
         footer={
           <View style={styles.footer}>
@@ -165,7 +161,7 @@ export default function EditHabitScreen() {
               label="Delete habit"
               variant="ghost"
               busy={remove.isPending}
-              onPress={confirmDelete}
+              onPress={() => void confirmDelete()}
             />
           </View>
         }
