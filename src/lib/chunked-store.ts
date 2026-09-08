@@ -3,7 +3,8 @@
  *
  * SecureStore warns above 2048 bytes per value, and a Supabase session is
  * larger than that once the JWT is in it. Values are split across numbered
- * chunks with the count stored under the key itself.
+ * chunks, measured in UTF-8 bytes because that is what the limit counts, with
+ * the count stored under the key itself.
  *
  * Kept apart from the SecureStore call sites so the decisions here can be
  * tested without a device.
@@ -20,11 +21,52 @@ export const safeKey = (key: string) => key.replace(/[^A-Za-z0-9._-]/g, '_');
 
 export const chunkKey = (key: string, i: number) => `${key}.${i}`;
 
+/**
+ * Split so that no chunk exceeds `limit` **bytes** once encoded as UTF-8.
+ *
+ * The limit SecureStore cares about is a byte count, not a character count, and
+ * a Supabase session is not pure ASCII: it carries the display name and email
+ * Google supplies. A name in Greek, Arabic or Japanese is two to three bytes a
+ * character, so slicing by `String.length` can hand SecureStore a chunk several
+ * times over its limit — and the failure lands as a session that will not
+ * persist, i.e. signed out again on every launch, for exactly the people whose
+ * names are not Latin.
+ *
+ * Code points are never split down the middle: a surrogate pair is measured and
+ * placed as one unit, so no chunk can end on half an emoji and no rejoined
+ * value can come back corrupted.
+ */
 export function split(value: string, limit: number): string[] {
   if (value.length === 0) return [''];
+
   const parts: string[] = [];
-  for (let i = 0; i < value.length; i += limit) parts.push(value.slice(i, i + limit));
+  let current = '';
+  let bytes = 0;
+
+  // Iterating the string yields whole code points, so a surrogate pair arrives
+  // as one two-unit character rather than as two halves.
+  for (const char of value) {
+    const size = utf8Length(char);
+    if (bytes + size > limit && current !== '') {
+      parts.push(current);
+      current = '';
+      bytes = 0;
+    }
+    current += char;
+    bytes += size;
+  }
+  parts.push(current);
+
   return parts;
+}
+
+/** Bytes one code point takes in UTF-8. */
+function utf8Length(char: string): number {
+  const code = char.codePointAt(0)!;
+  if (code < 0x80) return 1;
+  if (code < 0x800) return 2;
+  if (code < 0x10000) return 3;
+  return 4;
 }
 
 async function dropChunks(store: KeyValue, key: string, count: number) {

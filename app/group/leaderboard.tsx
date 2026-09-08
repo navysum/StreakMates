@@ -89,7 +89,7 @@ export default function LeaderboardScreen() {
   if (groups.isLoading || members.isLoading || habits.isLoading || checkIns.isLoading) {
     return (
       <Screen title="Leaderboard" back={back}>
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       </Screen>
     );
   }
@@ -151,7 +151,7 @@ export default function LeaderboardScreen() {
                 style={[
                   styles.rank,
                   typography.figureSmall,
-                  { color: i === 0 && row.rate !== null ? colors.accents[700] : ink(colors, 55) },
+                  { color: i === 0 && row.rate !== null ? colors.accents[700] : ink(colors, 62) },
                 ]}
               >
                 {row.rate === null ? '––' : String(i + 1).padStart(2, '0')}

@@ -333,12 +333,18 @@ export const doneKey = (habitId: string, userId: string, date: string) =>
   `${habitId}|${userId}|${date}`;
 
 /**
- * Keeps the board live: a friend's tick appears without a refresh.
+ * Keeps the shared half of the app live: a friend's tick, on a habit or on a
+ * shared task, appears without a refresh.
+ *
+ * This is the only live-update mechanism there is — `refetchOnWindowFocus` is
+ * off and nothing polls — so a table missing from here is a table that looks
+ * frozen until the app is restarted. Every table whose rows two people can
+ * both see belongs in this list.
  *
  * Row-level security applies to these events too, so nothing arrives that the
  * viewer could not already have read.
  */
-export function useRealtimeCheckIns() {
+export function useRealtime() {
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -354,6 +360,19 @@ export function useRealtimeCheckIns() {
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () =>
         qc.invalidateQueries({ queryKey: keys.reactions }),
+      )
+      // A shared task is only worth sharing if you can see somebody else do
+      // it. Without these two the list sat stale until the app was reopened.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () =>
+        qc.invalidateQueries({ queryKey: keys.tasks }),
+      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_completions' }, () =>
+        qc.invalidateQueries({ queryKey: keys.taskDone }),
+      )
+      // Both member queries share the 'group-members' prefix, so one
+      // invalidation refreshes the board and every roster.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () =>
+        qc.invalidateQueries({ queryKey: keys.allMembers }),
       )
       .subscribe();
 

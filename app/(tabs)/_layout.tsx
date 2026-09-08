@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon, type TabName } from '@/components/TabIcon';
-import { flushOutbox, useHabits, useRealtimeCheckIns } from '@/lib/queries';
+import { flushOutbox, useHabits, useRealtime } from '@/lib/queries';
 import { toLocalDate } from '@/lib/date';
 import { useAuth } from '@/auth/AuthProvider';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,8 +24,8 @@ export default function TabsLayout() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
-  // A friend's tick shows up without a refresh.
-  useRealtimeCheckIns();
+  // A friend's tick — on a habit or a shared task — shows up without a refresh.
+  useRealtime();
 
   // Anything tapped with no signal in a previous session goes now. Replaying
   // is safe: the unique key makes a check-in that lands twice a no-op.

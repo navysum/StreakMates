@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/Button';
 import { Plate } from '@/components/Plate';
 import { Field } from '@/components/Field';
@@ -13,6 +14,7 @@ import { space, spacing } from '@/theme/tokens';
 export default function NewGroupScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const create = useCreateGroup();
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -30,7 +32,10 @@ export default function NewGroupScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ModalHeader title="New group" eyebrow="You’ll be the owner" />
-      <ScrollView contentContainerStyle={styles.body} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Plate label="Group">
           <Field
             label="Name"
@@ -62,5 +67,5 @@ export default function NewGroupScreen() {
 }
 
 const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section, paddingBottom: spacing.bottom + space.xxl },
+  body: { padding: spacing.page, gap: spacing.section },
 });

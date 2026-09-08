@@ -200,7 +200,7 @@ export default function YouScreen() {
           {heat.months.map((m, i) => (
             <Text
               key={`${m}-${i}`}
-              style={[typography.labelSmall, styles.month, { color: ink(colors, 60) }]}
+              style={[typography.labelSmall, styles.month, { color: ink(colors, 62) }]}
             >
               {m}
             </Text>
@@ -231,7 +231,7 @@ export default function YouScreen() {
                 {row.habit.title}
               </Text>
               <Text style={[typography.statSmall, { color: colors.text }]}>{row.best}</Text>
-              <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>Days</Text>
+              <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>Days</Text>
             </View>
           ))}
         </Plate>

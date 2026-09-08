@@ -69,7 +69,7 @@ export default function HabitDetailScreen() {
   if (habitQuery.isLoading || !habit) {
     return (
       <Screen title="Habit" back={back}>
-        <ActivityIndicator style={styles.loader} color={ink(colors, 60)} />
+        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
       </Screen>
     );
   }
@@ -127,7 +127,7 @@ export default function HabitDetailScreen() {
 
       {habit.cadence === 'weekly' ? (
         <View style={[styles.weekRow, { borderColor: colors.divider }]}>
-          <Text style={[typography.label, { color: ink(colors, 60) }]}>This week</Text>
+          <Text style={[typography.label, { color: ink(colors, 62) }]}>This week</Text>
           <Text style={[typography.cardTitle, { color: colors.text }]}>
             {week.done} of {week.target}
           </Text>
@@ -163,7 +163,7 @@ export default function HabitDetailScreen() {
                 ]}
               >
                 <Text
-                  style={[typography.labelSmall, { color: on ? colors.accents[700] : ink(colors, 60) }]}
+                  style={[typography.labelSmall, { color: on ? colors.accents[700] : ink(colors, 62) }]}
                 >
                   {letter}
                 </Text>
@@ -205,7 +205,7 @@ export default function HabitDetailScreen() {
               <Text style={[typography.body, styles.noteText, { color: colors.text }]}>
                 “{note.note}”
               </Text>
-              <Text style={[typography.labelSmall, { color: ink(colors, 60) }]}>
+              <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
                 {note.local_date === today ? 'Today' : note.local_date}
               </Text>
             </View>
@@ -241,7 +241,7 @@ function Row({ label, value, last }: { label: string; value: string; last?: bool
     <View
       style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
     >
-      <Text style={[typography.label, { color: ink(colors, 60) }]}>{label}</Text>
+      <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
       <Text style={[typography.body, styles.value, { color: colors.text }]}>{value}</Text>
     </View>
   );

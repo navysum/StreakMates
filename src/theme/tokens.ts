@@ -121,9 +121,21 @@ export const palettes = { light, dark };
 /**
  * Secondary ink, as a share of the text colour.
  *
- *   78  body prose            60  micro-labels, inactive tabs
- *   70  meta                  55  ranks, completed task text
- *   65  captions inside plates
+ *   78  body prose             62  micro-labels, ranks, completed task text
+ *   70  meta, inactive tabs    45  input placeholders
+ *   65  captions inside plates 40  registration marks
+ *
+ * 62 is a floor, not a preference. Light mode is the tight one: on the cream
+ * page, ink 60 measures 4.49:1 against black text and ink 55 measures 3.83:1,
+ * so the micro-labels the whole design leans on sat just under WCAG AA's 4.5
+ * for text this size. 62 gives 4.77 on the page and 4.79 on a tag's fill, and
+ * is indistinguishable by eye from the 60 it replaces. Dark mode was never
+ * near the line.
+ *
+ * The two below the floor are deliberate and both are non-essential: 45 is
+ * placeholder text, which every Field also carries a permanent visible label
+ * for, and 40 draws the corner marks, which are decoration with no meaning to
+ * lose. Nothing a person must read goes below 62.
  */
 export function ink(colors: Palette, percent: number): string {
   const hex = colors.text.replace('#', '');
