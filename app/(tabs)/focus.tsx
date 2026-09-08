@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { Segmented } from '@/components/Segmented';
+import { Sheet } from '@/components/Sheet';
 import { StatTrio } from '@/components/StatTrio';
 import { TaskRow } from '@/components/TaskRow';
 import { useAuth } from '@/auth/AuthProvider';
@@ -24,6 +25,7 @@ import {
   useAddTask,
   useAllMembers,
   useDeleteTask,
+  useRenameTask,
   useFocusSessions,
   useGroups,
   usePeople,
@@ -33,6 +35,7 @@ import {
   useToggleTask,
 } from '@/lib/queries';
 import { byTask, doneBy, isDone, progress, sortTasks, toggleIntent } from '@/lib/tasks';
+import { confirm } from '@/lib/confirm';
 import { handle } from '@/lib/identity';
 import type { Task, TaskCompletionKind } from '@/lib/types';
 import {
@@ -83,6 +86,7 @@ export default function FocusScreen() {
   const addTask = useAddTask(userId);
   const toggleTask = useToggleTask(userId);
   const deleteTask = useDeleteTask();
+  const renameTask = useRenameTask();
   const record = useRecordFocus(userId);
   const people = usePeople();
 
@@ -95,6 +99,11 @@ export default function FocusScreen() {
   // The composer is a contextual action, not furniture. See the note on the
   // Plate below.
   const [composing, setComposing] = useState(false);
+  // The task the composer is editing. Null means it is adding a new one — the
+  // same field, the same keyboard, one less screen.
+  const [editing, setEditing] = useState<Task | null>(null);
+  // The task whose options sheet is open.
+  const [taskMenu, setTaskMenu] = useState<Task | null>(null);
   const [scope, setScope] = useState<'mine' | 'shared'>('mine');
   const [addTo, setAddTo] = useState<string | null>(null);
   const [kind, setKind] = useState<TaskCompletionKind>('once');
@@ -172,6 +181,53 @@ export default function FocusScreen() {
     setTimer(reset(timer));
     await cancelFocusAlarm();
   }, [timer]);
+
+  /**
+   * Rename, using the composer the add flow already has.
+   *
+   * `useRenameTask` existed and nothing called it — the only way to change a
+   * task was to delete it and type it again, and there was no way to delete
+   * one either unless you first ticked it off.
+   */
+  async function onRename() {
+    const title = draft.trim();
+    if (!title || !editing) return;
+    setError(null);
+    try {
+      await renameTask.mutateAsync({ id: editing.id, title });
+      setDraft('');
+      setEditing(null);
+      setComposing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not rename that.');
+    }
+  }
+
+  async function onRemove(task: Task) {
+    const yes = await confirm({
+      title: `Delete ${task.title}?`,
+      message: task.group_id
+        ? 'This removes it for everyone in the group, along with who had ticked it off.'
+        : 'This removes it from your list. It cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!yes) return;
+    try {
+      await deleteTask.mutateAsync(task.id);
+      // The timer cannot keep pointing at a task that no longer exists.
+      if (taskId === task.id) setTaskId(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete that.');
+    }
+  }
+
+  function closeComposer() {
+    setDraft('');
+    setEditing(null);
+    setError(null);
+    setComposing(false);
+  }
 
   async function onAdd() {
     const title = draft.trim();
@@ -261,6 +317,7 @@ export default function FocusScreen() {
         last={last}
         onToggle={() => toggleTask.mutate({ taskId: task.id, ...toggleIntent(task, ticked, userId) })}
         onPress={() => setTaskId(task.id === taskId ? null : task.id)}
+        onMore={() => setTaskMenu(task)}
       />
     );
   }
@@ -351,45 +408,51 @@ export default function FocusScreen() {
           label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
           onPress={() => {
             setError(null);
+            setEditing(null);
             setComposing(true);
           }}
         />
       ) : (
       <Plate
-        label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
+        label={
+          editing
+            ? 'Rename task'
+            : scope === 'mine'
+              ? 'Add a task'
+              : 'Add a shared task'
+        }
         action="Cancel"
-        onAction={() => {
-          setDraft('');
-          setError(null);
-          setComposing(false);
-        }}
+        onAction={closeComposer}
       >
         <View style={styles.addRow}>
           <TextInput
             value={draft}
             onChangeText={setDraft}
-            placeholder="Add a task"
+            placeholder={editing ? 'Task name' : 'Add a task'}
             placeholderTextColor={ink(colors, 45)}
-            onSubmitEditing={onAdd}
+            onSubmitEditing={editing ? onRename : onAdd}
             returnKeyType="done"
             maxLength={140}
+            autoFocus
             style={[
               styles.input,
               typography.body,
               { borderColor: colors.divider, color: colors.text },
             ]}
-            accessibilityLabel="Add a task"
+            accessibilityLabel={editing ? 'Task name' : 'Add a task'}
           />
           <Button
-            label="Add"
+            label={editing ? 'Save' : 'Add'}
             variant="primary"
-            onPress={onAdd}
-            disabled={!draft.trim() || (scope === 'shared' && !addTo)}
-            busy={addTask.isPending}
+            onPress={editing ? onRename : onAdd}
+            disabled={
+              !draft.trim() || (!editing && scope === 'shared' && !addTo)
+            }
+            busy={addTask.isPending || renameTask.isPending}
           />
         </View>
 
-        {scope === 'shared' ? (
+        {editing ? null : scope === 'shared' ? (
           groupList.length === 0 ? (
             <Text style={[typography.caption, styles.hint, { color: ink(colors, 70) }]}>
               Join or create a group first, then tasks can be shared with it.
@@ -525,6 +588,37 @@ export default function FocusScreen() {
           { value: `${Math.round(stats.weekMinutes / 6) / 10}h`, label: 'This week' },
           { value: String(open.length), label: 'Still to do' },
         ]}
+      />
+      {/* Reachable from the row's "⋯" as well as by holding it. A task has no
+          detail screen to hide these behind, so gesture-only would have meant
+          deleting one was a capability you could only find by accident. */}
+      <Sheet
+        visible={taskMenu !== null}
+        title={taskMenu?.title}
+        onClose={() => setTaskMenu(null)}
+        actions={
+          taskMenu
+            ? [
+                {
+                  label: 'Rename',
+                  onPress: () => {
+                    setDraft(taskMenu.title);
+                    setEditing(taskMenu);
+                    setError(null);
+                    setComposing(true);
+                  },
+                },
+                {
+                  label: 'Delete',
+                  tone: 'danger' as const,
+                  hint: taskMenu.group_id
+                    ? 'Removes it for the whole group'
+                    : 'Cannot be undone',
+                  onPress: () => void onRemove(taskMenu),
+                },
+              ]
+            : []
+        }
       />
     </Screen>
   );
