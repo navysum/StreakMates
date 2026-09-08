@@ -1,19 +1,8 @@
-/**
- * Exercise the gestures, rather than trusting that they compile.
- *
- *   npm run build:web -- --output-dir dist-demo
- *   npm run preview:gestures
- *
- * Presses and holds a real habit row for 600ms and asserts the contextual
- * sheet opens with Open / Edit / Archive and *without* Delete, then checks a
- * plain tap still navigates instead of opening the sheet. That last one is the
- * whole risk of adding a long press: getting it wrong breaks the tap.
- */
 import { chromium } from 'playwright';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { TABLES, IDS } from './fixtures.mjs';
 
-const DIST = process.env.DIST || new URL('../../dist-demo', import.meta.url).pathname;
+const DIST = '/home/user/Habit-Tracking-with-Friends/dist-demo';
 const types = {'.js':'text/javascript','.html':'text/html','.png':'image/png','.ico':'image/x-icon','.ttf':'font/ttf','.json':'application/json'};
 const server = http.createServer((req,res)=>{
   let f = path.join(DIST, decodeURIComponent(req.url.split('?')[0]));
@@ -40,7 +29,7 @@ function applyQuery(rows,url){const p=url.searchParams;let out=[...rows];
     else if(op==='lte') out=out.filter(r=>String(r[k])<=v);
   } return out; }
 
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
 let refetches = 0;
 await ctx.route('**/*.supabase.co/**', async route => {
@@ -83,7 +72,7 @@ const opened = /Morning run/.test(text) && /Archive/.test(text) && /Off Today/.t
 console.log('long press opened the sheet:', opened);
 console.log('sheet offers:', ['Open','Edit','Archive'].filter(a => new RegExp(`\\b${a}\\b`).test(text)).join(', '));
 console.log('sheet does NOT offer Delete:', !/Delete/.test(text));
-await page.screenshot({ path: `${process.env.OUT || '/tmp/screens'}/gesture-sheet.png` });
+await page.screenshot({ path: '/tmp/screens/gesture-sheet.png' });
 
 // Dismiss, and confirm a plain tap still navigates rather than opening it.
 await page.keyboard.press('Escape');
@@ -91,6 +80,44 @@ await page.waitForTimeout(400);
 await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
 await page.waitForTimeout(900);
 console.log('a normal tap still opens the habit:', page.url().includes('/habit/'));
+
+// ---- task options: the visible route and the gesture ----
+await page.goto('http://localhost:4602/focus', { waitUntil:'networkidle' });
+await page.waitForTimeout(1200);
+
+const more = page.locator('[aria-label="Options for Draft the launch post"]').first();
+console.log('\nvisible options button on a task:', await more.count() > 0);
+const mbox = await more.boundingBox();
+console.log('  its size:', mbox && `${Math.round(mbox.width)}x${Math.round(mbox.height)}`);
+
+await more.click();
+await page.waitForTimeout(500);
+let t = await page.evaluate(() => document.body.innerText);
+console.log('  sheet offers:', ['Rename','Delete'].filter(a => new RegExp(`\\b${a}\\b`).test(t)).join(', '));
+
+// Rename reuses the composer rather than opening another screen.
+await page.locator('text=Rename').first().click();
+await page.waitForTimeout(600);
+t = await page.evaluate(() => document.body.innerText);
+const inputValue = await page.evaluate(() => {
+  const i = [...document.querySelectorAll('input')].find(x => x.value);
+  return i ? i.value : null;
+});
+console.log('  rename opens the composer:', /RENAME TASK/i.test(t));
+console.log('  prefilled with the task name:', inputValue);
+console.log('  and offers Save:', /save/i.test(t));
+
+// Long press does the same thing.
+await page.locator('text=Cancel').first().click();
+await page.waitForTimeout(400);
+const taskRow = page.locator(`[aria-label="Focus on Reply to the physio"]`).first();
+const rbox = await taskRow.boundingBox();
+await page.mouse.move(rbox.x + rbox.width/2, rbox.y + rbox.height/2);
+await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.up();
+await page.waitForTimeout(500);
+t = await page.evaluate(() => document.body.innerText);
+console.log('  long press opens the same sheet:', /Rename/.test(t) && /Delete/.test(t));
+await page.screenshot({ path: `${process.env.OUT || '/tmp/screens'}/task-sheet.png` });
 
 console.log('page errors:', errors.length ? errors : 'none');
 await browser.close(); server.close();
