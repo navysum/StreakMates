@@ -159,6 +159,16 @@ select tests.allowed('leave the group himself',
   'delete from public.group_members where group_id = ' || quote_literal(:'gid') || ' and user_id = auth.uid()');
 
 \echo ''
+\echo '=== 3a. A signed-in person can still check a username ==='
+-- The other half of 0013: the guard must not break the sign-up flow it sits in
+-- the middle of. Somebody picking their first handle has a session already.
+select tests.as_user(:'bob');
+select tests.allowed('bob checks a free username',
+  'select public.username_available(''brandnewhandle'')');
+select tests.allowed('bob checks a taken one',
+  'select public.username_available(''alice'')');
+
+\echo ''
 \echo '=== 3b. A group owner may rename, and nothing else ==='
 -- The policy says who may update the row, not which columns. Without the
 -- column grant in 0012 an owner could rewrite the invite code the CSPRNG
@@ -192,12 +202,55 @@ select tests.allowed('alice can still rotate the code properly',
 
 \echo ''
 \echo '=== 4. Signed out entirely ==='
+--
+-- The app is served from a public URL now, so "what does a stranger with the
+-- anon key and curl get" is the question that matters most. Supabase grants the
+-- anon role broad table privileges by design and leans entirely on RLS to
+-- restrict them, which means every table has to be named here — a table nobody
+-- checks is a table nobody knows about.
+--
 select tests.as_user(null);
-select tests.invisible('any profile',   'select * from public.profiles');
-select tests.invisible('any group',     'select * from public.groups');
-select tests.invisible('any habit',     'select * from public.habits');
-select tests.invisible('any check-in',  'select * from public.check_ins');
-select tests.denied('creating a group', 'select public.create_group(''Anon Club'')');
+select tests.invisible('any profile',        'select * from public.profiles');
+select tests.invisible('any group',          'select * from public.groups');
+select tests.invisible('any membership',     'select * from public.group_members');
+select tests.invisible('any habit',          'select * from public.habits');
+select tests.invisible('any check-in',       'select * from public.check_ins');
+select tests.invisible('anyone''s ordering',  'select * from public.habit_order');
+select tests.invisible('any reaction',       'select * from public.reactions');
+select tests.invisible('any nudge',          'select * from public.nudges');
+select tests.invisible('any task',           'select * from public.tasks');
+select tests.invisible('any task tick',      'select * from public.task_completions');
+select tests.invisible('any focus session',  'select * from public.focus_sessions');
+select tests.invisible('the rate-limit ledger', 'select * from public.invite_code_attempts');
+
+-- Reading nothing is half of it. A stranger must not be able to write either,
+-- nor to learn whether a row exists by watching an insert succeed.
+select tests.denied('creating a group',   'select public.create_group(''Anon Club'')');
+select tests.denied('claiming a username', 'select public.set_username(''anon'')');
+select tests.denied('inserting a profile',
+  'insert into public.profiles (id, username, display_name) values (gen_random_uuid(), ''x'', ''X'')');
+select tests.denied('inserting a habit',
+  'insert into public.habits (owner_id, title) values (gen_random_uuid(), ''Anon habit'')');
+select tests.denied('inserting a task',
+  'insert into public.tasks (user_id, title) values (gen_random_uuid(), ''Anon task'')');
+select tests.denied('writing the rate-limit ledger',
+  'insert into public.invite_code_attempts (user_id) values (gen_random_uuid())');
+select tests.no_effect('deleting every check-in', 'delete from public.check_ins');
+select tests.no_effect('deleting every group',    'delete from public.groups');
+
+-- The RPCs. Four of these always refused for themselves; username_available did
+-- not, and a stranger could walk a wordlist through it to learn every handle on
+-- the platform without ever making an account. 0013 closed it two ways — a
+-- guard inside the function and a revoke of anon's EXECUTE — so this asserts
+-- the outcome rather than either mechanism.
+select tests.denied('checking whether a username is taken',
+  'select public.username_available(''alice'')');
+select tests.denied('previewing a group by its code',
+  'select public.preview_group_by_code(''ABC234'')');
+select tests.denied('joining with a code',
+  'select public.join_group_with_code(''ABC234'')');
+select tests.denied('rotating somebody''s invite code',
+  'select public.rotate_invite_code(' || quote_literal(:'gid') || ')');
 
 reset role;
 \echo ''

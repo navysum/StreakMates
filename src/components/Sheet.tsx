@@ -7,7 +7,7 @@ export type SheetAction = {
   label: string;
   onPress: () => void;
   /**
-   * Kept for the call sites that mark leaving or deleting. Industry has no
+   * Kept for the call sites that mark leaving or deleting. This system has no
    * destructive colour, so this only weights the label — it never turns red.
    */
   tone?: 'default' | 'danger';
@@ -43,7 +43,7 @@ export function Sheet({
         accessibilityLabel="Dismiss"
       />
       <View style={styles.dock} pointerEvents="box-none">
-        <View style={[styles.sheet, { backgroundColor: colors.bg, borderColor: colors.divider }]}>
+        <View style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.divider }]}>
           {title ? (
             <Text style={[typography.label, styles.title, { color: ink(colors, 62) }]}>{title}</Text>
           ) : null}
@@ -86,7 +86,7 @@ export function Sheet({
           style={({ pressed }) => [
             styles.cancel,
             {
-              backgroundColor: pressed ? colors.accents[100] : colors.bg,
+              backgroundColor: pressed ? colors.accents[100] : colors.surface,
               borderColor: colors.divider,
               marginBottom: insets.bottom + space.md,
             },
@@ -102,12 +102,17 @@ export function Sheet({
 const styles = StyleSheet.create({
   backdrop: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   dock: { flex: 1, justifyContent: 'flex-end', paddingHorizontal: space.md, gap: space.sm },
-  sheet: { borderWidth: 1, borderRadius: radius.none, overflow: 'hidden' },
+  sheet: {
+    borderWidth: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    overflow: 'hidden',
+  },
   title: { paddingHorizontal: space.xl, paddingTop: space.lg, paddingBottom: space.md },
   row: { paddingHorizontal: space.xl, paddingVertical: space.lg, gap: 2, minHeight: 56, justifyContent: 'center' },
   cancel: {
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',

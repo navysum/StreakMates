@@ -1,13 +1,15 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { font, radius, space, typography } from '@/theme/tokens';
+import { font, ink, space, typography } from '@/theme/tokens';
 
 /**
- * Initials on a tinted square.
+ * Initials on a tinted disc.
  *
- * Squares, not circles, and one tint for everyone rather than a colour per
- * member — Industry has a single accent, so identity is carried by the letters
- * rather than by hue. No images anywhere, so nothing to load or cache.
+ * Orchid, because a face is the most social object in the app and orchid is
+ * what social means here. One tint for everyone rather than a colour per
+ * member: identity is carried by the letters, and a colour per person would
+ * spend the vocabulary on decoration. No images anywhere, so nothing to load
+ * or cache.
  */
 export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
   const { colors } = useTheme();
@@ -19,7 +21,8 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
         {
           width: size,
           height: size,
-          backgroundColor: colors.accents[100],
+          borderRadius: size / 2,
+          backgroundColor: colors.meaningSoft.social,
           borderColor: colors.divider,
         },
       ]}
@@ -29,7 +32,7 @@ export function Avatar({ name, size = 32 }: { name: string; size?: number }) {
           fontFamily: font.heading,
           fontSize: Math.max(11, Math.round(size * 0.4)),
           letterSpacing: 0.4,
-          color: colors.accents[700],
+          color: colors.meaning.social,
         }}
       >
         {initials(name)}
@@ -45,7 +48,7 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** A row of faces. Squares sit side by side rather than overlapping. */
+/** A row of faces. Discs sit side by side rather than overlapping. */
 export function AvatarRow({
   people,
   size = 30,
@@ -71,12 +74,13 @@ export function AvatarRow({
             {
               width: size,
               height: size,
+              borderRadius: size / 2,
               backgroundColor: 'transparent',
               borderColor: colors.divider,
             },
           ]}
         >
-          <Text style={[typography.labelSmall, { color: colors.accents[700] }]}>+{rest}</Text>
+          <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>+{rest}</Text>
         </View>
       ) : null}
     </View>
@@ -88,7 +92,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: radius.none,
   },
   row: { flexDirection: 'row', gap: space.sm },
 });

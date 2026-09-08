@@ -52,7 +52,7 @@ export default function SignInScreen() {
 
       {configured ? (
         <>
-          <Button label="Continue with Google" variant="primary" onPress={onGoogle} busy={busy} />
+          <Button label="Continue with Google" variant="gradient" onPress={onGoogle} busy={busy} />
           {error ? <Notice label="Could not sign in">{error}</Notice> : null}
           <Text style={[typography.caption, styles.fine, { color: ink(colors, 65) }]}>
             We store your name, avatar and email. Nothing else.
@@ -71,9 +71,8 @@ export default function SignInScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.page, gap: spacing.section, justifyContent: 'center' },
   head: { alignItems: 'center', gap: space.md, marginBottom: space.lg },
-  // The mark is 365x482, so the box matches it rather than letterboxing a
-  // square down to 72pt wide.
-  mark: { width: 100, height: 132 },
+  // The mark is square now, drawn by scripts/make-icons.py.
+  mark: { width: 104, height: 104 },
   title: { marginTop: space.sm },
   tagline: { textAlign: 'center' },
   fine: { textAlign: 'center' },
