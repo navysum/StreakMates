@@ -29,8 +29,8 @@ export type HabitFormValue = {
   title: string;
   /**
    * Kept on the value because the column still exists and old habits still
-   * carry one. The Industry system is non-pictorial, so nothing sets it any
-   * more and nothing renders it.
+   * carry one. The interface is non-pictorial, so nothing sets it any more
+   * and nothing renders it.
    */
   emoji: string;
   /** Same: one accent only, so this is written but never shown. */
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.sm,
   },
   pressed: { opacity: 0.6 },
 });

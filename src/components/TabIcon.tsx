@@ -1,5 +1,4 @@
 import { View, StyleSheet, type ColorValue } from 'react-native';
-import { radius } from '@/theme/tokens';
 
 export type TabName = 'today' | 'groups' | 'focus' | 'you';
 
@@ -50,7 +49,7 @@ export function TabIcon({ name, color }: { name: TabName; color: ColorValue }) {
 const styles = StyleSheet.create({
   box: { width: 20, height: 20, alignItems: 'center', justifyContent: 'center' },
 
-  square: { width: 18, height: 18, borderRadius: radius.none },
+  square: { width: 18, height: 18, borderRadius: 5 },
   tickShort: {
     position: 'absolute',
     width: 1.5,
@@ -74,7 +73,10 @@ const styles = StyleSheet.create({
     right: 1,
     height: 7,
     borderBottomWidth: 0,
-    borderRadius: radius.none,
+    // Rounded at the top only, so the pair reads as the two figures in the
+    // mark rather than as two boxes.
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
 
   clock: { width: 17, height: 17, borderRadius: 8.5 },
@@ -85,6 +87,9 @@ const styles = StyleSheet.create({
     width: 14,
     height: 7,
     borderBottomWidth: 0,
-    borderRadius: radius.none,
+    // Rounded at the top only, so the pair reads as the two figures in the
+    // mark rather than as two boxes.
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
   },
 });

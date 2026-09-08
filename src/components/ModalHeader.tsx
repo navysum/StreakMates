@@ -53,7 +53,7 @@ const styles = StyleSheet.create({
     width: hit,
     height: hit,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
   },

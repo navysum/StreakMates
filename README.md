@@ -32,16 +32,6 @@ iPad plus the free **Expo Go** app on your phone.
    **Code** button → **Codespaces** → **Create codespace**. GitHub gives you 60 free hours
    a month, which is plenty.
 
-> **Pick the right branch.** Until this work is merged, the app lives on
-> `claude/shared-habit-tracker-plan-iyq4xz`, not on `main` — a Codespace created on `main`
-> has no `package.json` and `npm install` fails with `ENOENT`. Either switch the branch in
-> the Code menu *before* creating the Codespace, or fix it afterwards in the terminal:
->
-> ```bash
-> git fetch origin
-> git checkout claude/shared-habit-tracker-plan-iyq4xz
-> ```
-
 ### Every time you want to see the app
 
 In the Codespace terminal:
@@ -169,27 +159,41 @@ that sign-in needs, and what differs between the phone and the browser.
 
 ### The design system
 
-The app is drawn in **Industry**, a blueprint language: a light technical ground, one
-accent, square corners, hairline borders, condensed uppercase labels, and `+` registration
-marks at the corners of framed objects. Its steel-blue accent and grey ground are replaced
-by StreakMates' green on cream; nothing else about the system changed.
+The app is drawn from its own logo: an "S" built from two figures, swept blue → violet →
+orchid → pink on midnight. Three rules drive nearly every decision in
+`src/theme/tokens.ts`, and all three are easy to break by accident:
 
-Two rules drive nearly every decision in `src/theme/tokens.ts`, and both are easy to break
-by accident:
+- **The UI is flat.** No gloss, no glass, no glow, no shadow. A card is a fill and a
+  hairline; depth is a surface step, never lighting. The gradient comes from the logo — the
+  interface stays clean, flat and restrained.
+- **Most of the screen is neutral.** Lavender-tinted off-white → white → near-black text in
+  light; midnight → navy → near-white in dark. Never stark white and never pure `#000`.
+- **Colour means something.** Blue is progress, violet is a primary action or the active
+  tab, orchid is social — friends, groups, shared habits — and pink is celebration. The
+  full gradient is reserved for brand moments and real accomplishments. So a completed
+  habit gets a violet tick; it does not turn the card violet.
 
-- **Cards are line drawings, not filled surfaces.** A 1px divider border, no fill, no
-  shadow, no radius. The one solid object on a screen is the primary button. This is what
-  `Plate` is; there is no `Card`.
-- **There is only one accent.** No amber, no red, no per-member colour. Rank, tone and
-  emphasis come from steps of the accent ramp and from tag variants — which is why first
-  place is not gold and "needs work" is not red.
+The signature of the system is the **streak spectrum**. Green-means-done is gone: a streak
+climbs the gradient as it grows — blue at one day, periwinkle at three, violet at a week,
+orchid at a fortnight, pink at a month — so the colour of a number tells you how long it
+has been true. `streakColor()` does the banding; nothing hard-codes a stop.
+
+Every colour was measured, not chosen by eye. The brand hues are light on purpose, which
+makes several of them illegible as ink on a white page (orchid is 2.98:1 there), so each
+palette carries its own variant of each meaning and screens read them off `colors.meaning`
+rather than reaching for a raw brand hex. The `ink()` floor of 62% clears WCAG AA in both
+themes at a worst case of 4.79:1.
+
+There is still **no destructive colour**. "Needs work" is an outline tag, not a red one;
+first place is pink because finishing first is a celebration, not because red and gold are
+available. Every hue in the palette is spent saying something went well.
 
 The organising idea is a **7-cell week strip**, Monday→Sunday, repeated at four sizes:
 under each habit row on Today, as a member × day matrix on the group board, as a 12-week
 grid on habit detail, and as an 18-week intensity grid on You. You learn to read it once.
 
-The system is non-pictorial, so habit and group emoji are gone and reactions are word tags
-(`CLAP`, `FIRE`, `NICE`) rather than emoji. The database columns are untouched — old rows
+The interface is non-pictorial, so habit and group emoji are gone and reactions are word
+tags (`CLAP`, `FIRE`, `NICE`) rather than emoji. The database columns are untouched — old rows
 keep their emoji, nothing writes a new one, and nothing renders them.
 
 ### About the fonts
