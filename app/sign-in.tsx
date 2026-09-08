@@ -35,19 +35,17 @@ export default function SignInScreen() {
         { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 32 },
       ]}
     >
+      {/* The lockup carries the name and the tagline itself, so the screen
+          does not set them again underneath in a different typeface. */}
       <View style={styles.head}>
         <Image
           source={require('../assets/splash-icon.png')}
           style={styles.mark}
           resizeMode="contain"
+          accessibilityRole="image"
+          accessibilityLabel={`${brand.name} — ${brand.tagline}`}
           accessibilityIgnoresInvertColors
         />
-        <Text style={[typography.screenTitle, styles.title, { color: colors.text }]}>
-          {brand.name}
-        </Text>
-        <Text style={[typography.prose, styles.tagline, { color: ink(colors, 78) }]}>
-          {brand.tagline}
-        </Text>
       </View>
 
       {configured ? (
@@ -70,10 +68,8 @@ export default function SignInScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.page, gap: spacing.section, justifyContent: 'center' },
-  head: { alignItems: 'center', gap: space.md, marginBottom: space.lg },
-  // The mark is square now, drawn by scripts/make-icons.py.
-  mark: { width: 104, height: 104 },
-  title: { marginTop: space.sm },
-  tagline: { textAlign: 'center' },
+  head: { alignItems: 'center', marginBottom: space.lg },
+  // Square, cut from the master by scripts/make-icons.py.
+  mark: { width: 188, height: 188 },
   fine: { textAlign: 'center' },
 });

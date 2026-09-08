@@ -66,10 +66,27 @@ export default function HabitDetailScreen() {
 
   const back = { label: 'Back', onPress: () => router.back() };
 
-  if (habitQuery.isLoading || !habit) {
+  if (habitQuery.isLoading) {
     return (
       <Screen title="Habit" back={back}>
         <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+      </Screen>
+    );
+  }
+
+  // Loading and gone are different answers, and running them together as
+  // `isLoading || !habit` meant a deleted habit span its loader forever with
+  // no way out. The query settles, `data` is null, `isLoading` is false — and
+  // the screen sat on a spinner that would never resolve because there was
+  // nothing left to load. Deleting a habit lands here every time; so does
+  // opening one on a second device after deleting it on the first.
+  if (!habit) {
+    return (
+      <Screen title="Habit" label="Not found" back={back}>
+        <Notice label="Gone">
+          {'This habit no longer exists. It may have been deleted here or on another device.'}
+        </Notice>
+        <Button label="Back to today" onPress={() => router.replace('/')} />
       </Screen>
     );
   }
