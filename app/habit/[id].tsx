@@ -28,7 +28,7 @@ import {
   weeklyProgress,
 } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { ink, radius, space, streakColor, typography } from '@/theme/tokens';
 
 const HISTORY = 40;
 
@@ -85,6 +85,9 @@ export default function HabitDetailScreen() {
   const owed = days.filter((d) => isScheduled(schedule, d) && d >= habit.created_at.slice(0, 10));
   const hit = owed.filter((d) => dates.has(d)).length;
   const streak = computeStreak(schedule, dates, today);
+  // The heatmap is coloured by the run it belongs to, so twelve weeks of a
+  // long streak read pink and a fresh one reads blue.
+  const kept = streakColor(colors, streak) ?? undefined;
   const best = bestStreak(schedule, dates, today);
   const grid = gridCells(12, dates, schedule, today);
   const week = weeklyProgress(schedule, dates, today);
@@ -119,7 +122,7 @@ export default function HabitDetailScreen() {
     >
       <StatTrio
         stats={[
-          { value: String(streak), label: 'Streak' },
+          { value: String(streak), label: 'Streak', tone: streakColor(colors, streak) ?? undefined },
           { value: String(best), label: 'Best' },
           third,
         ]}
@@ -134,11 +137,11 @@ export default function HabitDetailScreen() {
         </View>
       ) : null}
 
-      <Plate marks>
+      <Plate feature>
         <Text style={[typography.label, { color: ink(colors, 65) }]}>Last 12 weeks</Text>
         <View style={styles.grid}>
           {grid.map((column, i) => (
-            <WeekStrip key={i} cells={column} size={20} direction="column" />
+            <WeekStrip key={i} cells={column} size={20} direction="column" tone={kept} />
           ))}
         </View>
       </Plate>
@@ -252,7 +255,7 @@ const styles = StyleSheet.create({
   weekRow: {
     minHeight: 56,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     paddingHorizontal: space.xl,
     flexDirection: 'row',
     alignItems: 'center',
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     minHeight: 44,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',

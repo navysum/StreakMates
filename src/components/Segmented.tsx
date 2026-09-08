@@ -47,7 +47,7 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
 }
 
 const styles = StyleSheet.create({
-  track: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.none },
+  track: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
   opt: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.6 },
 });

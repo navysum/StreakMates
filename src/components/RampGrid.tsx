@@ -1,6 +1,5 @@
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius } from '@/theme/tokens';
 import type { Cell } from '@/lib/week';
 
 /**
@@ -57,5 +56,5 @@ export function RampGrid({
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row' },
   column: { flex: 1 },
-  cell: { flex: 1, aspectRatio: 1, borderRadius: radius.none },
+  cell: { flex: 1, aspectRatio: 1, borderRadius: 3 },
 });

@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius, typography, ink } from '@/theme/tokens';
+import { typography, ink } from '@/theme/tokens';
 import { WEEKDAY_LABELS } from '@/lib/date';
 import type { Cell, CellState } from '@/lib/week';
 import type { Palette } from '@/theme/tokens';
@@ -8,20 +8,26 @@ import type { Palette } from '@/theme/tokens';
 type Size = 12 | 16 | 20;
 
 /**
- * Seven days, Monday first — the motif the whole app is built on. A square
- * cell, 1px border, no radius.
+ * Seven days, Monday first — the motif the whole app is built on.
  *
- * A missed day is an outline rather than a colour: there is one accent in this
- * system, and spending it on failure would leave nothing to say "kept".
+ * A kept day is violet by default; pass `tone` to colour the week by the
+ * streak it belongs to, so a long run reads pink and a new one reads blue.
+ *
+ * A missed day is an outline, never a colour. Nothing in this system says
+ * failure in colour — every hue is spent on the opposite, which is what keeps
+ * a gap in the strip feeling like a gap rather than an accusation.
  */
 export function WeekStrip({
   cells,
   size = 12,
   direction = 'row',
   flex,
+  tone,
 }: {
   cells: Cell[];
   size?: Size;
+  /** Overrides the colour of a kept day — normally a streak colour. */
+  tone?: string;
   /** 'column' stacks Monday to Sunday downward, for a grid of weeks. */
   direction?: 'row' | 'column';
   /** Cells share the width instead of taking a fixed size, for the board. */
@@ -38,7 +44,8 @@ export function WeekStrip({
           style={[
             flex ? styles.flexCell : { width: size, height: size },
             styles.cell,
-            fill(cell.state, colors),
+            { borderRadius: Math.max(3, Math.round(size / 3)) },
+            fill(cell.state, colors, tone),
           ]}
         />
       ))}
@@ -46,16 +53,17 @@ export function WeekStrip({
   );
 }
 
-function fill(state: CellState, colors: Palette) {
+function fill(state: CellState, colors: Palette, tone?: string) {
+  const kept = tone ?? colors.accent;
   switch (state) {
     case 'done':
-      return { backgroundColor: colors.accent, borderColor: colors.accent };
+      return { backgroundColor: kept, borderColor: kept };
     case 'today':
-      return { backgroundColor: 'transparent', borderColor: colors.accent };
+      return { backgroundColor: 'transparent', borderColor: kept };
     case 'missed':
-      return { backgroundColor: 'transparent', borderColor: colors.neutral[400] };
+      return { backgroundColor: 'transparent', borderColor: colors.dividerStrong };
     case 'off':
-      return { backgroundColor: colors.accents[100], borderColor: colors.accents[100] };
+      return { backgroundColor: colors.raised, borderColor: colors.raised };
   }
 }
 
@@ -82,7 +90,7 @@ export function WeekLabels({ flex }: { flex?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  cell: { borderWidth: 1, borderRadius: radius.none },
+  cell: { borderWidth: 1 },
   flexCell: { flex: 1, aspectRatio: 1 },
   grow: { flex: 1 },
   labels: { flexDirection: 'row', gap: 5 },

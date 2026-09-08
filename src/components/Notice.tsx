@@ -5,9 +5,10 @@ import { ink, space, typography } from '@/theme/tokens';
 /**
  * An aside, on a 2px accent left rule.
  *
- * Not a tinted callout box: Industry frames things with lines, and a filled
- * panel here would be the only one in the app. The rule carries the same
- * "read this" weight with none of the fill.
+ * A rule rather than a tinted panel. A filled callout would compete with the
+ * card it sits inside, and a colour spent on "notice" is a colour not
+ * available to say "you kept a streak". The rule carries the same "read this"
+ * weight with none of the fill.
  */
 export function Notice({ label, children }: { label?: string; children: string }) {
   const { colors } = useTheme();
