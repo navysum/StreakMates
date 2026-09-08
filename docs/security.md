@@ -109,6 +109,57 @@ upsert. PostgREST puts every column of an upsert payload into the
 very grant that keeps identity fixed, for everyone, not just the accounts it
 was meant to help.
 
+## The web deployment
+
+The app is served from a public URL, which changes one question from
+theoretical to routine: **what does someone with the anon key, `curl` and no
+account get?**
+
+The answer is nothing. All twelve tables are invisible signed out and every
+write is refused; the attack suite asserts this table by table rather than for
+a representative few, because a table nobody checks is a table nobody knows
+about.
+
+The functions were the gap. Supabase's default privileges grant `EXECUTE` on
+new functions to `anon` as well as `authenticated`, so every `SECURITY DEFINER`
+function here was callable by an unauthenticated request. Four of the five the
+client calls refuse for themselves — `preview_group_by_code`,
+`join_group_with_code`, `create_group` and `rotate_invite_code` all check.
+`username_available` did not: it is a bare existence check, so a stranger could
+walk a wordlist through it and learn every handle on the platform, at any rate,
+without an account. `0013` closes it twice — a guard inside the function and a
+revoke of `anon`'s `EXECUTE` — and the suite asserts the outcome rather than
+either mechanism.
+
+The RLS helpers (`is_group_member`, `can_see_habit` and the rest) keep their
+`anon` grant deliberately. They are called *inside* policies, which evaluate as
+the querying role, so revoking them turns a signed-out read from a clean empty
+result into a permission error. Empty is the better answer.
+
+### Headers
+
+`vercel.json` sets a Content-Security-Policy. It was arrived at by testing, not
+by copying: the strict version — `style-src 'self'` — renders a blank page,
+because react-native-web injects its styles at runtime. What ships allows
+inline *styles* and nothing else:
+
+```
+script-src 'self'          no inline script, no eval, no CDN
+style-src  'self' 'unsafe-inline'
+connect-src 'self' https://*.supabase.co wss://*.supabase.co
+frame-ancestors 'none'     clickjacking, alongside X-Frame-Options
+object-src 'none'
+```
+
+`script-src` is the one that matters, and it is tight. The app has no
+`dangerouslySetInnerHTML`, no `innerHTML`, no `eval`, no `WebView` and no
+user-controlled `href` — but the session lives in `localStorage` on the web, so
+an XSS would be an account takeover, and the CSP is the standing defence
+against one arriving later through a dependency.
+
+Verified in a browser against the exact policy in `vercel.json`: the app
+renders, 394 style rules apply, zero violations.
+
 ## Known and accepted
 
 - **Any group member can edit a shared habit** — rename it, change its cadence,
@@ -122,10 +173,14 @@ was meant to help.
 - **An owner can rename their own group and change nothing else.** Members
   cannot rename it at all; there is no UPDATE policy on `group_members`, so
   nobody can promote themselves to owner.
-- **Two moderate advisories** sit in Expo's own build tooling
-  (`@expo/prebuild-config` → `decode-uri-component`, `uuid`). Neither is
-  reachable from the shipped bundle, and `npm audit fix --force` downgrades
-  Expo. They clear when Expo updates.
+- **Fourteen moderate advisories** sit in Expo's own build tooling, from two
+  roots: `decode-uri-component` (via `query-string`, via `expo-router`) and
+  `uuid` (via `xcode` and `@expo/ngrok`). None is reachable from the shipped
+  bundle, which was checked rather than assumed: neither `decode-uri-component`
+  nor `query-string` appears in the web bundle at all, and the single `uuid`
+  match is a property name in Expo's module proxy — the vulnerable
+  implementation (`stringToBytes`, `bytesToUuid`) is absent. `npm audit fix
+  --force` downgrades Expo; they clear when Expo updates.
 - **Realtime DELETE events** stay as above — that one cannot be fixed from
   here.
 
