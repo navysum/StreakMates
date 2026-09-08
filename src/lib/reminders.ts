@@ -19,6 +19,17 @@ import {
 export * from './reminders-pure';
 
 /**
+ * Whether this platform can schedule a notification for later.
+ *
+ * The browser cannot. `Notification` can show something while a tab is open,
+ * but there is no way to schedule one for 07:00 tomorrow without a service
+ * worker, a push server and VAPID keys — none of which a static site has. So
+ * on web every function below is a no-op and the UI says reminders are a phone
+ * feature, rather than quietly accepting a time that will never fire.
+ */
+export const CAN_SCHEDULE = Platform.OS !== 'web';
+
+/**
  * Android puts every notification in a channel, and the channel — not the
  * notification — owns whether it makes a sound and whether it comes forward.
  * Post without one and Android files it under a default low-importance
@@ -52,6 +63,7 @@ export async function ensureChannels(): Promise<void> {
 }
 
 export async function ensurePermission(): Promise<boolean> {
+  if (!CAN_SCHEDULE) return false;
   const existing = await Notifications.getPermissionsAsync();
   if (existing.granted) return true;
   // Never ask twice if they have said no; iOS ignores it anyway.
@@ -67,6 +79,7 @@ export async function ensurePermission(): Promise<boolean> {
  * costs a permission-visible churn on every app open, so this diffs first.
  */
 export async function syncReminders(habits: Habit[]): Promise<{ added: number; removed: number }> {
+  if (!CAN_SCHEDULE) return { added: 0, removed: 0 };
   await ensureChannels();
 
   const wanted = new Map<string, { reminder: Reminder; weekday: number | null }>();
@@ -129,6 +142,7 @@ export async function syncReminders(habits: Habit[]): Promise<{ added: number; r
 }
 
 export async function cancelAll(): Promise<void> {
+  if (!CAN_SCHEDULE) return;
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
@@ -146,6 +160,7 @@ export async function cancelAll(): Promise<void> {
 const FOCUS_ALARM = 'streakmates.focus-alarm';
 
 export async function scheduleFocusAlarm(finishesAt: number, phase: string): Promise<void> {
+  if (!CAN_SCHEDULE) return;
   await cancelFocusAlarm();
   await ensureChannels();
 
@@ -175,6 +190,7 @@ export async function scheduleFocusAlarm(finishesAt: number, phase: string): Pro
 }
 
 export async function cancelFocusAlarm(): Promise<void> {
+  if (!CAN_SCHEDULE) return;
   try {
     await Notifications.cancelScheduledNotificationAsync(FOCUS_ALARM);
   } catch {

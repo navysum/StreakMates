@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, View, Text, StyleSheet } from 'react-native';
+import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Button } from '@/components/Button';
@@ -11,6 +11,7 @@ import { Screen } from '@/components/Screen';
 import { Sheet } from '@/components/Sheet';
 import { Segmented } from '@/components/Segmented';
 import { useAuth } from '@/auth/AuthProvider';
+import { confirm } from '@/lib/confirm';
 import { handle } from '@/lib/identity';
 import {
   byHabit,
@@ -130,32 +131,28 @@ export default function YouScreen() {
     return { weeks, counts, months };
   }, [checkIns.data, userId, today]);
 
-  function confirmDelete() {
+  async function confirmDelete() {
     const owned = (groups.data ?? []).length;
     const count = (habits.data ?? []).length;
-    Alert.alert(
-      'Delete your account?',
-      `This removes your profile, your ${count} habit${count === 1 ? '' : 's'} and every check-in you have made. ` +
+    const yes = await confirm({
+      title: 'Delete your account?',
+      message:
+        `This removes your profile, your ${count} habit${count === 1 ? '' : 's'} and every check-in you have made. ` +
         (owned > 0
           ? 'Shared habits you created are handed to another member so their history survives, and groups you own pass to the longest-standing member. '
           : '') +
         'It cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete everything',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await remove.mutateAsync();
-              await signOut();
-            } catch (e) {
-              setError(e instanceof Error ? e.message : 'Could not delete the account.');
-            }
-          },
-        },
-      ],
-    );
+      confirmLabel: 'Delete everything',
+      destructive: true,
+    });
+    if (!yes) return;
+
+    try {
+      await remove.mutateAsync();
+      await signOut();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not delete the account.');
+    }
   }
 
   return (
@@ -288,7 +285,7 @@ export default function YouScreen() {
             label: 'Delete account',
             tone: 'danger' as const,
             hint: 'Permanent',
-            onPress: confirmDelete,
+            onPress: () => void confirmDelete(),
           },
         ]}
       />
