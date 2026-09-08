@@ -256,9 +256,8 @@ iOS build, not App Store submission.
 
 ### Writing the code
 
-- **Claude Code at claude.ai/code** in mobile Safari works the repo, commits and pushes. No
-  local install. Review pull requests in GitHub's web UI.
-- **github.dev** (press `.` on any repo) is a full editor in Safari.
+- **github.dev** (press `.` on any repo) is a full editor in Safari, with no local install.
+  Review pull requests in GitHub's web UI.
 - **Working Copy** is a good native iPad git client if you prefer an app.
 
 ### Seeing it run
