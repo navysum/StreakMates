@@ -7,6 +7,25 @@ them.
 
 ## Deploying to Vercel
 
+### The short way
+
+```bash
+./scripts/deploy-web.sh
+```
+
+Reads the two values out of your `.env`, checks them, builds locally so an
+error shows up with readable output, pushes the variables to Vercel and
+deploys. Your credentials never leave your machine — the script only drives
+the official CLI, which keeps its token in `~/.vercel`.
+
+It refuses to continue on a `service_role` key. That one bypasses row-level
+security, it looks almost identical to the anon key, and in a public bundle it
+would hand anyone the whole database.
+
+Afterwards it prints the two allowlist entries you still have to add by hand.
+
+### The manual way
+
 1. **Import the repository** at [vercel.com/new](https://vercel.com/new). Leave
    the framework preset as "Other" — `vercel.json` in the repo root already
    declares the build command, the output directory and the routing.
