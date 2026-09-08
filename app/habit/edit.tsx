@@ -41,11 +41,26 @@ export default function EditHabitScreen() {
     [checkIns.data, userId, id],
   );
 
-  if (habitQuery.isLoading || !habit) {
+  if (habitQuery.isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg }}>
         <ModalHeader title="Habit" />
         <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+      </View>
+    );
+  }
+
+  // Loading and gone are different answers — see the note in habit/[id].tsx.
+  if (!habit) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg }}>
+        <ModalHeader title="Habit" />
+        <View style={styles.gone}>
+          <Notice label="Gone">
+            {'This habit no longer exists. It may have been deleted here or on another device.'}
+          </Notice>
+          <Button label="Back to today" onPress={() => router.replace('/')} />
+        </View>
       </View>
     );
   }
@@ -111,7 +126,11 @@ export default function EditHabitScreen() {
 
     try {
       await remove.mutateAsync(habit!.id);
-      router.back();
+      // Not router.back(). Back is the detail screen for the habit that was
+      // just deleted — a tombstone of the thing you asked to be rid of. Go to
+      // the list it was in instead.
+      if (router.canDismiss()) router.dismissTo('/');
+      else router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not delete the habit.');
     }
@@ -173,5 +192,6 @@ export default function EditHabitScreen() {
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
+  gone: { padding: spacing.page, gap: spacing.section },
   footer: { gap: spacing.section, marginTop: spacing.section },
 });
