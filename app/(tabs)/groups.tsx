@@ -119,7 +119,7 @@ export default function GroupsScreen() {
                   >
                     {group.name}
                   </Text>
-                  <Text style={[typography.label, { color: colors.accent }]}>Open</Text>
+                  <Text style={[typography.label, { color: colors.meaning.action }]}>Open</Text>
                 </View>
 
                 <Text style={[typography.caption, styles.meta, { color: ink(colors, 70) }]}>

@@ -12,8 +12,8 @@ type Props = {
 };
 
 /**
- * One shape for every "nothing here yet". No illustration and no icon —
- * Industry says it in words.
+ * One shape for every "nothing here yet". No illustration and no icon — this
+ * system says it in words.
  */
 export function EmptyState({ title, body, actionLabel, onAction }: Props) {
   const { colors } = useTheme();

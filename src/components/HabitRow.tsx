@@ -20,7 +20,8 @@ type Props = {
  * column by a hairline. The rule matters: the row body opens the habit and
  * the column only toggles, so the two never fight over a tap.
  *
- * No emoji column. Industry carries no pictures; the name does the work.
+ * The check is a violet fill, not a violet card — a completed habit marks
+ * itself, it does not repaint the row around it.
  */
 export function HabitRow({ name, meta, week, complete, last, onToggle, onPress }: Props) {
   const { colors } = useTheme();
@@ -98,7 +99,7 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },

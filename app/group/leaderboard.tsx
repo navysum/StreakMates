@@ -140,7 +140,7 @@ export default function LeaderboardScreen() {
               key={row.userId}
               style={[
                 styles.row,
-                you && { backgroundColor: colors.accents[100] },
+                you && { backgroundColor: colors.meaningSoft.action },
                 {
                   borderBottomColor: colors.divider,
                   borderBottomWidth: i === rows.length - 1 ? 0 : 1,
@@ -151,7 +151,10 @@ export default function LeaderboardScreen() {
                 style={[
                   styles.rank,
                   typography.figureSmall,
-                  { color: i === 0 && row.rate !== null ? colors.accents[700] : ink(colors, 62) },
+                  {
+                    color:
+                      i === 0 && row.rate !== null ? colors.meaning.celebrate : ink(colors, 62),
+                  },
                 ]}
               >
                 {row.rate === null ? '––' : String(i + 1).padStart(2, '0')}
@@ -175,7 +178,7 @@ export default function LeaderboardScreen() {
                   value={Math.round((row.rate ?? 0) * 100)}
                   max={100}
                   height={6}
-                  tone={you ? colors.accent : colors.accents[500]}
+                  tone={you ? colors.meaning.action : colors.meaning.progress}
                 />
               </View>
             </View>
@@ -184,7 +187,7 @@ export default function LeaderboardScreen() {
       </Plate>
 
       {improved ? (
-        <Plate label="Most improved" marks>
+        <Plate label="Most improved" feature>
           <View style={styles.standout}>
             <Text numberOfLines={1} style={[typography.cardTitle, styles.name, { color: colors.text }]}>
               {nameOf(improved.userId)}
@@ -227,7 +230,7 @@ export default function LeaderboardScreen() {
                 height={6}
                 // Tone by ramp step, not by hue: a struggling habit steps back
                 // down the accent, it does not turn red.
-                tone={(h.rate ?? 0) < 0.4 ? colors.accents[400] : colors.accent}
+                tone={(h.rate ?? 0) < 0.4 ? colors.accents[400] : colors.meaning.progress}
               />
               {h === best && h.rate !== null ? (
                 <View style={styles.tag}>

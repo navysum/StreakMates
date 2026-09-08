@@ -47,7 +47,7 @@ Source of truth: `life-os-portal/src/styles/variables.css`.
 | `--bg-surface` | `#ffffff` | `#101110` |
 | `--bg-surface-muted` | `#f5f5f3` | `#252725` |
 | `--border-default` | `#e4e4e1` | `#292b29` |
-| `--green` (primary action) | `#3f6248` | `#7e9b7a` |
+| `--accent` (primary action, violet) | `#765ceb` | `#8b67f5` |
 | `--amber` (pending / warn) | `#a46f2b` | `#c39552` |
 | `--blue` | `#3f5a80` | `#7691bc` |
 | `--purple` | `#6c4f80` | `#a189b3` |

@@ -261,7 +261,7 @@ export default function FocusScreen() {
 
   return (
     <Screen title="Focus" label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}>
-      <Plate marks>
+      <Plate feature>
         <Text style={[typography.label, { color: ink(colors, 65) }]}>
           {timer.phase === 'focus' ? (activeTask ? 'Working on' : 'Focus') : 'Step away from it'}
         </Text>
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 44,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     paddingHorizontal: space.lg,
   },
   loader: { marginTop: space.xxxl },
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
     minHeight: 36,
     justifyContent: 'center',
     paddingHorizontal: space.lg,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     borderWidth: 1,
   },
 });

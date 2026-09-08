@@ -1,7 +1,8 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Plate } from './Plate';
-import { ink, radius, space, tnum, typography } from '@/theme/tokens';
+import { LinearGradient } from 'expo-linear-gradient';
+import { gradient, gradientDirection, ink, radius, space, tnum, typography } from '@/theme/tokens';
 
 type Props = {
   done: number;
@@ -19,14 +20,20 @@ type Props = {
  * The ticks are one per habit owed today while that stays legible, and a
  * single filled track once there are too many for individual ticks to mean
  * anything.
+ *
+ * Blue while it is in progress, and the full brand gradient the moment the
+ * day is clear — the one place on the Today screen where finishing is worth a
+ * brand moment rather than another tick.
  */
 export function DayProgress({ done, total, label, note }: Props) {
   const { colors } = useTheme();
   const ticked = total > 0 && total <= 14;
   const fraction = total > 0 ? done / total : 0;
+  const cleared = total > 0 && done >= total;
+  const tone = colors.meaning.progress;
 
   return (
-    <Plate marks>
+    <Plate feature>
       <View style={styles.head}>
         <Text style={[typography.label, { color: ink(colors, 65) }]}>{label}</Text>
         <Text style={[typography.stat, tnum, { color: colors.text }]}>
@@ -36,26 +43,45 @@ export function DayProgress({ done, total, label, note }: Props) {
 
       <View style={styles.ticks}>
         {ticked ? (
-          Array.from({ length: total }, (_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.tick,
-                {
-                  borderColor: colors.accent,
-                  backgroundColor: i < done ? colors.accent : 'transparent',
-                },
-              ]}
-            />
-          ))
+          Array.from({ length: total }, (_, i) =>
+            cleared ? (
+              <LinearGradient
+                key={i}
+                colors={gradient}
+                start={gradientDirection.start}
+                end={gradientDirection.end}
+                style={[styles.tick, styles.tickBrand]}
+              />
+            ) : (
+              <View
+                key={i}
+                style={[
+                  styles.tick,
+                  {
+                    borderColor: i < done ? tone : colors.dividerStrong,
+                    backgroundColor: i < done ? tone : 'transparent',
+                  },
+                ]}
+              />
+            )
+          )
         ) : (
-          <View style={[styles.track, { borderColor: colors.accent }]}>
-            <View
-              style={[
-                styles.fill,
-                { width: `${Math.round(fraction * 100)}%`, backgroundColor: colors.accent },
-              ]}
-            />
+          <View style={[styles.track, { backgroundColor: colors.raised }]}>
+            {cleared ? (
+              <LinearGradient
+                colors={gradient}
+                start={gradientDirection.start}
+                end={gradientDirection.end}
+                style={styles.fill}
+              />
+            ) : (
+              <View
+                style={[
+                  styles.fill,
+                  { width: `${Math.round(fraction * 100)}%`, backgroundColor: tone },
+                ]}
+              />
+            )}
           </View>
         )}
       </View>
@@ -73,7 +99,8 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   ticks: { flexDirection: 'row', gap: 4, marginTop: space.lg, marginBottom: space.lg },
-  tick: { flex: 1, height: 10, borderWidth: 1, borderRadius: radius.none },
-  track: { flex: 1, height: 10, borderWidth: 1, borderRadius: radius.none },
-  fill: { height: '100%' },
+  tick: { flex: 1, height: 10, borderWidth: 1, borderRadius: radius.sm },
+  tickBrand: { borderColor: 'transparent' },
+  track: { flex: 1, height: 10, borderRadius: radius.pill, overflow: 'hidden' },
+  fill: { height: '100%', width: '100%', borderRadius: radius.pill },
 });
