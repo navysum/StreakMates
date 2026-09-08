@@ -32,16 +32,6 @@ iPad plus the free **Expo Go** app on your phone.
    **Code** button → **Codespaces** → **Create codespace**. GitHub gives you 60 free hours
    a month, which is plenty.
 
-> **Pick the right branch.** Until this work is merged, the app lives on
-> `claude/shared-habit-tracker-plan-iyq4xz`, not on `main` — a Codespace created on `main`
-> has no `package.json` and `npm install` fails with `ENOENT`. Either switch the branch in
-> the Code menu *before* creating the Codespace, or fix it afterwards in the terminal:
->
-> ```bash
-> git fetch origin
-> git checkout claude/shared-habit-tracker-plan-iyq4xz
-> ```
-
 ### Every time you want to see the app
 
 In the Codespace terminal:
