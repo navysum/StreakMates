@@ -163,7 +163,7 @@ export default function GroupScreen() {
       onMenu={() => setMenuOpen(true)}
       menuLabel="Group options"
     >
-      <Plate marks>
+      <Plate feature>
         <View style={styles.plateHead}>
           <Text style={[typography.label, { color: ink(colors, 65) }]}>This week</Text>
           <Text style={[typography.figure, tnum, { color: colors.text }]}>
@@ -239,7 +239,7 @@ export default function GroupScreen() {
                 style={[
                   typography.figureSmall,
                   styles.place,
-                  { color: i === 0 ? colors.accents[700] : ink(colors, 62) },
+                  { color: i === 0 ? colors.meaning.celebrate : ink(colors, 62) },
                 ]}
               >
                 {String(i + 1).padStart(2, '0')}
@@ -259,7 +259,7 @@ export default function GroupScreen() {
         </Plate>
       </Pressable>
 
-      <Plate marks>
+      <Plate feature>
         <View style={styles.plateHead}>
           <Text style={[typography.label, { color: ink(colors, 65) }]}>Invite code</Text>
           {isOwner ? <Tag label="Owner" variant="outline" /> : null}

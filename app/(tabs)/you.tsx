@@ -26,7 +26,7 @@ import { bestStreak, computeStreak, isScheduled } from '@/lib/streak';
 import { gridCells } from '@/lib/week';
 import { useTheme, type ThemeMode } from '@/theme/ThemeProvider';
 import { FieldRow } from '@/components/Field';
-import { ink, space, typography } from '@/theme/tokens';
+import { ink, space, streakColor, typography } from '@/theme/tokens';
 
 export default function YouScreen() {
   const { colors, mode, setMode, scheme } = useTheme();
@@ -177,13 +177,17 @@ export default function YouScreen() {
 
       <StatTrio
         stats={[
-          { value: String(totals.streak), label: 'Current streak' },
+          {
+            value: String(totals.streak),
+            label: 'Current streak',
+            tone: streakColor(colors, totals.streak) ?? undefined,
+          },
           { value: String(totals.best), label: 'Best streak' },
           { value: totals.rate === null ? '—' : `${totals.rate}%`, label: '30-day rate' },
         ]}
       />
 
-      <Plate marks>
+      <Plate feature>
         <View style={styles.plateHead}>
           <Text style={[typography.label, { color: ink(colors, 65) }]}>Last 18 weeks</Text>
           <Text style={[typography.label, { color: ink(colors, 65) }]}>
@@ -227,7 +231,14 @@ export default function YouScreen() {
               >
                 {row.habit.title}
               </Text>
-              <Text style={[typography.statSmall, { color: colors.text }]}>{row.best}</Text>
+              <Text
+                style={[
+                  typography.statSmall,
+                  { color: streakColor(colors, row.best) ?? colors.text },
+                ]}
+              >
+                {row.best}
+              </Text>
               <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>Days</Text>
             </View>
           ))}

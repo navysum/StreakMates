@@ -157,11 +157,11 @@ export default function TodayScreen() {
             accessibilityLabel="Your profile"
             style={({ pressed }) => [
               styles.avatar,
-              { borderColor: colors.divider, backgroundColor: colors.accents[100] },
+              { borderColor: colors.divider, backgroundColor: colors.meaningSoft.social },
               pressed && styles.pressed,
             ]}
           >
-            <Text style={[typography.figure, { color: colors.accents[700] }]}>
+            <Text style={[typography.figure, { color: colors.meaning.social }]}>
               {initials(profile.data.display_name)}
             </Text>
           </Pressable>
@@ -285,7 +285,7 @@ const styles = StyleSheet.create({
     width: hit,
     height: hit,
     borderWidth: 1,
-    borderRadius: radius.none,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
