@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Platform, StyleSheet } from 'react-native';
+import { PixelRatio, Platform, StyleSheet, Text } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabIcon, type TabName } from '@/components/TabIcon';
@@ -9,13 +9,41 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useQueryClient } from '@tanstack/react-query';
 import { ensurePermission, syncReminders } from '@/lib/reminders';
 import { useTheme } from '@/theme/ThemeProvider';
-import { border, ink, typography } from '@/theme/tokens';
+import { border, buildTypography, ink } from '@/theme/tokens';
+
+/**
+ * How much larger the tab labels are allowed to get.
+ *
+ * Text scaling is honoured everywhere else in the app without a ceiling — that
+ * is the point of the setting. The bar is the one place it cannot be, because
+ * it is fixed chrome holding four labels side by side: at 200% the words do
+ * not wrap into more room, they collide with each other. 1.3 is enough to help
+ * and still fits "GROUPS" four times across the narrowest phone.
+ *
+ * Every screen the bar leads to scales without a cap, so nothing a person
+ * needs to read is limited by this.
+ */
+const MAX_LABEL_SCALE = 1.3;
 
 /**
  * What the bar needs above the safe area: the icon, the gap, the label and the
  * item's own padding, plus slack so the label is never the thing that gives.
+ *
+ * The label's share grows with the OS text setting — `typography.tabLabel`
+ * already scales its line height — so the bar has to grow with it or the
+ * labels are clipped again by a different cause than last time.
  */
-const CONTENT = 56;
+const CONTENT = (labelHeight: number) => 20 + 3 + labelHeight + 8 + 18;
+
+/**
+ * The label's own type, built at the capped scale rather than the OS one.
+ *
+ * `buildTypography` exists so this can be asked for a different scale than the
+ * rest of the app uses — the tokens are otherwise a single fixed object read
+ * at startup.
+ */
+const labelScale = Math.min(PixelRatio.getFontScale(), MAX_LABEL_SCALE);
+const tabLabel = buildTypography(labelScale).tabLabel;
 
 /**
  * A phone browser reports no bottom inset even with `viewport-fit=cover`, since
@@ -92,7 +120,7 @@ export default function TabsLayout() {
            * from a round number: 20 icon + 3 gap + 13 label + 8 item padding is
            * 44, and CONTENT is 56. The slack is the point.
            */
-          height: CONTENT + BOTTOM(insets.bottom) + 6,
+          height: CONTENT(tabLabel.lineHeight) + BOTTOM(insets.bottom),
           paddingTop: 6,
           paddingBottom: BOTTOM(insets.bottom),
           backgroundColor: colors.bg,
@@ -103,7 +131,7 @@ export default function TabsLayout() {
         // flexShrink: 0 is the actual guard. The height above gives it room;
         // this stops it being compressed again by any future change.
         tabBarLabelStyle: {
-          ...typography.tabLabel,
+          ...tabLabel,
           marginTop: 3,
           flexShrink: 0,
           includeFontPadding: false,
@@ -118,6 +146,18 @@ export default function TabsLayout() {
           options={{
             title: tab.title,
             tabBarIcon: ({ color }) => <TabIcon name={tab.icon} color={color} />,
+            // The style alone caps the line box; this caps the glyphs inside
+            // it. Without both, large text grows past a box that stopped
+            // growing and the words are clipped again.
+            tabBarLabel: ({ color }) => (
+              <Text
+                numberOfLines={1}
+                maxFontSizeMultiplier={MAX_LABEL_SCALE}
+                style={[tabLabel, { marginTop: 3, color }]}
+              >
+                {tab.title}
+              </Text>
+            ),
           }}
         />
       ))}

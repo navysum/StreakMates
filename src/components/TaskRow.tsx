@@ -14,9 +14,27 @@ type Props = {
   last?: boolean;
   onToggle: () => void;
   onPress?: () => void;
+  /**
+   * Opens the row's actions — rename and delete.
+   *
+   * Reachable two ways on purpose. Long press is the shortcut, and the "⋯"
+   * button is the visible route: unlike a habit, a task has no detail screen,
+   * so if this were gesture-only then deleting one would be a capability you
+   * could only find by accident.
+   */
+  onMore?: () => void;
 };
 
-export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: Props) {
+export function TaskRow({
+  title,
+  done,
+  active,
+  meta,
+  last,
+  onToggle,
+  onPress,
+  onMore,
+}: Props) {
   const { colors } = useTheme();
 
   return (
@@ -39,9 +57,12 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
 
       <Pressable
         onPress={onPress}
-        disabled={!onPress}
+        onLongPress={onMore}
+        delayLongPress={350}
+        disabled={!onPress && !onMore}
         accessibilityRole={onPress ? 'button' : undefined}
         accessibilityLabel={onPress ? `Focus on ${title}` : undefined}
+        accessibilityHint={onMore ? 'Double tap and hold for options' : undefined}
         style={({ pressed }) => [styles.text, pressed && onPress ? styles.pressed : null]}
       >
         <Text
@@ -68,6 +89,24 @@ export function TaskRow({ title, done, active, meta, last, onToggle, onPress }: 
           <Tag label="Now" variant="accent" />
         </View>
       ) : null}
+
+      {onMore ? (
+        <Pressable
+          onPress={onMore}
+          accessibilityRole="button"
+          accessibilityLabel={`Options for ${title}`}
+          style={({ pressed }) => [styles.more, pressed && styles.pressed]}
+        >
+          {/* Three dots drawn rather than typed: the character renders at a
+              different weight in each of the app's fonts, and "..." is read
+              aloud as "dot dot dot". */}
+          <View style={styles.dots}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={[styles.dot, { backgroundColor: ink(colors, 62) }]} />
+            ))}
+          </View>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -80,6 +119,9 @@ const styles = StyleSheet.create({
   // padding the label's own pressable came out 40pt tall — under the minimum,
   // and with dead space either side of it inside a row that looked tappable.
   text: { flex: 1, minWidth: 0, justifyContent: 'center', paddingVertical: space.md, gap: 2 },
-  badge: { paddingRight: space.lg, justifyContent: 'center' },
+  badge: { paddingRight: space.sm, justifyContent: 'center' },
+  more: { width: hit, alignItems: 'center', justifyContent: 'center' },
+  dots: { flexDirection: 'row', gap: 3 },
+  dot: { width: 3, height: 3, borderRadius: 1.5 },
   pressed: { opacity: 0.6 },
 });
