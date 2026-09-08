@@ -4,11 +4,12 @@ import { useTheme } from '@/theme/ThemeProvider';
 import {
   gradient,
   gradientDirection,
-  hit,
   ink,
   radius,
   space,
   spacing,
+  tapPadding,
+  tapPaddingX,
   typography,
 } from '@/theme/tokens';
 
@@ -78,10 +79,15 @@ export function Plate({ label, action, onAction, feature, flush, style, children
               onAction ? (
                 <Pressable
                   onPress={onAction}
-                  hitSlop={hit / 3}
                   accessibilityRole="button"
                   accessibilityLabel={action}
-                  style={({ pressed }) => pressed && styles.pressed}
+                  // Padding, not hitSlop — see tapPadding. This control
+                  // measured 42x14 in a browser before.
+                  style={({ pressed }) => [
+                    tapPadding(typography.label.lineHeight),
+                    tapPaddingX(typography.label.lineHeight),
+                    pressed && styles.pressed,
+                  ]}
                 >
                   <Text style={[typography.label, { color: colors.meaning.action }]}>{action}</Text>
                 </Pressable>

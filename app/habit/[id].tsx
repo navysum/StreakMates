@@ -28,7 +28,7 @@ import {
   weeklyProgress,
 } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, streakColor, typography } from '@/theme/tokens';
+import { ink, radius, space, streakColor, tapPadding, typography } from '@/theme/tokens';
 
 const HISTORY = 40;
 
@@ -233,9 +233,16 @@ export default function HabitDetailScreen() {
         </Plate>
       ) : null}
 
+      {/* A Link renders as one line of text, which measured 14px tall. The
+          padding gives it a real 44pt target on every platform. */}
       <Link
         href={{ pathname: '/habit/edit', params: { id: habit.id } }}
-        style={[typography.label, styles.edit, { color: colors.accent }]}
+        style={[
+          typography.label,
+          styles.edit,
+          tapPadding(typography.label.lineHeight),
+          { color: colors.meaning.action },
+        ]}
       >
         Edit habit
       </Link>
