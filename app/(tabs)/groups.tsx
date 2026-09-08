@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AvatarRow } from '@/components/Avatar';
@@ -30,6 +30,19 @@ export default function GroupsScreen() {
   const members = useAllMembers();
   const habits = useHabits();
   const checkIns = useCheckIns();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        groups.refetch(),
+        habits.refetch(),
+        checkIns.refetch(),
+      ]),
+    [groups, habits, checkIns],
+  );
 
   const today = toLocalDate();
   const byGroup = useMemo(() => membersByGroup(members.data), [members.data]);
@@ -83,7 +96,8 @@ export default function GroupsScreen() {
   const list = groups.data ?? [];
 
   return (
-    <Screen title="Groups" label={formatWeekOf(today)}>
+    <Screen
+      onRefresh={onRefresh} title="Groups" label={formatWeekOf(today)}>
       {groups.error ? (
         <Notice label="Could not load">
           {groups.error instanceof Error ? groups.error.message : 'Something went wrong.'}

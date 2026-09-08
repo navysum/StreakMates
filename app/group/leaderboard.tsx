@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
@@ -38,6 +38,20 @@ export default function LeaderboardScreen() {
   const members = useGroupMembers(id);
   const habits = useHabits();
   const checkIns = useCheckIns();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        groups.refetch(),
+        members.refetch(),
+        habits.refetch(),
+        checkIns.refetch(),
+      ]),
+    [groups, members, habits, checkIns],
+  );
 
   const group = groups.data?.find((g) => g.id === id);
   const today = toLocalDate();
@@ -117,6 +131,7 @@ export default function LeaderboardScreen() {
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title="Leaderboard"
       label={`${group?.name ?? 'Group'} · this week`}
       back={back}

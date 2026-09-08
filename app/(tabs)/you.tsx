@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
@@ -40,6 +40,20 @@ export default function YouScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const checkIns = useCheckIns();
+
+  // Pull to refresh. Every query the screen actually shows, refetched
+  // together — refreshing one and leaving the rest is how a screen ends up
+  // showing two different moments at once.
+  const onRefresh = useCallback(
+    () =>
+      Promise.all([
+        profile.refetch(),
+        habits.refetch(),
+        groups.refetch(),
+        checkIns.refetch(),
+      ]),
+    [profile, habits, groups, checkIns],
+  );
   const today = toLocalDate();
 
   const joined = useMemo(() => {
@@ -157,6 +171,7 @@ export default function YouScreen() {
 
   return (
     <Screen
+      onRefresh={onRefresh}
       title="You"
       label="Profile"
       onMenu={() => setMenuOpen(true)}
