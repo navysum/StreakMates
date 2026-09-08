@@ -2,7 +2,16 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
 import { Plate } from './Plate';
 import { LinearGradient } from 'expo-linear-gradient';
-import { gradient, gradientDirection, ink, radius, space, tnum, typography } from '@/theme/tokens';
+import {
+  gradient,
+  gradientDirection,
+  ink,
+  radius,
+  sampleGradient,
+  space,
+  tnum,
+  typography,
+} from '@/theme/tokens';
 
 type Props = {
   done: number;
@@ -45,12 +54,22 @@ export function DayProgress({ done, total, label, note }: Props) {
         {ticked ? (
           Array.from({ length: total }, (_, i) =>
             cleared ? (
-              <LinearGradient
+              // Each tick takes its colour from its own position along the
+              // gradient, so the row reads as one sweep. Drawing the whole
+              // gradient into every tick gave a line of identical little
+              // rainbows.
+              <View
                 key={i}
-                colors={gradient}
-                start={gradientDirection.start}
-                end={gradientDirection.end}
-                style={[styles.tick, styles.tickBrand]}
+                style={[
+                  styles.tick,
+                  styles.tickBrand,
+                  {
+                    backgroundColor: sampleGradient(
+                      gradient,
+                      total > 1 ? i / (total - 1) : 1,
+                    ),
+                  },
+                ]}
               />
             ) : (
               <View
