@@ -71,6 +71,7 @@ export default function GroupScreen() {
         targetDays: h.target_days,
         targetPerWeek: h.target_per_week,
       },
+      startsOn: h.created_at.slice(0, 10),
     }));
     const rows = list.map((member) => {
       const cells = aggregateCells(
@@ -78,6 +79,7 @@ export default function GroupScreen() {
         schedules,
         (habitId, day) => done.has(doneKey(habitId, member.user_id, day)),
         today,
+        member.joined_at.slice(0, 10),
       );
       return {
         member,
