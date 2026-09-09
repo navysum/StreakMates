@@ -31,6 +31,12 @@ const habits = [
   { id: 'h3', owner_id: ME, group_id: null, title: 'Guitar practice', emoji: null, color: 'purple',
     cadence: 'days', target_days: [1, 3, 5], target_per_week: 1, reminder_at: null, sort_order: 2,
     created_at: iso(30), archived_at: null },
+  { id: 'h6', owner_id: ME, group_id: null, title: 'Cold shower', emoji: null, color: 'blue',
+    cadence: 'daily', target_days: [], target_per_week: 1, reminder_at: null, sort_order: 5,
+    created_at: iso(90), archived_at: null },
+  { id: 'h7', owner_id: ME, group_id: null, title: 'Stretch', emoji: null, color: 'teal',
+    cadence: 'daily', target_days: [], target_per_week: 1, reminder_at: null, sort_order: 6,
+    created_at: iso(40), archived_at: null },
   { id: 'h4', owner_id: ALEX, group_id: GROUP, title: 'Gym session', emoji: null, color: 'teal',
     cadence: 'weekly', target_days: [], target_per_week: 3, reminder_at: null, sort_order: 3,
     created_at: iso(45), archived_at: null },
@@ -50,6 +56,12 @@ const add = (habit, user, back, note = null) =>
 for (let i = 0; i < 41; i++) add('h1', ME, i);          // 41-day streak → pink
 for (let i = 0; i < 9; i++) add('h2', ME, i);           // 9 days       → violet
 for (let i = 0; i < 2; i++) add('h3', ME, i * 2);       // 2 days       → blue
+// Exactly six days, ending yesterday. Checking in today makes it a week —
+// the transition the milestone banner exists for.
+for (let i = 1; i <= 6; i++) add('h6', ME, i);
+// Two days, ending yesterday. Checking in today makes three — an ordinary
+// day, which must stay quiet.
+for (let i = 1; i <= 2; i++) add('h7', ME, i);
 add('h1', ME, 0, 'Cold but worth it. Hit a new best pace on the last mile.');
 checkIns.pop();
 for (let i = 0; i < 25; i++) if (i % 3 !== 2) add('h5', ME, i);

@@ -36,6 +36,7 @@ import {
 } from '@/lib/queries';
 import { byTask, doneBy, isDone, progress, sortTasks, toggleIntent } from '@/lib/tasks';
 import { confirm } from '@/lib/confirm';
+import { useRemembered } from '@/lib/remembered';
 import { handle } from '@/lib/identity';
 import type { Task, TaskCompletionKind } from '@/lib/types';
 import {
@@ -104,7 +105,7 @@ export default function FocusScreen() {
   const [editing, setEditing] = useState<Task | null>(null);
   // The task whose options sheet is open.
   const [taskMenu, setTaskMenu] = useState<Task | null>(null);
-  const [scope, setScope] = useState<'mine' | 'shared'>('mine');
+  const [scope, setScope] = useRemembered('focus.scope', 'mine', ['mine', 'shared'] as const);
   const [addTo, setAddTo] = useState<string | null>(null);
   const [kind, setKind] = useState<TaskCompletionKind>('once');
 
