@@ -1,23 +1,8 @@
-/**
- * Measure every touch target and check for sideways overflow, on every screen.
- *
- *   npm run build:web -- --output-dir dist-demo
- *   npm run preview:touch
- *
- * Two of the mobile audit's mandatory failure flags are "important controls
- * are too small to tap reliably" and "essential content depends on horizontal
- * scrolling". Both are measurable, so neither should ever be a judgement call.
- *
- * The first run found ten controls under 44x44 — every text link in the app,
- * at 14px tall. They looked fine on a phone because they carried `hitSlop`,
- * and react-native-web does not implement hitSlop at all. That is exactly the
- * kind of thing reading the source will not tell you.
- */
 import { chromium } from 'playwright';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { TABLES, IDS } from './fixtures.mjs';
 
-const DIST = process.env.DIST || new URL('../../dist-demo', import.meta.url).pathname;
+const DIST = '/home/user/Habit-Tracking-with-Friends/dist-demo';
 const types = {'.js':'text/javascript','.html':'text/html','.png':'image/png','.ico':'image/x-icon','.ttf':'font/ttf','.json':'application/json'};
 const server = http.createServer((req,res)=>{
   let f = path.join(DIST, decodeURIComponent(req.url.split('?')[0]));
@@ -44,7 +29,7 @@ function applyQuery(rows, url){ const p=url.searchParams; let out=[...rows];
     else if(op==='lte') out=out.filter(r=>String(r[k])<=v);
   } return out; }
 
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
+const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
 const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2 });
 await ctx.route('**/*.supabase.co/**', async route => {
   const url = new URL(route.request().url());
@@ -105,6 +90,55 @@ for (const [name, route] of ROUTES) {
 console.log(`Touch targets under ${MIN}x${MIN} at 390x844:\n`);
 if (!small.length) console.log('  none');
 for (const s of small) console.log(`  ${s.screen.padEnd(12)} ${String(s.w).padStart(3)}x${String(s.h).padStart(3)}  ${s.label}`);
+// The tab labels have now been clipped twice, by two different causes: once
+// because the bar was sized from a round number, and once because supplying a
+// custom label render made `tabBarLabelStyle` — and the flexShrink guard in it
+// — stop applying. Both times the symptom was identical: a line box shorter
+// than the text it holds. So measure that, rather than trusting the config.
+//
+// Matched case-insensitively: textTransform is CSS, so the DOM says "Today"
+// while the screen says "TODAY".
+await page.goto('http://localhost:4601/', { waitUntil: 'networkidle' });
+await page.waitForTimeout(900);
+const labels = await page.evaluate(() => {
+  const names = /^(today|groups|focus|you)$/i;
+  return [...document.querySelectorAll('*')]
+    .filter((el) => el.children.length === 0 && names.test((el.textContent || '').trim()))
+    .map((el) => {
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        text: el.textContent.trim(),
+        box: Math.round(r.height * 10) / 10,
+        line: Math.round(parseFloat(cs.lineHeight) * 10) / 10,
+        size: Math.round(parseFloat(cs.fontSize) * 10) / 10,
+        shrink: cs.flexShrink,
+      };
+    })
+    // Scoped by size, not by line height. "You" also appears inside the
+    // activity sentence on Today as an inline <Text>, and an inline element's
+    // rect is its content box rather than its line box — 18 against a 20px
+    // line, which reads as clipped and is not. The bar's labels are 11px and
+    // nothing else on the screen is.
+    .filter((l) => Number.isFinite(l.line) && l.size <= 12);
+});
+
+console.log('\nTab labels — rendered box vs their own line height:');
+if (labels.length < 4) {
+  console.log(`  ONLY ${labels.length} FOUND — the check is not looking at the bar`);
+} else {
+  let clipped = 0;
+  for (const l of labels) {
+    const bad = l.box + 0.5 < l.line;
+    if (bad) clipped++;
+    console.log(
+      `  ${l.text.padEnd(7)} ${l.size}px  box ${String(l.box).padStart(5)}  line ${String(l.line).padStart(5)}` +
+      `  flex-shrink ${l.shrink}  ${bad ? 'CLIPPED' : 'ok'}`,
+    );
+  }
+  console.log(clipped ? `  ${clipped} CLIPPED` : '  none clipped');
+}
+
 console.log('\nHorizontal overflow (essential content scrolling sideways):');
 console.log(overflow.length ? overflow : '  none');
 await browser.close(); server.close();
