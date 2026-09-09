@@ -43,7 +43,25 @@ const CONTENT = (labelHeight: number) => 20 + 3 + labelHeight + 8 + 18;
  * at startup.
  */
 const labelScale = Math.min(PixelRatio.getFontScale(), MAX_LABEL_SCALE);
-const tabLabel = buildTypography(labelScale).tabLabel;
+
+/**
+ * The label's complete style, in one place.
+ *
+ * It has to be one object because a custom `tabBarLabel` render makes React
+ * Navigation ignore `tabBarLabelStyle` entirely — so anything left only in
+ * that option silently stops applying. That is exactly how the labels came
+ * back clipped: `flexShrink: 0` was in `tabBarLabelStyle`, the render function
+ * did not carry it, and the label went back to being the thing that gives.
+ *
+ * flexShrink: 0        the label is never what absorbs a squeeze
+ * includeFontPadding   Android's extra leading, off, so the box is the box
+ */
+const tabLabel = {
+  ...buildTypography(labelScale).tabLabel,
+  marginTop: 3,
+  flexShrink: 0,
+  includeFontPadding: false,
+} as const;
 
 /**
  * A phone browser reports no bottom inset even with `viewport-fit=cover`, since
@@ -128,14 +146,9 @@ export default function TabsLayout() {
           borderTopWidth: border.hairline,
           elevation: 0,
         },
-        // flexShrink: 0 is the actual guard. The height above gives it room;
-        // this stops it being compressed again by any future change.
-        tabBarLabelStyle: {
-          ...tabLabel,
-          marginTop: 3,
-          flexShrink: 0,
-          includeFontPadding: false,
-        },
+        // Kept in step with the render below, for the case where a future
+        // change drops the custom label and this becomes live again.
+        tabBarLabelStyle: tabLabel,
         tabBarItemStyle: { gap: 0, paddingVertical: 4 },
       }}
     >
@@ -153,7 +166,7 @@ export default function TabsLayout() {
               <Text
                 numberOfLines={1}
                 maxFontSizeMultiplier={MAX_LABEL_SCALE}
-                style={[tabLabel, { marginTop: 3, color }]}
+                style={[tabLabel, { color }]}
               >
                 {tab.title}
               </Text>
