@@ -1,11 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar, initials } from '@/components/Avatar';
 import { Button } from '@/components/Button';
 import { DayProgress } from '@/components/DayProgress';
 import { EmptyState } from '@/components/EmptyState';
 import { HabitRow } from '@/components/HabitRow';
+import { Milestone } from '@/components/Milestone';
+import { DayProgressSkeleton, RowsSkeleton } from '@/components/Skeleton';
 import { Notice } from '@/components/Notice';
 import { Plate } from '@/components/Plate';
 import { Screen } from '@/components/Screen';
@@ -25,6 +27,9 @@ import {
   peopleById,
 } from '@/lib/queries';
 import { handle } from '@/lib/identity';
+import { useRemembered } from '@/lib/remembered';
+import { feel } from '@/lib/feel';
+import { reachedMilestone } from '@/lib/milestone';
 import { sortHabits } from '@/lib/ordering';
 import { weekCells } from '@/lib/week';
 import { formatDayLabel, toLocalDate } from '@/lib/date';
@@ -42,11 +47,13 @@ export default function TodayScreen() {
   const { colors } = useTheme();
   const { userId } = useAuth();
   const router = useRouter();
-  const [tab, setTab] = useState<'mine' | 'shared'>('mine');
+  const [tab, setTab] = useRemembered('today.tab', 'mine', ['mine', 'shared'] as const);
 
   const today = toLocalDate();
   // The habit whose contextual actions are open. Null when the sheet is shut.
   const [menuFor, setMenuFor] = useState<Habit | null>(null);
+  // The run that was just reached, if this visit reached one.
+  const [milestone, setMilestone] = useState<{ title: string; days: number } | null>(null);
   const setArchived = useSetArchived();
   const habitsQuery = useHabits();
   const checkInsQuery = useCheckIns();
@@ -147,6 +154,38 @@ export default function TodayScreen() {
     return map;
   }, [shared, positions]);
 
+  /**
+   * Checking in, with the two things that make it land.
+   *
+   * The write itself is unchanged and still optimistic — the row fills before
+   * the network is asked. What is added is acknowledgement: a tap you can
+   * feel, and, on the day a run reaches a week or a month, the moment said out
+   * loud instead of left to be noticed.
+   *
+   * The streak is computed from the set the toggle is about to produce rather
+   * than from the query, because the query has not been told yet. Waiting for
+   * it would put the celebration a beat behind the tap.
+   */
+  function onToggle(habit: Habit, dates: Set<string>, complete: boolean) {
+    toggle.mutate({ habitId: habit.id, date: today, complete: !complete });
+
+    if (complete) {
+      feel('undone');
+      return;
+    }
+
+    const schedule = scheduleOf(habit);
+    const before = computeStreak(schedule, dates, today);
+    const after = computeStreak(schedule, new Set([...dates, today]), today);
+
+    if (reachedMilestone(before, after)) {
+      feel('milestone');
+      setMilestone({ title: habit.title, days: after });
+    } else {
+      feel('kept');
+    }
+  }
+
   function row(habit: Habit, last: boolean) {
     const dates = completed.get(habit.id) ?? new Set<string>();
     const complete = dates.has(today);
@@ -159,7 +198,7 @@ export default function TodayScreen() {
         meta={describeProgress(schedule, dates, today)}
         complete={complete}
         last={last}
-        onToggle={() => toggle.mutate({ habitId: habit.id, date: today, complete: !complete })}
+        onToggle={() => onToggle(habit, dates, complete)}
         onPress={() => router.push(`/habit/${habit.id}`)}
         onLongPress={() => setMenuFor(habit)}
       />
@@ -196,7 +235,20 @@ export default function TodayScreen() {
         </Notice>
       ) : null}
 
-      {loading ? null : (
+      {milestone ? (
+        <Milestone
+          // Keyed by the run, so reaching a second milestone in one sitting
+          // restarts the banner rather than inheriting the first one's timer.
+          key={`${milestone.title}-${milestone.days}`}
+          title={milestone.title}
+          days={milestone.days}
+          onDone={() => setMilestone(null)}
+        />
+      ) : null}
+
+      {loading ? (
+        <DayProgressSkeleton />
+      ) : (
         <DayProgress
           done={doneToday}
           total={owed.length}
@@ -208,14 +260,17 @@ export default function TodayScreen() {
       <Segmented
         value={tab}
         onChange={setTab}
+        // No counts until they are real. "Mine · 0" during the first load is
+        // not a placeholder, it is a wrong number — and the one it is most
+        // likely to be mistaken for is "you have no habits".
         options={[
-          { value: 'mine', label: `Mine · ${mine.length}` },
-          { value: 'shared', label: `Shared · ${shared.length}` },
+          { value: 'mine', label: loading ? 'Mine' : `Mine · ${mine.length}` },
+          { value: 'shared', label: loading ? 'Shared' : `Shared · ${shared.length}` },
         ]}
       />
 
       {loading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+        <RowsSkeleton />
       ) : tab === 'mine' ? (
         mine.length === 0 ? (
           <EmptyState
@@ -338,7 +393,6 @@ export default function TodayScreen() {
 }
 
 const styles = StyleSheet.create({
-  loader: { marginTop: 32 },
   links: { flexDirection: 'row', gap: space.lg },
   pressed: { opacity: 0.6 },
   avatar: {
