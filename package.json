@@ -12,6 +12,7 @@
     "expo-constants": "~57.0.17",
     "expo-crypto": "~57.0.2",
     "expo-font": "~57.0.3",
+    "expo-haptics": "^57.0.2",
     "expo-linear-gradient": "^57.0.1",
     "expo-linking": "~57.0.9",
     "expo-notifications": "~57.0.16",
@@ -47,7 +48,8 @@
     "build:web": "expo export --platform web --output-dir dist",
     "preview:screens": "node scripts/preview/screens.mjs",
     "preview:touch": "node scripts/preview/touch.mjs",
-    "preview:gestures": "node scripts/preview/gestures.mjs"
+    "preview:gestures": "node scripts/preview/gestures.mjs",
+    "preview:premium": "node scripts/preview/premium.mjs"
   },
   "private": true
 }
