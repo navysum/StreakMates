@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView, Text, View, StyleSheet } from 'react-native';
 import { KeyboardSafe } from '@/components/KeyboardSafe';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { Field } from '@/components/Field';
 import { Notice } from '@/components/Notice';
 import { Tag } from '@/components/Tag';
 import { useAuth } from '@/auth/AuthProvider';
-import { useProfile, useSetUsername, useUsernameAvailable } from '@/lib/queries';
+import { useProfile, useSetUsername } from '@/lib/queries';
 import { useTheme } from '@/theme/ThemeProvider';
 import { ink, space, spacing, typography } from '@/theme/tokens';
 
@@ -22,13 +22,10 @@ export default function UsernameScreen() {
   const { userId } = useAuth();
 
   const profile = useProfile(userId);
-  const check = useUsernameAvailable();
   const save = useSetUsername(userId);
 
   const [username, setUsername] = useState('');
-  const [available, setAvailable] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const first = !profile.data?.username;
   const wellFormed = VALID.test(username);
@@ -37,26 +34,6 @@ export default function UsernameScreen() {
   useEffect(() => {
     if (profile.data?.username) setUsername(profile.data.username);
   }, [profile.data?.username]);
-
-  // Check as they type, but not on every keystroke.
-  useEffect(() => {
-    setAvailable(null);
-    setError(null);
-    if (!wellFormed || unchanged) return;
-
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      check
-        .mutateAsync(username)
-        .then(setAvailable)
-        .catch(() => setAvailable(null));
-    }, 400);
-
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [username, wellFormed, unchanged]);
 
   async function onSave() {
     setError(null);
@@ -67,7 +44,6 @@ export default function UsernameScreen() {
       else router.replace('/');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not save that username.');
-      setAvailable(false);
     }
   }
 
@@ -111,12 +87,8 @@ export default function UsernameScreen() {
             <Tag label="3–20 chars, start with a letter" variant="outline" />
           ) : unchanged ? (
             <Tag label="Unchanged" variant="outline" />
-          ) : check.isPending || available === null ? (
-            <Tag label="Checking…" variant="outline" />
-          ) : available ? (
-            <Tag label={`@${username} is free`} />
           ) : (
-            <Tag label="Already taken" variant="outline" />
+            <Tag label="Ready to claim" variant="outline" />
           )}
         </View>
 
@@ -124,7 +96,7 @@ export default function UsernameScreen() {
           label={first ? 'Claim it' : 'Save username'}
           variant="primary"
           busy={save.isPending}
-          disabled={!wellFormed || unchanged || available !== true}
+          disabled={!wellFormed || unchanged}
           onPress={onSave}
         />
 

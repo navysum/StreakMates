@@ -64,17 +64,6 @@ export function useProfile(userId: string | null) {
   });
 }
 
-/** Yes or no, without exposing who holds it. */
-export function useUsernameAvailable() {
-  return useMutation({
-    mutationFn: async (username: string): Promise<boolean> => {
-      const { data, error } = await db().rpc('username_available', { p_username: username });
-      if (error) throw error;
-      return data as boolean;
-    },
-  });
-}
-
 export function useSetUsername(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
@@ -90,7 +79,9 @@ export function useSetUsername(userId: string | null) {
       if (error) {
         // Two people can pick the same free name in the same moment; the
         // unique index is what decides, and this is how it says so.
-        if (error.code === '23505') throw new Error('That username is already taken.');
+        if (error.code === '23505') {
+          throw new Error('That username could not be claimed. Please try another one.');
+        }
         if (error.code === '23514') {
           throw new Error(
             'Usernames are 3–20 characters, start with a letter, and use only letters, numbers and underscores.',
