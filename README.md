@@ -12,6 +12,9 @@ A habit tracker built around the people you're doing it with.
 
 `React Native` · `Expo` · `TypeScript` · `Supabase` · `PostgreSQL`
 
+**Status (Sep 2026): live on the web.** The latest change (12 Sep) closed a
+username-enumeration gap.
+
 </div>
 
 <img src="./docs/screens/banner.png" alt="Today, habit detail, the group leaderboard and the focus timer, in light and dark" />
@@ -344,10 +347,11 @@ src/
                       tokens.ts — the only file that touches the platform
   auth/               session, Google OAuth, deep links
 supabase/
-  migrations/         13, applied in order
+  migrations/         14, applied in filename order (two share the 0013 prefix)
   tests/              the attack suite
 scripts/preview/      the browser harness
-docs/                 security notes, web deployment, screenshots
+docs/                 security notes, web deployment, Life Operating System habit-sync design, plan, screenshots
+PLAN.md               the original v1 product plan
 ```
 
 The theme is split for a reason worth stating: `tokens.ts` reads `PixelRatio`
