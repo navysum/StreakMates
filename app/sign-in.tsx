@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { View, Text, Image, StyleSheet, ScrollView } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from '@/components/Button';
+import { Button, HeroText, Label, Paper, Seal } from '@/components/ui';
 import { Notice } from '@/components/Notice';
 import { useAuth } from '@/auth/AuthProvider';
 import { configError } from '@/lib/supabase';
-import { useTheme } from '@/theme/ThemeProvider';
-import { brand, ink, space, spacing, typography } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 export default function SignInScreen() {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const { configured, signInWithGoogle } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -21,55 +21,54 @@ export default function SignInScreen() {
     try {
       await signInWithGoogle();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Sign-in failed. Try again.');
+      setError(e instanceof Error ? e.message : 'Signing in did not work. Try again.');
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <ScrollView
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + 60, paddingBottom: insets.bottom + 32 },
-      ]}
-    >
-      {/* The lockup carries the name and the tagline itself, so the screen
-          does not set them again underneath in a different typeface. */}
-      <View style={styles.head}>
-        <Image
-          source={require('../assets/splash-icon.png')}
-          style={styles.mark}
-          resizeMode="contain"
-          accessibilityRole="image"
-          accessibilityLabel={`${brand.name} — ${brand.tagline}`}
-          accessibilityIgnoresInvertColors
-        />
-      </View>
-
-      {configured ? (
-        <>
-          <Button label="Continue with Google" variant="gradient" onPress={onGoogle} busy={busy} />
-          {error ? <Notice label="Could not sign in">{error}</Notice> : null}
-          <Text style={[typography.caption, styles.fine, { color: ink(colors, 65) }]}>
-            We store your name, avatar and email. Nothing else.
+    <Paper>
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xl },
+        ]}
+      >
+        {/* The seal is StreakMates' mark: 連, "in a row" and "a companion". */}
+        <View style={styles.head}>
+          <Seal size={64} label="StreakMates" />
+          <Label accessibilityRole="header">StreakMates</Label>
+          <HeroText text="Better together." />
+          <Text style={styles.lead}>
+            A habit tracker built around the people you are doing it with.
           </Text>
-        </>
-      ) : (
-        <Notice label={configError ? 'Check your .env' : 'Setup needed'}>
-          {configError ??
-            'No Supabase project is connected yet. Create one, run supabase/migrations/0001_init.sql in its SQL editor, then copy .env.example to .env with your project URL and anon key and restart the dev server. Full steps are in supabase/README.md.'}
-        </Notice>
-      )}
-    </ScrollView>
+        </View>
+
+        {configured ? (
+          <View style={styles.actions}>
+            <Button title="Continue with Google" onPress={onGoogle} loading={busy} />
+            {error ? <Notice label="Could not sign in">{error}</Notice> : null}
+            <Text style={styles.fine}>
+              We keep your name, picture and email address. Nothing else.
+            </Text>
+          </View>
+        ) : (
+          <Notice label={configError ? 'Check your .env' : 'Setup needed'}>
+            {configError ??
+              'No Supabase project is connected yet. Create one, run supabase/migrations/0001_init.sql in its SQL editor, then copy .env.example to .env with your project URL and anon key and restart the dev server. Full steps are in supabase/README.md.'}
+          </Notice>
+        )}
+      </ScrollView>
+    </Paper>
   );
 }
 
-const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.page, gap: spacing.section, justifyContent: 'center' },
-  head: { alignItems: 'center', marginBottom: space.lg },
-  // Square, cut from the master by scripts/make-icons.py.
-  mark: { width: 188, height: 188 },
-  fine: { textAlign: 'center' },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: space.gutter, gap: space.xxl },
+    head: { gap: space.md },
+    lead: { ...t.type.body, color: t.colors.inkSoft },
+    actions: { gap: space.md },
+    fine: { ...t.type.italic, color: t.colors.inkMuted },
+  });

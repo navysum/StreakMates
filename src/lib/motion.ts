@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react';
-import { AccessibilityInfo, Platform } from 'react-native';
+import { AccessibilityInfo, Easing, Platform } from 'react-native';
 
 /**
- * Durations, in ms. Short enough that nothing waits on an animation.
+ * Durations, in ms, inside the NavySum range of 180 to 320. Short enough that
+ * nothing waits on an animation.
  *
- * Motion in this app exists to say what changed — a control became active, a
- * day was cleared — and never to decorate. If a transition cannot be described
- * in those terms it should not be added.
+ * Motion in this app exists to say what changed — a habit was sealed, a line
+ * arrived — and never to decorate. If a transition cannot be described in
+ * those terms it should not be added.
  */
 export const duration = {
-  /** A control responding to a tap. */
-  tap: 160,
-  /** Something appearing or leaving. */
+  /** A control responding to a tap, or a mark leaving. */
+  tap: 180,
+  /** Something appearing. */
   enter: 220,
+  /** The seal stamping down on something completed. */
+  stamp: 260,
 } as const;
+
+/**
+ * Ease-out, and only ease-out: things settle. Nothing in a NavySum app
+ * bounces, springs or spins.
+ */
+export const settle = Easing.out(Easing.cubic);
 
 /**
  * Does this person want motion reduced?

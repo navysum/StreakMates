@@ -1,124 +1,120 @@
-/**
- * Type, and how it responds to the OS text size setting.
- *
- * Kept apart from tokens.ts for one reason: tokens.ts reads `PixelRatio` and
- * therefore imports react-native, which the test runner cannot parse. Every
- * pure part of the design system lives in a file that can be loaded by a test,
- * and the single file that touches the platform is named for what it does.
- */
-/** Font families, as registered with expo-font in app/_layout.tsx. */
-export const font = {
-  /** Barlow Condensed 600 — anything structural: titles, labels, figures. */
-  heading: 'BarlowCondensed-SemiBold',
-  /** Barlow — prose, row names, captions. */
-  body: 'Barlow-Regular',
-  bodyStrong: 'Barlow-SemiBold',
-} as const;
+import type { Palette } from './palette.ts';
 
 /**
- * Every figure a person compares is tabular, so digits do not jitter as they
- * change. Spread this into any style showing a number.
+ * Type: a serif display face for what matters, a quiet UI face for controls,
+ * and small uppercase tracked labels above sections. Typography carries the
+ * hierarchy, so there are few boxes anywhere in the app.
+ *
+ *   Washi, Aizome   Cormorant Garamond for display, Inter for the interface
+ *   LifeOS          DM Sans for both, display sizes scaled by 0.84 because
+ *                   DM Sans runs larger than Cormorant at the same size
+ *
+ * Line heights are fixed and are NOT multiplied by the OS text size. React
+ * Native already scales `lineHeight` alongside `fontSize` on both platforms —
+ * iOS multiplies it by the effective font size multiplier, Android converts it
+ * as SP — and it honours `maxFontSizeMultiplier` for both. Scaling it here as
+ * well gave twice the leading at large text sizes.
+ *
+ * Every ratio below clears the face's own measured height (from its hhea
+ * table): Cormorant 1.21 em, Inter 1.21 em, DM Sans 1.30 em. The figures are
+ * the exception, and may sit tighter, because lining digits never reach the
+ * ascender or the descender.
  */
-export const tnum = { fontVariant: ['tabular-nums' as const] };
 
 /**
- * Line heights track the OS font size setting.
+ * How far type may grow with the OS text size, where it must stop.
  *
- * React Native scales `fontSize` for you when someone turns text size up in
- * their phone's settings, and does *not* touch `lineHeight`. Every size below
- * carries a fixed lineHeight, so at 200% text the glyphs grew and the line box
- * did not: descenders clipped, then whole rows of the type overlapped.
- *
- * Multiplying the line height by the same factor keeps the proportions the
- * design was drawn at, whatever the setting. It is read once at startup, which
- * is when the platform applies the setting anyway.
- *
- * `buildTypography` is separate from the export so the scaling can be tested
- * at sizes this machine cannot be set to — see theme/__tests__/typescale.
+ * Body text grows freely; that is the point of the setting. Hero type, titles
+ * and big numerals are capped so a layout built around them does not break,
+ * and the tab bar is capped so three labels side by side never collide.
  */
-export function buildTypography(fontScale: number) {
-  // A scale below 1 is someone choosing smaller text; it still needs a line
-  // box at least as tall as the glyphs, so the floor is 1 for line heights.
-  const lh = (n: number) => Math.round(n * Math.max(1, fontScale));
+export const HERO_MAX_SCALE = 1.4;
+export const NUMERAL_MAX_SCALE = 1.2;
+export const CHROME_MAX_SCALE = 1.5;
+
+/**
+ * Cormorant's default figures are old-style, which makes "11" read as "II" —
+ * "No phone after 10" came out as "after IO". Every display style is set in
+ * lining figures, not just the big numerals.
+ */
+export const numerals = { fontVariant: ['lining-nums' as const] };
+
+/** Small uppercase, tracked labels ("SATURDAY"). */
+export function labelStyle(t: Pick<Palette, 'fonts' | 'labelTracking' | 'colors'>) {
+  return {
+    fontFamily: t.fonts.uiMedium,
+    fontSize: 11,
+    letterSpacing: t.labelTracking,
+    textTransform: 'uppercase' as const,
+    color: t.colors.inkMuted,
+  };
+}
+
+export function buildType(p: Palette) {
+  const lifeos = p.family === 'lifeos';
+  // Display sizes follow the face; UI sizes are the same in every family.
+  const d = (n: number) => Math.round(n * p.displayScale);
 
   return {
-  screenTitle: {
-    fontFamily: font.heading,
-    fontSize: 34,
-    lineHeight: lh(35),
-    letterSpacing: 0.68,
-    textTransform: 'uppercase' as const,
-  },
-  subTitle: {
-    fontFamily: font.heading,
-    fontSize: 30,
-    lineHeight: lh(31),
-    letterSpacing: 0.6,
-    textTransform: 'uppercase' as const,
-  },
-  sectionTitle: {
-    fontFamily: font.heading,
-    fontSize: 24,
-    lineHeight: lh(26),
-    letterSpacing: 0.48,
-    textTransform: 'uppercase' as const,
-  },
-  cardTitle: {
-    fontFamily: font.heading,
-    fontSize: 22,
-    lineHeight: lh(24),
-    letterSpacing: 0.44,
-    textTransform: 'uppercase' as const,
-  },
-  /** The kicker above a title, and the header above a list. */
-  label: {
-    fontFamily: font.heading,
-    fontSize: 12,
-    lineHeight: lh(14),
-    letterSpacing: 1.2,
-    textTransform: 'uppercase' as const,
-  },
-  /** Stat captions, day letters. */
-  labelSmall: {
-    fontFamily: font.heading,
-    fontSize: 11,
-    lineHeight: lh(13),
-    letterSpacing: 1.1,
-    textTransform: 'uppercase' as const,
-  },
-  tabLabel: {
-    fontFamily: font.heading,
-    fontSize: 11,
-    lineHeight: lh(13),
-    letterSpacing: 1.1,
-    textTransform: 'uppercase' as const,
-  },
-  /** Row names and anything read as a sentence. */
-  body: { fontFamily: font.body, fontSize: 15, lineHeight: lh(20) },
-  bodyStrong: { fontFamily: font.bodyStrong, fontSize: 15, lineHeight: lh(20) },
-  prose: { fontFamily: font.body, fontSize: 13, lineHeight: lh(20) },
-  caption: { fontFamily: font.body, fontSize: 12, lineHeight: lh(16) },
+    /** A screen's title. Sentence case. Cap with HERO_MAX_SCALE. */
+    title: {
+      fontFamily: p.fonts.display,
+      fontSize: d(32),
+      lineHeight: d(42),
+      letterSpacing: lifeos ? -0.5 : -0.2,
+      ...numerals,
+    },
+    /** A name heading a block: a group, a person, an empty state. */
+    heading: { fontFamily: p.fonts.display, fontSize: d(24), lineHeight: d(32), ...numerals },
+    /** A row's content: a habit, a task, a person. */
+    row: { fontFamily: p.fonts.display, fontSize: d(21), lineHeight: d(28), ...numerals },
+    /** An italic title, in inkSoft. */
+    italicTitle: {
+      fontFamily: p.fonts.displayItalic,
+      fontSize: d(20),
+      lineHeight: d(26),
+      ...numerals,
+    },
+    /**
+     * The one short italic line under a number, a source or an excerpt, in
+     * inkMuted. LifeOS sets it smaller, as the design system does.
+     */
+    italic: lifeos
+      ? { fontFamily: p.fonts.displayItalic, fontSize: 14, lineHeight: 20, ...numerals }
+      : { fontFamily: p.fonts.displayItalic, fontSize: 17, lineHeight: 23, ...numerals },
+    body: { fontFamily: p.fonts.ui, fontSize: 16, lineHeight: 24 },
+    bodyMedium: { fontFamily: p.fonts.uiMedium, fontSize: 16, lineHeight: 24 },
+    caption: { fontFamily: p.fonts.ui, fontSize: 14, lineHeight: 20 },
+    /** The section label. Carries inkMuted, as the design system's does. */
+    label: { ...labelStyle(p), lineHeight: 15 },
+    /** A button's label: tracked capitals on paper, sentence case on LifeOS. */
+    button: lifeos
+      ? { fontFamily: p.fonts.uiMedium, fontSize: 15, lineHeight: 20 }
+      : {
+          fontFamily: p.fonts.uiMedium,
+          fontSize: 12,
+          lineHeight: 16,
+          letterSpacing: 2.4,
+          textTransform: 'uppercase' as const,
+        },
 
-  /** Figures. All tabular; spread `tnum` alongside. */
-  stat: { fontFamily: font.heading, fontSize: 26, lineHeight: lh(26), letterSpacing: 0.52, ...tnum },
-  statSmall: { fontFamily: font.heading, fontSize: 22, lineHeight: lh(22), letterSpacing: 0.44, ...tnum },
-  figure: { fontFamily: font.heading, fontSize: 19, lineHeight: lh(19), letterSpacing: 0.38, ...tnum },
-  figureSmall: { fontFamily: font.heading, fontSize: 17, lineHeight: lh(17), letterSpacing: 0.34, ...tnum },
-  clock: { fontFamily: font.heading, fontSize: 64, lineHeight: lh(64), letterSpacing: 1.28, ...tnum },
-  code: { fontFamily: font.heading, fontSize: 38, lineHeight: lh(38), letterSpacing: 10.6, ...tnum },
-
-  /** Buttons, segments and tags. */
-  action: {
-    fontFamily: font.heading,
-    fontSize: 13,
-    lineHeight: lh(15),
-    letterSpacing: 1.04,
-    textTransform: 'uppercase' as const,
-  },
+    /** Big light numerals: the day's count. Cap with NUMERAL_MAX_SCALE. */
+    numeral: { fontFamily: p.fonts.displayLight, fontSize: d(64), lineHeight: d(72), ...numerals },
+    /** The focus clock. Drawn digit by digit — see components/Clock. */
+    clock: { fontFamily: p.fonts.displayLight, fontSize: d(88), lineHeight: d(96), ...numerals },
+    /** A figure in a row of three: a streak, a rate. */
+    figure: { fontFamily: p.fonts.displayLight, fontSize: d(44), lineHeight: d(52), ...numerals },
+    /** A number inside a row: a rank, a rate, a count. */
+    figureSmall: { fontFamily: p.fonts.display, fontSize: d(21), lineHeight: d(28), ...numerals },
+    /** The invite code: six characters, spaced to be read aloud. */
+    code: {
+      fontFamily: p.fonts.display,
+      fontSize: d(40),
+      lineHeight: d(52),
+      letterSpacing: 8,
+      ...numerals,
+    },
   } as const;
 }
 
-/**
- * The scale as it is right now. Components read this; nothing should call
- * `buildTypography` directly outside a test.
- */
+export type TypeScale = ReturnType<typeof buildType>;

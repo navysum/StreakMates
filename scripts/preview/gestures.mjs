@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { TABLES, IDS } from './fixtures.mjs';
 
-const DIST = '/home/user/Habit-Tracking-with-Friends/dist-demo';
+const DIST = process.env.DIST || new URL('../../dist-demo', import.meta.url).pathname;
 const types = {'.js':'text/javascript','.html':'text/html','.png':'image/png','.ico':'image/x-icon','.ttf':'font/ttf','.json':'application/json'};
 const server = http.createServer((req,res)=>{
   let f = path.join(DIST, decodeURIComponent(req.url.split('?')[0]));
@@ -29,7 +29,7 @@ function applyQuery(rows,url){const p=url.searchParams;let out=[...rows];
     else if(op==='lte') out=out.filter(r=>String(r[k])<=v);
   } return out; }
 
-const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2, hasTouch:true });
 let refetches = 0;
 await ctx.route('**/*.supabase.co/**', async route => {
@@ -55,7 +55,8 @@ await page.evaluate(([k,v]) => localStorage.setItem(k,v), ['sb-demoproject-auth-
 await page.goto('http://localhost:4602/', { waitUntil:'networkidle' });
 await page.waitForTimeout(1200);
 
-const row = page.locator('[aria-label="Open Morning run"]').first();
+// Prefix match: the label goes on to read the row's line, "…, 41 days in a row".
+const row = page.locator('[aria-label^="Open Morning run"]').first();
 console.log('habit row found:', await row.count() > 0);
 console.log('accessibility hint:', await row.getAttribute('aria-describedby') ? '(described)' : await row.evaluate(e => e.getAttribute('aria-roledescription') || e.title || '(none exposed on web)'));
 

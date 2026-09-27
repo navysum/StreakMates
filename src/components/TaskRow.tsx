@@ -1,8 +1,9 @@
-import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { hit, ink, space, typography } from '@/theme/tokens';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
+import { Stamp } from './Stamp';
 import { Tag } from './Tag';
-import { Tick } from './Tick';
+import { TextAction } from './TextAction';
 
 type Props = {
   title: string;
@@ -17,42 +18,31 @@ type Props = {
   /**
    * Opens the row's actions — rename and delete.
    *
-   * Reachable two ways on purpose. Long press is the shortcut, and the "⋯"
-   * button is the visible route: unlike a habit, a task has no detail screen,
-   * so if this were gesture-only then deleting one would be a capability you
-   * could only find by accident.
+   * Reachable two ways on purpose. Long press is the shortcut, and "Edit" is
+   * the visible route: unlike a habit, a task has no detail screen, so if this
+   * were gesture-only then deleting one would be a capability you could only
+   * find by accident.
    */
   onMore?: () => void;
 };
 
-export function TaskRow({
-  title,
-  done,
-  active,
-  meta,
-  last,
-  onToggle,
-  onPress,
-  onMore,
-}: Props) {
-  const { colors } = useTheme();
+/**
+ * A task: the stamp first, as on any list of things to do, then the task.
+ * Done tasks stay on the list, struck through, until cleared.
+ */
+export function TaskRow({ title, done, active, meta, last, onToggle, onPress, onMore }: Props) {
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View
-      style={[
-        styles.row,
-        active && { backgroundColor: colors.accents[100] },
-        { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 },
-      ]}
-    >
+    <View style={[styles.row, active && styles.active]}>
       <Pressable
         onPress={onToggle}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: done }}
-        accessibilityLabel={done ? `Mark ${title} unfinished` : `Finish ${title}`}
-        style={({ pressed }) => [styles.check, pressed && styles.pressed]}
+        accessibilityLabel={done ? `${title}, done. Mark it unfinished` : `Finish ${title}`}
+        style={({ pressed }) => [styles.check, pressed && styles.pressedStamp]}
       >
-        <Tick checked={done} size={22} />
+        <Stamp checked={done} size={24} />
       </Pressable>
 
       <Pressable
@@ -61,67 +51,77 @@ export function TaskRow({
         delayLongPress={350}
         disabled={!onPress && !onMore}
         accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={onPress ? `Focus on ${title}` : undefined}
+        accessibilityLabel={
+          onPress ? (active ? `${title}, the timer is on this. Clear it` : `Focus on ${title}`) : undefined
+        }
         accessibilityHint={onMore ? 'Double tap and hold for options' : undefined}
-        style={({ pressed }) => [styles.text, pressed && onPress ? styles.pressed : null]}
+        style={({ pressed }) => [styles.text, pressed && (onPress || onMore) && styles.pressed]}
       >
-        <Text
-          numberOfLines={2}
-          style={[
-            typography.body,
-            {
-              color: done ? ink(colors, 62) : colors.text,
-              textDecorationLine: done ? 'line-through' : 'none',
-            },
-          ]}
-        >
+        <Text numberOfLines={2} style={[styles.title, done && styles.done]}>
           {title}
         </Text>
         {meta ? (
-          <Text numberOfLines={1} style={[typography.caption, { color: ink(colors, 70) }]}>
+          <Text numberOfLines={1} style={styles.meta}>
             {meta}
           </Text>
         ) : null}
       </Pressable>
 
       {active ? (
-        <View style={styles.badge}>
+        <View style={styles.now}>
           <Tag label="Now" variant="accent" />
         </View>
       ) : null}
 
       {onMore ? (
-        <Pressable
-          onPress={onMore}
-          accessibilityRole="button"
-          accessibilityLabel={`Options for ${title}`}
-          style={({ pressed }) => [styles.more, pressed && styles.pressed]}
-        >
-          {/* Three dots drawn rather than typed: the character renders at a
-              different weight in each of the app's fonts, and "..." is read
-              aloud as "dot dot dot". */}
-          <View style={styles.dots}>
-            {[0, 1, 2].map((i) => (
-              <View key={i} style={[styles.dot, { backgroundColor: ink(colors, 62) }]} />
-            ))}
-          </View>
-        </Pressable>
+        <View style={styles.more}>
+          <TextAction
+            title="Edit"
+            tone="muted"
+            onPress={onMore}
+            accessibilityLabel={`Options for ${title}`}
+          />
+        </View>
       ) : null}
+
+      {last ? null : <View style={styles.rule} />}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { minHeight: hit + 8, flexDirection: 'row', alignItems: 'stretch' },
-  check: { width: 52, alignItems: 'center', justifyContent: 'center' },
-  // `alignItems: 'stretch'` on the row plus `justifyContent: 'center'` here
-  // makes both halves fill the row's full height. With `center` and a fixed
-  // padding the label's own pressable came out 40pt tall — under the minimum,
-  // and with dead space either side of it inside a row that looked tappable.
-  text: { flex: 1, minWidth: 0, justifyContent: 'center', paddingVertical: space.md, gap: 2 },
-  badge: { paddingRight: space.sm, justifyContent: 'center' },
-  more: { width: hit, alignItems: 'center', justifyContent: 'center' },
-  dots: { flexDirection: 'row', gap: 3 },
-  dot: { width: 3, height: 3, borderRadius: 1.5 },
-  pressed: { opacity: 0.6 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      minHeight: 60,
+      marginHorizontal: -space.gutter,
+      paddingRight: space.gutter,
+    },
+    active: { backgroundColor: t.colors.paperDeep },
+    check: {
+      width: space.gutter + 24 + space.md,
+      paddingLeft: space.gutter,
+      justifyContent: 'center',
+    },
+    // `alignItems: 'stretch'` on the row and `justifyContent: 'center'` here
+    // make the label's own target fill the row's height, so it never comes
+    // out under 44pt with dead space around it.
+    text: { flex: 1, minWidth: 0, justifyContent: 'center', paddingVertical: space.md, gap: 2 },
+    title: { ...t.type.row, color: t.colors.ink },
+    done: { color: t.colors.inkMuted, textDecorationLine: 'line-through' },
+    meta: { ...t.type.italic, color: t.colors.inkMuted },
+    now: { justifyContent: 'center', paddingLeft: space.sm },
+    more: { justifyContent: 'center', paddingLeft: space.md },
+    pressed: { opacity: 0.6 },
+    pressedStamp: { opacity: 0.7 },
+    rule: {
+      position: 'absolute',
+      left: space.gutter,
+      right: space.gutter,
+      bottom: 0,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.colors.inkFaint,
+      opacity: 0.8,
+    },
+  });

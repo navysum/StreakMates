@@ -1,18 +1,25 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { milestoneLabel, reachedMilestone } from '../milestone.ts';
-import { MILESTONES } from '../../theme/palette.ts';
+import { MILESTONES, milestoneLabel, reachedMilestone } from '../milestone.ts';
 
 test('milestone: fires on the day the run reaches one', () => {
   assert.equal(reachedMilestone(6, 7), true);
-  assert.equal(reachedMilestone(13, 14), true);
   assert.equal(reachedMilestone(29, 30), true);
+  assert.equal(reachedMilestone(99, 100), true);
+  assert.equal(reachedMilestone(364, 365), true);
 });
 
 test('milestone: says nothing on an ordinary day', () => {
   assert.equal(reachedMilestone(7, 8), false);
   assert.equal(reachedMilestone(0, 1), false);
   assert.equal(reachedMilestone(30, 31), false);
+});
+
+test('milestone: only the four NavySum milestones, so the line stays rare', () => {
+  assert.deepEqual([...MILESTONES], [7, 30, 100, 365]);
+  // Fortnights and fifties used to fire too.
+  assert.equal(reachedMilestone(13, 14), false);
+  assert.equal(reachedMilestone(49, 50), false);
 });
 
 test('milestone: a streak already past one does not re-announce it', () => {

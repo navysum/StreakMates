@@ -15,7 +15,7 @@
     "android": {
       "package": "com.navysum.streakmates",
       "adaptiveIcon": {
-        "backgroundColor": "#080c1f",
+        "backgroundColor": "#F3EDE2",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -30,8 +30,8 @@
       "name": "StreakMates",
       "shortName": "StreakMates",
       "description": "Better together. Build habits with your friends.",
-      "themeColor": "#080c1f",
-      "backgroundColor": "#f8f7fc",
+      "themeColor": "#F3EDE2",
+      "backgroundColor": "#F3EDE2",
       "lang": "en-GB"
     },
     "plugins": [
@@ -42,9 +42,9 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 180,
           "resizeMode": "contain",
-          "backgroundColor": "#080c1f",
+          "backgroundColor": "#F3EDE2",
           "dark": {
-            "backgroundColor": "#080c1f"
+            "backgroundColor": "#1C1A17"
           }
         }
       ],
@@ -52,7 +52,7 @@
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#8b67f5"
+          "color": "#B2382A"
         }
       ]
     ],

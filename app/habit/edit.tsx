@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button } from '@/components/Button';
+import { Button } from '@/components/ui';
 import { HabitForm, type HabitFormValue } from '@/components/HabitForm';
-import { ModalHeader } from '@/components/ModalHeader';
+import { ModalScreen } from '@/components/ModalScreen';
 import { Notice } from '@/components/Notice';
+import { TextAction } from '@/components/TextAction';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   byHabit,
@@ -19,10 +20,9 @@ import { confirm } from '@/lib/confirm';
 import { toLocalDate } from '@/lib/date';
 import { describeProgress } from '@/lib/streak';
 import { useTheme } from '@/theme/ThemeProvider';
-import { ink, spacing } from '@/theme/tokens';
 
 export default function EditHabitScreen() {
-  const { colors } = useTheme();
+  const t = useTheme();
   const { userId } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,25 +43,21 @@ export default function EditHabitScreen() {
 
   if (habitQuery.isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <ModalHeader title="Habit" />
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
-      </View>
+      <ModalScreen title="Habit">
+        <ActivityIndicator style={styles.loader} color={t.colors.inkMuted} />
+      </ModalScreen>
     );
   }
 
   // Loading and gone are different answers — see the note in habit/[id].tsx.
   if (!habit) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.bg }}>
-        <ModalHeader title="Habit" />
-        <View style={styles.gone}>
-          <Notice label="Gone">
-            {'This habit no longer exists. It may have been deleted here or on another device.'}
-          </Notice>
-          <Button label="Back to today" onPress={() => router.replace('/')} />
-        </View>
-      </View>
+      <ModalScreen title="Habit" eyebrow="Not found">
+        <Notice label="Gone">
+          {'This habit no longer exists. It may have been deleted here or on another device.'}
+        </Notice>
+        <Button title="Back to Today" variant="outline" onPress={() => router.replace('/')} />
+      </ModalScreen>
     );
   }
 
@@ -92,7 +88,7 @@ export default function EditHabitScreen() {
       });
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the habit.');
+      setError(e instanceof Error ? e.message : 'The habit could not be saved.');
     }
   }
 
@@ -106,7 +102,7 @@ export default function EditHabitScreen() {
       title: 'Share this habit?',
       message: `Everyone in ${group?.name ?? 'the group'} will see ${habit!.title}, including the ${dates.size} check-in${dates.size === 1 ? '' : 's'} already against it. You can make it private again, but they will have seen it.`,
       confirmLabel: 'Share it',
-      cancelLabel: 'Keep private',
+      cancelLabel: 'Keep it private',
     });
     if (yes) await save(value);
   }
@@ -132,26 +128,25 @@ export default function EditHabitScreen() {
       if (router.canDismiss()) router.dismissTo('/');
       else router.replace('/');
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete the habit.');
+      setError(e instanceof Error ? e.message : 'The habit could not be deleted.');
     }
   }
 
   const archived = !!habit.archived_at;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ModalHeader
-        title="Edit habit"
-        eyebrow={describeProgress(
-          {
-            cadence: habit.cadence,
-            targetDays: habit.target_days,
-            targetPerWeek: habit.target_per_week,
-          },
-          dates,
-          toLocalDate(),
-        )}
-      />
+    <ModalScreen
+      title="Edit habit"
+      eyebrow={describeProgress(
+        {
+          cadence: habit.cadence,
+          targetDays: habit.target_days,
+          targetPerWeek: habit.target_per_week,
+        },
+        dates,
+        toLocalDate(),
+      )}
+    >
       <HabitForm
         initial={initial}
         submitLabel="Save changes"
@@ -159,11 +154,12 @@ export default function EditHabitScreen() {
         onSubmit={(v) => void onSubmit(v)}
         groups={groups ?? []}
         footer={
-          <View style={styles.footer}>
+          <>
             {error ? <Notice label="Something went wrong">{error}</Notice> : null}
             <Button
-              label={archived ? 'Restore habit' : 'Archive habit'}
-              busy={setArchived.isPending}
+              title={archived ? 'Restore habit' : 'Archive habit'}
+              variant="outline"
+              loading={setArchived.isPending}
               onPress={() =>
                 setArchived.mutate(
                   { id: habit.id, archived: !archived },
@@ -172,26 +168,27 @@ export default function EditHabitScreen() {
               }
             />
             <Notice label="Archive keeps everything">
-              {'Archiving drops the habit off Today but keeps every check-in and the streak record, and you can restore it in one tap. Deleting destroys the history.'}
+              {'Archiving takes the habit off Today but keeps every check-in and its longest run, and you can restore it in one tap. Deleting destroys the history.'}
             </Notice>
             {/* There is no destructive colour in this system, so the weight of
-                this action is carried by the confirmation, not by a red
-                button. */}
-            <Button
-              label="Delete habit"
-              variant="ghost"
-              busy={remove.isPending}
+                this action is carried by the confirmation — and a warning
+                haptic as it appears — not by a red button. It is a quiet
+                word in muted ink: in Washi the accent is red, and in LifeOS
+                it is green, and neither should say "delete". */}
+            <TextAction
+              title={remove.isPending ? 'Deleting…' : 'Delete habit'}
+              tone="muted"
               onPress={() => void confirmDelete()}
+              style={styles.start}
             />
-          </View>
+          </>
         }
       />
-    </View>
+    </ModalScreen>
   );
 }
 
 const styles = StyleSheet.create({
   loader: { marginTop: 32 },
-  gone: { padding: spacing.page, gap: spacing.section },
-  footer: { gap: spacing.section, marginTop: spacing.section },
+  start: { alignSelf: 'flex-start' },
 });

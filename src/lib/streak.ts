@@ -79,7 +79,11 @@ export function weeklyProgress(
   return { done: count, target };
 }
 
-/** Short line under a habit name: streak, or weekly progress for weekly habits. */
+/**
+ * The one short line under a habit's name: its run, or this week for a weekly
+ * habit. Set in italic, in sentence case, and written the NavySum way — a run
+ * that ended is a fresh start, never "broken": the app forgives, and says so.
+ */
 export function describeProgress(
   schedule: Schedule,
   completedDates: Iterable<string>,
@@ -87,16 +91,17 @@ export function describeProgress(
 ): string {
   if (schedule.cadence === 'weekly') {
     const { done, target } = weeklyProgress(schedule, completedDates, today);
-    return `${done} OF ${target} THIS WEEK`;
+    return `${done} of ${target} this week`;
   }
 
   const streak = computeStreak(schedule, completedDates, today);
-  if (streak > 0) return `${streak} DAY STREAK`;
+  if (streak === 1) return 'Day one';
+  if (streak > 1) return `${streak} days in a row`;
 
   const done = completedDates instanceof Set ? completedDates : new Set(completedDates);
   const yesterday = addDays(today, -1);
-  if (done.size > 0 && !done.has(yesterday) && !done.has(today)) return 'STREAK BROKEN';
-  return 'NO STREAK YET';
+  if (done.size > 0 && !done.has(yesterday) && !done.has(today)) return 'A fresh start today';
+  return 'Not started yet';
 }
 
 /**

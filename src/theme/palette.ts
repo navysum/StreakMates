@@ -1,353 +1,405 @@
 /**
- * The palette: colour, and the rules for spending it.
+ * The NavySum palettes: paper, ink and one seal.
  *
- * Built from the logo: an "S" drawn from two figures, running blue into
- * violet into orchid into pink on a midnight ground. Three rules carry that
- * mark into an interface without turning the interface into the mark:
+ * Every value here is exactly what the NavySum design system ships (first seen
+ * in Parables), so StreakMates looks like the rest of the family. Three
+ * families, each with a light and a dark look, and the person picks a family
+ * plus Light, Dark or Automatic:
  *
- *   The UI is flat. No gloss, no glass, no glow, no shadow. A card is a fill
- *   and a hairline. Depth comes from the surface steps below, never from
- *   lighting.
+ *   Washi & Seal   rice paper and a vermilion hanko (dark: Sumi, "ink")
+ *   LifeOS         true neutrals and one emerald, set in DM Sans
+ *   Aizome         indigo-dyed paper with the red seal
  *
- *   Most of the screen is neutral. Off-white to white to near-black text in
- *   light; midnight to navy to near-white in dark. The brand colours are not
- *   decoration — they are a vocabulary, and spending them on ordinary
- *   furniture is what makes them stop meaning anything.
+ * This file is pure data so the contrast rules can be tested directly: the
+ * textures need `require`, which only the bundler understands, so they are
+ * attached in ./index — the one file in the theme that touches the platform.
  *
- *   Colour appears where something *means* something:
- *     blue    progress, interaction
- *     violet  primary actions, active navigation
- *     orchid  social — friends, groups, shared habits
- *     pink    celebration — streak milestones
- *     the gradient   brand moments and real accomplishments only
+ * The rules for spending it:
  *
- *   So a completed habit gets a violet tick, not a violet card.
+ *   One accent. `seal` marks the single most important thing on a screen: a
+ *   completed habit's stamp, the active tab, a text button. Never a second
+ *   accent, never a gradient, never a coloured section background.
  *
- * Every colour below was measured rather than chosen by eye. The brand hues
- * are light on purpose, which means several of them are illegible as ink on a
- * white page: orchid #C56AE9 is 2.98:1 there. Each palette therefore carries
- * its own darkened or lightened variant of the same meaning, and `meaning`
- * exists so no screen ever reaches for a raw brand hex.
+ *   Paper, not glass. Grounds are opaque. Depth is a step from `paper` to
+ *   `paperDeep`, never a shadow or a blur.
+ *
+ *   Dark is its own palette, drawn rather than inverted.
+ *
+ * Three pairings the palettes do not support, measured rather than assumed —
+ * see theme/__tests__/contrast.test.ts, which fails if any of them creeps in:
+ *
+ *   inkMuted on paperDeep   4.22:1 on Washi. Muted text on a deep ground is
+ *                           stepped up to inkSoft by `deepen` below.
+ *   seal on sealSoft        4.02:1 on Sumi. A selected chip writes its label
+ *                           in ink and keeps the accent for its edge and mark.
+ *   onAccent on seal        3.54:1 on Sumi. Nothing in the paper families
+ *                           writes on an accent fill; LifeOS alone does.
  */
 
-export type Ramp = {
-  100: string;
-  200: string;
-  300: string;
-  400: string;
-  500: string;
-  600: string;
-  700: string;
-  800: string;
-  900: string;
-};
+export type ThemeFamily = 'washi' | 'lifeos' | 'aizome';
+export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeId = `${ThemeFamily}-${'light' | 'dark'}`;
 
-/** The five semantic roles. Never reach for a raw brand hex in a screen. */
-export type Meaning = {
-  /** Blue. Progress bars, ring fills, anything counting toward something. */
-  progress: string;
-  /** Violet. Primary actions, the active tab, a completed habit's tick. */
-  action: string;
-  /** Orchid. Anything social — friends, groups, shared habits, reactions. */
-  social: string;
-  /** Pink. Celebration only. A streak milestone, a personal best. */
-  celebrate: string;
-};
-
-export type Palette = {
-  /** The page. Never stark white — a lavender tint reads considerably better. */
-  bg: string;
-  /** A card sitting on the page. */
+export type Colors = {
+  /** Page background. */
+  paper: string;
+  /** Slightly deeper surface: modals, sheets, a pressed row. */
+  paperDeep: string;
+  /** Hairlines, input borders, the tab bar's top rule. */
+  paperEdge: string;
+  /** Raised surfaces: inputs (often semi-transparent over the texture). */
   surface: string;
-  /** A card that is selected, or raised above another card. */
-  raised: string;
-  text: string;
-  /** Violet, as a *fill*. The ink version lives in `meaning.action`. */
-  accent: string;
-  /** Violet held down. */
-  accentPressed: string;
-  divider: string;
-  /** For a border that has to be seen rather than felt. */
-  dividerStrong: string;
-  neutral: Ramp;
-  accents: Ramp;
-  meaning: Meaning;
-  /** A 12%-ish wash of each meaning, for chips and soft fills. */
-  meaningSoft: Meaning;
-  /**
-   * The streak spectrum, low to high. Replaces "green means done": a streak
-   * climbs blue → periwinkle → violet → orchid → pink as it grows. Read it
-   * through `streakColor`, which does the banding.
-   */
-  streak: [string, string, string, string, string];
-  /**
-   * What to write on top of an accent fill. Dark mode's accent is light, so
-   * this is the page colour there, never white — a literal '#fff' is a bug in
-   * one of the two themes. (White on light's #765CEB is 4.67:1; midnight on
-   * dark's #8B67F5 is 5.15:1. White on dark's would have been 3.92:1.)
-   */
+  /** Primary text. */
+  ink: string;
+  /** Secondary text, italic titles. */
+  inkSoft: string;
+  /** Labels, captions, inactive tabs. Still AA on paper. */
+  inkMuted: string;
+  /** Decorative only: hairlines, empty days. Never text someone must read. */
+  inkFaint: string;
+  /** The one accent: the seal, the streak, the active tab. */
+  seal: string;
+  /** An accent wash behind a selected chip. */
+  sealSoft: string;
+  /** Text on an accent fill. LifeOS only — see the note above. */
   onAccent: string;
+  /** The filled button, and its label. */
+  button: string;
+  onButton: string;
 };
 
-/**
- * Light is lavender-tinted rather than stark white, which is most of what
- * makes it feel considered rather than default.
- *
- * The meanings are darkened from their brand hues because the brand hues are
- * light: as ink on this page, violet #8B67F5 measures 3.68:1, orchid #C56AE9
- * measures 2.98:1 and soft pink #F7A4E2 measures 1.73:1.
- *
- * Electric blue was the near miss. It passes on the page (4.51:1) and on a
- * card (4.81:1) and fails on `raised` (4.23:1) — the one ground it was not
- * checked against first, and the one a selected row uses. Every meaning here
- * is now held to AA on all three grounds and on its own soft chip, which is
- * what src/theme/__tests__/contrast.test.ts asserts.
- */
-const light: Palette = {
-  bg: '#f8f7fc',
-  surface: '#ffffff',
-  raised: '#f1eff8',
-  text: '#111326',
-  accent: '#765ceb',
-  accentPressed: '#6548df',
-  divider: '#e1ddee',
-  dividerStrong: '#cbc5dd',
-  neutral: {
-    100: '#ffffff',
-    200: '#f1eff8',
-    300: '#eae6f7',
-    400: '#e1ddee',
-    500: '#cbc5dd',
-    600: '#9697a8',
-    700: '#686a7c',
-    800: '#3a3b4e',
-    900: '#111326',
-  },
-  accents: {
-    100: '#f2eafe',
-    200: '#e6dafc',
-    300: '#d3c2f9',
-    400: '#b7a0f4',
-    500: '#9b7ef0',
-    600: '#765ceb',
-    700: '#6548df',
-    800: '#4e36b0',
-    900: '#372578',
-  },
-  meaning: {
-    progress: '#3d51e6',
-    action: '#6548df',
-    social: '#9b39bd',
-    celebrate: '#aa3a86',
-  },
-  meaningSoft: {
-    progress: '#e6eafe',
-    action: '#f2eafe',
-    social: '#f8e9fc',
-    celebrate: '#fde9f5',
-  },
-  streak: ['#4b61f8', '#5c55f0', '#6548df', '#a343c7', '#b23f8d'],
-  onAccent: '#ffffff',
+export type Fonts = {
+  display: string;
+  displayItalic: string;
+  displayLight: string;
+  /** For CJK, including the characters on the seal. */
+  mincho: string;
+  ui: string;
+  uiMedium: string;
 };
 
-/**
- * Dark is navy-black, not #000: the logo lives on midnight and pure black
- * would strand it. Both ramps are inverted end-for-end — step 100 stays the
- * soft *fill* (now a dark tint) and 700-900 stay the strong *ink* (now light)
- * — which is what lets tags, buttons and label greys re-theme untouched.
- *
- * Two swaps here. Progress cannot be electric blue: it measures 3.81:1 on a
- * card, so dark uses periwinkle #6A81FB at 5.37:1 — the neighbouring stop of
- * the same gradient. And violet as *ink* is one step lighter than violet as a
- * *fill*: #8B67F5 is right under white on a button but only 4.35:1 as text on
- * `raised`, so `meaning.action` is #9D7EF7 at 5.49:1 while `accent` stays the
- * brand's own violet. Orchid and pink work as themselves.
- */
-const dark: Palette = {
-  bg: '#050611',
-  surface: '#0f1328',
-  raised: '#151a35',
-  text: '#faf9fd',
-  accent: '#8b67f5',
-  accentPressed: '#a98cf8',
-  divider: '#242a49',
-  dividerStrong: '#343b62',
-  neutral: {
-    100: '#0a0d1d',
-    200: '#0f1328',
-    300: '#151a35',
-    400: '#1c2142',
-    500: '#343b62',
-    600: '#7c7b8e',
-    700: '#b2b0c2',
-    800: '#d8d6e4',
-    900: '#faf9fd',
-  },
-  accents: {
-    100: '#1a153a',
-    200: '#231c4c',
-    300: '#2e2464',
-    400: '#453488',
-    500: '#6b4fc9',
-    600: '#8b67f5',
-    700: '#a98cf8',
-    800: '#c5b2fb',
-    900: '#e3d9fd',
-  },
-  meaning: {
-    progress: '#6a81fb',
-    action: '#9d7ef7',
-    social: '#c56ae9',
-    celebrate: '#f7a4e2',
-  },
-  meaningSoft: {
-    progress: '#141a3d',
-    action: '#1a153a',
-    social: '#2a1440',
-    celebrate: '#33122a',
-  },
-  streak: ['#6a81fb', '#7b74f8', '#8b67f5', '#c56ae9', '#f7a4e2'],
-  onAccent: '#050611',
+/** Everything about a theme except its texture, which needs the bundler. */
+export type Palette = {
+  /** Resolved id, e.g. "washi-dark". */
+  id: ThemeId;
+  family: ThemeFamily;
+  name: string;
+  dark: boolean;
+  colors: Colors;
+  fonts: Fonts;
+  /** Tint for the seal image; null keeps the textured vermilion stamp. */
+  sealTint: string | null;
+  /** Letter-spacing for small uppercase labels. */
+  labelTracking: number;
+  /** Scale applied to display sizes (DM Sans runs larger than Cormorant). */
+  displayScale: number;
+  radius: { card: number; input: number };
 };
 
-export const palettes = { light, dark };
+/** Font families, as registered with expo-font in app/_layout.tsx. */
+const cormorant: Fonts = {
+  display: 'CormorantGaramond_500Medium',
+  displayItalic: 'CormorantGaramond_500Medium_Italic',
+  displayLight: 'CormorantGaramond_300Light',
+  mincho: 'ShipporiMincho_500Medium',
+  ui: 'Inter_400Regular',
+  uiMedium: 'Inter_500Medium',
+};
 
-/**
- * The brand gradient, as the logo draws it. Four stops for surfaces and
- * strokes, five for the streak spectrum.
- *
- * Spend it deliberately: the sign-in mark, a primary call to action, a
- * milestone. Applied to ordinary furniture it stops being a brand moment and
- * becomes wallpaper — which is the failure mode the whole flat rule exists to
- * avoid.
- */
-export const gradient = ['#4b61f8', '#8b67f5', '#c56ae9', '#f7a4e2'] as const;
-export const gradientStreak = ['#4b61f8', '#6a81fb', '#8b67f5', '#c56ae9', '#f7a4e2'] as const;
+const dmSans: Fonts = {
+  display: 'DMSans_500Medium',
+  displayItalic: 'DMSans_400Regular_Italic',
+  displayLight: 'DMSans_300Light',
+  mincho: 'ShipporiMincho_500Medium',
+  ui: 'DMSans_400Regular',
+  uiMedium: 'DMSans_600SemiBold',
+};
 
-/**
- * The same sweep, for anything with a label on top of it.
- *
- * The brand gradient cannot carry text. It is built to end in soft pink, and
- * white on soft pink is 1.85:1 — a button filled with the full sweep is
- * readable at its left edge and unreadable at its right, which a screenshot
- * of the sign-in screen showed immediately. Nothing about it is fixable by
- * choosing a different text colour: the sweep spans both ends of the
- * lightness range, so no single ink clears it.
- *
- * These are the same four hues held to the darker half of the ramp, where
- * white measures 6.91, 5.92 and 6.23 — clear of AA across the whole sweep
- * rather than only at the start. It reads as the brand gradient because it is
- * the brand gradient; it just does not run off the end into a colour that
- * cannot hold a word.
- */
-export const gradientAction = ['#3348d6', '#6548df', '#9332b6'] as const;
+const washiBase = {
+  family: 'washi' as const,
+  fonts: cormorant,
+  sealTint: null,
+  labelTracking: 2.2,
+  displayScale: 1,
+  radius: { card: 4, input: 4 },
+};
+const aizomeBase = {
+  family: 'aizome' as const,
+  fonts: cormorant,
+  sealTint: null,
+  labelTracking: 2.2,
+  displayScale: 1,
+  radius: { card: 4, input: 4 },
+};
+const lifeosBase = {
+  family: 'lifeos' as const,
+  fonts: dmSans,
+  labelTracking: 0.9,
+  displayScale: 0.84,
+  radius: { card: 12, input: 12 },
+};
 
-/**
- * One colour, part-way along a set of stops.
- *
- * For the places that need a gradient spread across several separate objects
- * rather than drawn inside one. The day's progress is the case that prompted
- * it: filling each tick with the whole four-stop sweep gave a row of tiny
- * identical rainbows instead of one gradient crossing the row, which is the
- * opposite of a brand moment.
- *
- * `t` is clamped, so a caller need not special-case a single tick.
- */
-export function sampleGradient(stops: readonly string[], t: number): string {
-  if (stops.length === 0) throw new Error('sampleGradient needs at least one stop');
-  if (stops.length === 1) return stops[0];
+export const PALETTES: Record<ThemeId, Palette> = {
+  'washi-light': {
+    ...washiBase,
+    id: 'washi-light',
+    name: 'Washi',
+    dark: false,
+    colors: {
+      paper: '#F3EDE2',
+      paperDeep: '#EAE2D3',
+      paperEdge: '#DCD2BF',
+      surface: 'rgba(255, 253, 248, 0.55)',
+      ink: '#1E1B17',
+      inkSoft: '#4E483F',
+      inkMuted: '#70695E',
+      inkFaint: '#B8AE9D',
+      seal: '#B2382A',
+      sealSoft: 'rgba(178, 56, 42, 0.10)',
+      onAccent: '#FFFDF8',
+      button: '#1E1B17',
+      onButton: '#F3EDE2',
+    },
+  },
+  'washi-dark': {
+    ...washiBase,
+    id: 'washi-dark',
+    name: 'Sumi',
+    dark: true,
+    colors: {
+      paper: '#1C1A17',
+      paperDeep: '#141311',
+      paperEdge: '#3A362F',
+      surface: 'rgba(255, 250, 240, 0.04)',
+      ink: '#EDE6D8',
+      inkSoft: '#C9C0B0',
+      inkMuted: '#958C7D',
+      inkFaint: '#5E574C',
+      seal: '#D4614E',
+      sealSoft: 'rgba(208, 80, 60, 0.14)',
+      onAccent: '#FFF8EE',
+      button: '#EDE6D8',
+      onButton: '#1C1A17',
+    },
+  },
+  'lifeos-light': {
+    ...lifeosBase,
+    id: 'lifeos-light',
+    name: 'LifeOS',
+    dark: false,
+    sealTint: '#047857',
+    colors: {
+      paper: '#FAFAFA',
+      paperDeep: '#F4F4F5',
+      paperEdge: '#E5E5E5',
+      surface: '#FFFFFF',
+      ink: '#0A0A0A',
+      inkSoft: '#525252',
+      inkMuted: '#737373',
+      inkFaint: '#D4D4D4',
+      seal: '#047857',
+      sealSoft: '#E7F6F0',
+      onAccent: '#FFFFFF',
+      button: '#047857',
+      onButton: '#FFFFFF',
+    },
+  },
+  'lifeos-dark': {
+    ...lifeosBase,
+    id: 'lifeos-dark',
+    name: 'LifeOS Dark',
+    dark: true,
+    sealTint: '#34D399',
+    colors: {
+      paper: '#050505',
+      paperDeep: '#0A0A0A',
+      paperEdge: '#1F1F1F',
+      surface: '#111111',
+      ink: '#F5F5F5',
+      inkSoft: '#A3A3A3',
+      inkMuted: '#808080',
+      inkFaint: '#2C2C2C',
+      seal: '#34D399',
+      sealSoft: '#0F2A20',
+      onAccent: '#04120C',
+      button: '#34D399',
+      onButton: '#04120C',
+    },
+  },
+  'aizome-light': {
+    ...aizomeBase,
+    id: 'aizome-light',
+    name: 'Aizome',
+    dark: false,
+    colors: {
+      paper: '#ECEFF3',
+      paperDeep: '#E1E6ED',
+      paperEdge: '#C9D1DD',
+      surface: 'rgba(255, 255, 255, 0.6)',
+      ink: '#14213D',
+      inkSoft: '#34466B',
+      inkMuted: '#5E6B83',
+      inkFaint: '#A7B2C4',
+      seal: '#B2382A',
+      sealSoft: 'rgba(178, 56, 42, 0.10)',
+      onAccent: '#FFFFFF',
+      button: '#14213D',
+      onButton: '#ECEFF3',
+    },
+  },
+  'aizome-dark': {
+    ...aizomeBase,
+    id: 'aizome-dark',
+    name: 'Aizome Night',
+    dark: true,
+    colors: {
+      paper: '#111C30',
+      paperDeep: '#0B1424',
+      paperEdge: '#26365A',
+      surface: 'rgba(255, 255, 255, 0.04)',
+      ink: '#E8ECF3',
+      inkSoft: '#BCC6D8',
+      inkMuted: '#8292B0',
+      inkFaint: '#3C4E75',
+      seal: '#D56251',
+      sealSoft: 'rgba(208, 80, 60, 0.16)',
+      onAccent: '#FFFFFF',
+      button: '#E8ECF3',
+      onButton: '#111C30',
+    },
+  },
+};
 
-  const at = Math.min(1, Math.max(0, Number.isFinite(t) ? t : 0));
-  const span = at * (stops.length - 1);
-  const i = Math.min(Math.floor(span), stops.length - 2);
-  const f = span - i;
+export const FAMILIES: { id: ThemeFamily; name: string; description: string }[] = [
+  { id: 'washi', name: 'Washi & Seal', description: 'Rice paper and a red seal' },
+  { id: 'lifeos', name: 'LifeOS', description: 'Clean greys and one green' },
+  { id: 'aizome', name: 'Aizome', description: 'Indigo-dyed paper and a red seal' },
+];
 
-  const channels = (hex: string) =>
-    [0, 2, 4].map((o) => parseInt(hex.slice(1 + o, 3 + o), 16));
-  const a = channels(stops[i]);
-  const b = channels(stops[i + 1]);
+export const MODES: { id: ThemeMode; name: string }[] = [
+  { id: 'system', name: 'Automatic' },
+  { id: 'light', name: 'Light' },
+  { id: 'dark', name: 'Dark' },
+];
 
-  return (
-    '#' +
-    a
-      .map((v, k) => Math.round(v + (b[k] - v) * f).toString(16).padStart(2, '0'))
-      .join('')
-  );
+export function isFamily(value: unknown): value is ThemeFamily {
+  return value === 'washi' || value === 'lifeos' || value === 'aizome';
 }
 
-/** Left-to-right, so a gradient reads the way the wordmark does. */
-export const gradientDirection = { start: { x: 0, y: 0 }, end: { x: 1, y: 0 } } as const;
-
-/**
- * Where a streak sits on the spectrum. The bands are the milestones the app
- * already celebrates, so the colour changes on the day the number does:
- *
- *   0        not started — no colour is spent on nothing
- *   1-2      blue         just begun
- *   3-6      periwinkle   holding
- *   7-13     violet       a week
- *   14-29    orchid       a fortnight
- *   30+      pink         a month and beyond
- *
- * Returns null at zero rather than a grey, so callers must decide what "no
- * streak" looks like in their own context instead of being handed a colour
- * that quietly means something.
- */
-export function streakColor(colors: Palette, days: number): string | null {
-  if (days <= 0) return null;
-  if (days < 3) return colors.streak[0];
-  if (days < 7) return colors.streak[1];
-  if (days < 14) return colors.streak[2];
-  if (days < 30) return colors.streak[3];
-  return colors.streak[4];
+export function isMode(value: unknown): value is ThemeMode {
+  return value === 'system' || value === 'light' || value === 'dark';
 }
 
-/** The days that earn the full gradient rather than a single stop. */
-export const MILESTONES = [7, 14, 30, 50, 100, 200, 365] as const;
-
-export function isMilestone(days: number): boolean {
-  return (MILESTONES as readonly number[]).includes(days);
+/** Which of the six to draw. "system" follows the phone's light/dark setting. */
+export function themeId(family: ThemeFamily, mode: ThemeMode, systemDark: boolean): ThemeId {
+  const dark = mode === 'dark' || (mode === 'system' && systemDark);
+  return `${family}-${dark ? 'dark' : 'light'}`;
 }
 
-/**
- * Secondary ink, as a share of the text colour.
- *
- *   78  body prose             62  micro-labels, ranks, completed task text
- *   70  meta, inactive tabs    45  input placeholders
- *   65  captions inside cards
- *
- * 62 is a floor, not a preference, and it survived the rebrand unchanged:
- * against the new grounds the worst case is a soft accent chip in light mode
- * at 4.79:1, still clear of WCAG AA's 4.5 — and ink 58 would be 4.22, under
- * it. Dark mode is nowhere near the line at 6.55.
- *
- * The one value below the floor is deliberate and non-essential: 45 is
- * placeholder text, and every Field also carries a permanent visible label.
- * Nothing a person must read goes below 62.
- */
-export function ink(colors: Palette, percent: number): string {
-  const hex = colors.text.replace('#', '');
-  const r = parseInt(hex.slice(0, 2), 16);
-  const g = parseInt(hex.slice(2, 4), 16);
-  const b = parseInt(hex.slice(4, 6), 16);
-  return `rgba(${r},${g},${b},${percent / 100})`;
-}
-
-/**
- * The mark's own colours, named as the brand names them. Screens should use
- * `meaning` on the palette instead — these are here so the gradient and the
- * icon pipeline have one source, and so the names in the design conversation
- * exist in the code.
- */
-export const brand = {
-  midnight: '#080c1f',
-  deepNavy: '#121945',
-  electricBlue: '#4b61f8',
-  periwinkle: '#6a81fb',
-  violet: '#8b67f5',
-  orchid: '#c56ae9',
-  softPink: '#f7a4e2',
-  softLilac: '#d39ef4',
-  name: 'StreakMates',
-  tagline: 'Better together.',
+/** The spacing scale. `gutter` is the page's side padding. */
+export const space = {
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
+  gutter: 28,
 } as const;
+
+/** The minimum comfortable tap target. Tabs get 48. */
+export const hit = 44;
+
+/**
+ * Real padding that brings a line of text up to `hit`, rather than hitSlop.
+ *
+ * hitSlop is the obvious tool and the wrong one here: react-native-web does
+ * not implement it, so every text control measured the height of its own
+ * glyphs in a browser while looking correct on a phone. Padding works on all
+ * three platforms; `marginVertical` cancels the space it adds, so the layout
+ * around the control is unchanged.
+ */
+export function tapPadding(lineHeight: number) {
+  const pad = Math.max(0, Math.ceil((hit - lineHeight) / 2));
+  return { paddingVertical: pad, marginVertical: -pad } as const;
+}
+
+/**
+ * A colour with some transparency, from a #rrggbb hex. For a scrim or a
+ * pressed wash — never for a surface, which is always opaque.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** WCAG relative luminance of a #rrggbb colour. */
+function luminance(hex: string): number {
+  const c = [1, 3, 5]
+    .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+}
+
+/**
+ * Flattens a colour onto the ground beneath it, as the eye sees it. The paper
+ * families' `surface` and `sealSoft` are washes over the page, so their
+ * contrast is only meaningful once composited.
+ */
+export function flatten(color: string, ground: string): string {
+  if (color.startsWith('#')) return color.toLowerCase();
+  const [r, g, b, a] = color.match(/[\d.]+/g)!.map(Number);
+  const base = [1, 3, 5].map((i) => parseInt(ground.slice(i, i + 2), 16));
+  const out = [r, g, b].map((v, i) => Math.round(v * a + base[i] * (1 - a)));
+  return '#' + out.map((v) => v.toString(16).padStart(2, '0')).join('');
+}
+
+/** WCAG contrast ratio between two colours, the first composited on `ground`. */
+export function contrast(fg: string, bg: string, ground = bg): number {
+  const [x, y] = [luminance(flatten(fg, ground)), luminance(flatten(bg, ground))];
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+
+/** WCAG AA for text; 3:1 is the floor for a control's edge or a mark. */
+export const AA = 4.5;
+export const AA_NON_TEXT = 3;
+
+/**
+ * The same theme, one step deeper: for a modal or a sheet, which sits on
+ * `paperDeep` rather than the page.
+ *
+ * On that ground Washi's muted ink measures 4.22:1 — under AA — so muted text
+ * steps up to `inkSoft` wherever the palette's own `inkMuted` would fall
+ * short, and stays itself where it does not. `paperDeep` becomes the page, and
+ * a pressed row on it deepens to `paperEdge`.
+ */
+export function deepen<T extends Palette>(p: T): T {
+  const ground = p.colors.paperDeep;
+  const muted =
+    contrast(p.colors.inkMuted, ground) >= AA ? p.colors.inkMuted : p.colors.inkSoft;
+  return {
+    ...p,
+    colors: {
+      ...p.colors,
+      paper: ground,
+      paperDeep: p.colors.paperEdge,
+      inkMuted: muted,
+    },
+  };
+}
+
+/**
+ * How a selected chip is drawn.
+ *
+ * The design system asks for the accent on its soft wash, which measures
+ * 4.02:1 on Sumi and 4.48:1 on Washi. So the paper families write the label
+ * in ink on the wash and keep the accent for the chip's edge and a small
+ * square mark; LifeOS fills the chip with the accent, where its own onAccent
+ * clears AA in both looks.
+ */
+export function chipSelected(p: Palette): { fill: string; edge: string; text: string } {
+  if (p.family === 'lifeos') {
+    return { fill: p.colors.seal, edge: p.colors.seal, text: p.colors.onAccent };
+  }
+  return { fill: p.colors.sealSoft, edge: p.colors.seal, text: p.colors.ink };
+}

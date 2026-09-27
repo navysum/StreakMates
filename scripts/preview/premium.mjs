@@ -21,7 +21,7 @@ import { chromium } from 'playwright';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { TABLES, IDS } from './fixtures.mjs';
 
-const DIST = process.env.DIST || '/home/user/Habit-Tracking-with-Friends/dist-demo';
+const DIST = process.env.DIST || new URL('../../dist-demo', import.meta.url).pathname;
 const OUT = process.env.OUT || '/tmp/screens';
 const types = {'.js':'text/javascript','.html':'text/html','.png':'image/png','.ico':'image/x-icon','.ttf':'font/ttf','.json':'application/json'};
 const server = http.createServer((q,r)=>{ let f=path.join(DIST, decodeURIComponent(q.url.split('?')[0]));
@@ -116,16 +116,16 @@ await page.locator('[aria-label="Check in Cold shower"]').first().click();
 // Straight away: did the row acknowledge the tap before the network answered?
 await page.waitForTimeout(120);
 const instant = await page.evaluate(() =>
-  !!document.querySelector('[aria-label="Undo Cold shower"]'));
-console.log('row ticks optimistically, before the server replies:', instant);
+  !!document.querySelector('[aria-label="Cold shower, checked in today. Undo"]'));
+console.log('row stamps optimistically, before the server replies:', instant);
 await page.waitForTimeout(900);
 const after = await page.evaluate(() => document.body.innerText);
-console.log('milestone banner shown:', /A week/i.test(after) && /Kept every day it was owed/i.test(after));
+console.log('milestone line shown:', /A week/i.test(after) && /Kept every day it was owed/i.test(after));
 console.log('  says:', (after.match(/A WEEK[\s\S]{0,60}/i) || [''])[0].replace(/\n/g, ' | '));
 await page.screenshot({ path: `${OUT}/premium-milestone.png` });
 const stuck = await page.evaluate(() =>
-  !!document.querySelector('[aria-label="Undo Cold shower"]'));
-console.log('  and stays ticked after the refetch:', stuck);
+  !!document.querySelector('[aria-label="Cold shower, checked in today. Undo"]'));
+console.log('  and stays stamped after the refetch:', stuck);
 console.log('  streak now reads:',
   (await page.evaluate(() => document.body.innerText)).match(/Cold shower[\s\S]{0,24}/)?.[0].replace(/\n/g,' '));
 

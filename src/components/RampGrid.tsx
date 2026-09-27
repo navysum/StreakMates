@@ -1,14 +1,15 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
+import { withAlpha } from '@/theme';
 import type { Cell } from '@/lib/week';
 
 /**
  * Weeks as columns, days as rows, shaded by how much was kept that day — a
  * season of habit as one picture.
  *
- * Five steps of the one accent ramp, no borders. A day you kept five habits
- * reads darker than a day you kept one, which is the only thing this grid is
- * trying to say.
+ * Shaded in ink, as a wash: an empty day is the paper's edge tone, and a day
+ * you kept five habits reads darker than a day you kept one. The accent stays
+ * out of it; this is a record, not a moment.
  */
 export function RampGrid({
   weeks,
@@ -20,14 +21,14 @@ export function RampGrid({
   counts: Map<string, number>;
   gap?: number;
 }) {
-  const { colors } = useTheme();
-
+  const t = useTheme();
+  const ink = t.colors.inkSoft;
   const ramp = [
-    colors.accents[100],
-    colors.accents[200],
-    colors.accents[400],
-    colors.accents[600],
-    colors.accent,
+    t.colors.paperEdge,
+    withAlpha(ink, 0.3),
+    withAlpha(ink, 0.5),
+    withAlpha(ink, 0.72),
+    ink,
   ];
 
   // Scaled to the busiest day on screen, so the darkest square always means
@@ -36,16 +37,18 @@ export function RampGrid({
   for (const n of counts.values()) if (n > busiest) busiest = n;
 
   return (
-    <View style={[styles.grid, { gap }]}>
+    <View
+      style={[styles.grid, { gap }]}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
       {weeks.map((week, i) => (
         <View key={i} style={[styles.column, { gap }]}>
           {week.map((day) => {
             const n = counts.get(day.date) ?? 0;
             const step =
               n === 0 ? 0 : busiest <= 1 ? 4 : Math.min(4, Math.max(1, Math.ceil((n / busiest) * 4)));
-            return (
-              <View key={day.date} style={[styles.cell, { backgroundColor: ramp[step] }]} />
-            );
+            return <View key={day.date} style={[styles.cell, { backgroundColor: ramp[step] }]} />;
           })}
         </View>
       ))}
@@ -56,5 +59,5 @@ export function RampGrid({
 const styles = StyleSheet.create({
   grid: { flexDirection: 'row' },
   column: { flex: 1 },
-  cell: { flex: 1, aspectRatio: 1, borderRadius: 3 },
+  cell: { flex: 1, aspectRatio: 1, borderRadius: 2 },
 });

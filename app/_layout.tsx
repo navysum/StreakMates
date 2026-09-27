@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
-import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import * as Notifications from 'expo-notifications';
-import { View, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { useProfile } from '@/lib/queries';
-import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { ThemeChoiceProvider } from '@/theme/ThemeChoice';
+import { useTheme } from '@/theme/ThemeProvider';
 import { WebShell } from '@/components/WebShell';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -22,8 +22,8 @@ SplashScreen.preventAutoHideAsync().catch(() => {
  * Without a handler, the default is to show nothing at all — the alert is
  * swallowed on both platforms. That matters most for the focus timer: you can
  * be looking at another tab when a stretch ends, and silence is exactly what
- * the timer exists to prevent. Banner and sound, no badge — a habit tracker
- * has nothing to count on its icon.
+ * the timer exists to prevent. Banner and sound, no badge — NavySum apps have
+ * nothing to count on their icon.
  */
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -44,13 +44,34 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * On the web, the page behind the app takes the theme's paper, so an
+ * overscroll bounce or the strip under a phone browser's toolbar shows the
+ * same ground as the app rather than the default in public/index.html.
+ */
+function usePageColour(paper: string) {
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    document.body.style.backgroundColor = paper;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', paper);
+  }, [paper]);
+}
+
 /** Sends people to sign-in when signed out, and away from it once signed in. */
 function AuthGate() {
-  const { colors, scheme } = useTheme();
+  const t = useTheme();
   const { loading, session, configured, userId } = useAuth();
   const profile = useProfile(userId);
   const segments = useSegments();
   const router = useRouter();
+
+  usePageColour(t.colors.paper);
+
+  // The theme and its faces are in by the time this mounts, so the first
+  // frame after the splash is the real one.
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (loading) return;
@@ -87,24 +108,23 @@ function AuthGate() {
   // Nothing until the session is known. Rendering the tabs first mounts Today
   // against no session: a flash of an empty "No habits yet" before the redirect
   // to sign-in, and a round of queries that can only come back empty.
-  if (loading) return <View style={[styles.blank, { backgroundColor: colors.bg }]} />;
+  if (loading) return <View style={[styles.blank, { backgroundColor: t.colors.paper }]} />;
 
   return (
     <>
       {/* Follows the chosen theme, not the device's, so a forced light or dark
-          mode doesn't leave unreadable status-bar text. */}
-      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+          theme doesn't leave unreadable status-bar text. */}
+      <StatusBar style={t.dark ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: t.colors.paper },
           /**
            * Swipe back.
            *
            * Enabled by default on iOS, but only from the very edge of the
-           * screen — a target most people never find, which is why the app
-           * felt like a website on a phone. `fullScreenGestureEnabled` lets
-           * the swipe start anywhere, which is what every native app does.
+           * screen — a target most people never find. `fullScreenGestureEnabled`
+           * lets the swipe start anywhere, which is what every native app does.
            *
            * Safe here because nothing in the app scrolls horizontally: the
            * week strips and the group board are grids, not carousels, so
@@ -116,8 +136,8 @@ function AuthGate() {
            * app.json because the predictive animation needs testing on a real
            * device before it is worth the risk of the gesture closing the app.
            *
-           * The header's own back control stays on every screen. The gesture
-           * is a shortcut, never the only way out.
+           * "‹ Back" stays on every screen. The gesture is a shortcut, never
+           * the only way out.
            */
           gestureEnabled: true,
           fullScreenGestureEnabled: true,
@@ -126,6 +146,7 @@ function AuthGate() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
         <Stack.Screen name="username" />
+        <Stack.Screen name="you" />
         <Stack.Screen name="activity" />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="habit/[id]" />
@@ -144,32 +165,18 @@ function AuthGate() {
 const styles = StyleSheet.create({ blank: { flex: 1 } });
 
 export default function RootLayout() {
-  // Barlow Condensed carries everything structural; Barlow carries prose.
-  // Figures are condensed with tabular numerals rather than a separate mono
-  // face, which is why Cascadia Code is gone.
-  const [loaded, error] = useFonts({
-    'BarlowCondensed-SemiBold': require('../assets/fonts/BarlowCondensed-SemiBold.ttf'),
-    'Barlow-Regular': require('../assets/fonts/Barlow-Regular.ttf'),
-    'Barlow-SemiBold': require('../assets/fonts/Barlow-SemiBold.ttf'),
-  });
-
-  useEffect(() => {
-    // Show the app even if a font fails, rather than holding the splash forever.
-    if (loaded || error) SplashScreen.hideAsync().catch(() => {});
-  }, [loaded, error]);
-
-  if (!loaded && !error) return null;
-
+  // The theme provider restores the chosen theme and loads that family's
+  // faces before it renders anything; the splash stays up until then.
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
+        <ThemeChoiceProvider>
           <AuthProvider>
             <WebShell>
               <AuthGate />
             </WebShell>
           </AuthProvider>
-        </ThemeProvider>
+        </ThemeChoiceProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

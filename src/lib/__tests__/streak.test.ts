@@ -78,10 +78,18 @@ test('weekly: only the current week counts', () => {
 });
 
 test('describeProgress: wording matches the state', () => {
-  assert.equal(describeProgress(daily, ['2026-09-03', '2026-09-02'], THU), '2 DAY STREAK');
-  assert.equal(describeProgress(daily, [], THU), 'NO STREAK YET');
-  assert.equal(describeProgress(daily, ['2026-08-20'], THU), 'STREAK BROKEN');
-  assert.equal(describeProgress(weekly, ['2026-09-01'], THU), '1 OF 3 THIS WEEK');
+  assert.equal(describeProgress(daily, ['2026-09-03', '2026-09-02'], THU), '2 days in a row');
+  assert.equal(describeProgress(daily, ['2026-09-03'], THU), 'Day one');
+  assert.equal(describeProgress(daily, [], THU), 'Not started yet');
+  assert.equal(describeProgress(weekly, ['2026-09-01'], THU), '1 of 3 this week');
+});
+
+test('describeProgress: a run that ended is a fresh start, never a failure', () => {
+  // NavySum: no guilt, streaks that forgive. The same state used to read
+  // "STREAK BROKEN".
+  const line = describeProgress(daily, ['2026-08-20'], THU);
+  assert.equal(line, 'A fresh start today');
+  assert.doesNotMatch(line, /broken|missed|failed|lost/i);
 });
 
 test('bestStreak: no check-ins means no streak', () => {

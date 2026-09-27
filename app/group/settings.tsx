@@ -1,21 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, View, StyleSheet } from 'react-native';
-import { KeyboardSafe } from '@/components/KeyboardSafe';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button } from '@/components/Button';
-import { Plate } from '@/components/Plate';
+import { Button } from '@/components/ui';
 import { Field } from '@/components/Field';
-import { ModalHeader } from '@/components/ModalHeader';
+import { ModalScreen } from '@/components/ModalScreen';
 import { Notice } from '@/components/Notice';
 import { useGroups, useUpdateGroup } from '@/lib/queries';
-import { useTheme } from '@/theme/ThemeProvider';
-import { space, spacing } from '@/theme/tokens';
 
 export default function GroupSettingsScreen() {
-  const { colors } = useTheme();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const groups = useGroups();
@@ -37,50 +29,35 @@ export default function GroupSettingsScreen() {
       await update.mutateAsync({ id: id!, name: name.trim(), emoji: group?.emoji ?? null });
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the group.');
+      setError(e instanceof Error ? e.message : 'The group could not be saved.');
     }
   }
 
   const changed = !!group && name.trim() !== group.name;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ModalHeader title="Group settings" eyebrow="Everyone in the group sees this" />
-      <KeyboardSafe>
-        <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: insets.bottom + spacing.bottom }]}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Plate label="Group">
-            <Field
-              label="Name"
-              value={name}
-              onChangeText={setName}
-              placeholder="The Gym Rats"
-              maxLength={60}
-              last
-            />
-          </Plate>
+    <ModalScreen title="Group settings" eyebrow="Everyone in the group sees this">
+      <Field
+        label="Name"
+        value={name}
+        onChangeText={setName}
+        placeholder="The Gym Rats"
+        maxLength={60}
+        returnKeyType="done"
+      />
 
-          <Button
-            label="Save changes"
-            variant="primary"
-            busy={update.isPending}
-            disabled={!changed || !name.trim()}
-            onPress={onSave}
-          />
+      <Button
+        title="Save changes"
+        loading={update.isPending}
+        disabled={!changed || !name.trim()}
+        onPress={onSave}
+      />
 
-          {error ? <Notice label="Could not save">{error}</Notice> : null}
+      {error ? <Notice label="Could not save">{error}</Notice> : null}
 
-          <Notice label="Owners only">
-            {'Only the group owner can rename a group. The invite code is changed from the group menu.'}
-          </Notice>
-        </ScrollView>
-      </KeyboardSafe>
-    </View>
+      <Notice label="Only the owner">
+        {'Only the person who owns a group can rename it. The invite code is changed from the group’s options.'}
+      </Notice>
+    </ModalScreen>
   );
 }
-
-const styles = StyleSheet.create({
-  body: { padding: spacing.page, gap: spacing.section },
-});

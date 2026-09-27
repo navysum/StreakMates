@@ -1,32 +1,18 @@
-import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '@/theme/ThemeProvider';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Animated, Pressable, StyleSheet, Text } from 'react-native';
+import { Hairline, Label } from './ui';
+import { useThemedStyles } from '@/theme/ThemeProvider';
 import { milestoneLabel } from '@/lib/milestone';
-import {
-  gradient,
-  gradientDirection,
-  hit,
-  ink,
-  radius,
-  space,
-  spacing,
-  tnum,
-  typography,
-} from '@/theme/tokens';
+import { duration, settle } from '@/lib/motion';
+import { space, type Theme } from '@/theme';
 
 /**
- * A run reaching a week, a month, a year.
+ * A run reaching a week, a month, a hundred days, a year.
  *
- * The brand reserves the full gradient for major accomplishments, and this is
- * the only place in the app that produces one. Everything else that changes
- * colour with a streak does it quietly, through the spectrum; this is the loud
- * version, and it appears a handful of times a year per habit.
- *
- * It goes away on its own. A celebration that has to be dismissed is a task,
- * and handing someone a chore as a reward for a month of consistency is the
- * wrong trade — but it is tappable too, because something that vanishes on a
- * timer must also yield to someone who wants it gone now.
+ * NavySum marks a milestone with one quiet line — no confetti, no badge, no
+ * banner. It says what happened in a sentence, between two hairlines, and
+ * goes away on its own: a celebration that has to be dismissed is a chore.
+ * It can be tapped away sooner, and a screen reader hears it as it arrives.
  */
 export function Milestone({
   title,
@@ -35,61 +21,57 @@ export function Milestone({
 }: {
   title: string;
   days: number;
-  /** Called when it dismisses itself, or when tapped. */
+  /** Called when it goes on its own, or when tapped. */
   onDone: () => void;
 }) {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const shown = useRef(new Animated.Value(0)).current;
+  const line = `${title}, kept every day it was owed.`;
+
+  // The parent hands over a fresh callback each render. Held in a ref, so the
+  // timer and the announcement below run once per milestone rather than
+  // restarting every time anything else on Today changes.
+  const done = useRef(onDone);
+  done.current = onDone;
 
   useEffect(() => {
-    // Keyed by the run in the parent, so a second milestone restarts this
+    // A fade, which is not movement, so it stays under Reduce Motion too.
+    Animated.timing(shown, {
+      toValue: 1,
+      duration: duration.enter,
+      easing: settle,
+      useNativeDriver: true,
+    }).start();
+    AccessibilityInfo.announceForAccessibility(`${milestoneLabel(days)}. ${line}`);
+    // Keyed by the run in the parent, so a second milestone mounts afresh
     // rather than inheriting the remains of the first one's timer.
-    const timer = setTimeout(onDone, 6000);
+    const timer = setTimeout(() => done.current(), 6000);
     return () => clearTimeout(timer);
-  }, [onDone]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <Pressable
-      onPress={onDone}
-      accessibilityRole="button"
-      accessibilityLabel={`${days}-day streak on ${title}. Dismiss.`}
-      // The whole thing is the target, and it is far past 44 in both
-      // directions, so no extra padding is needed to make it hittable.
-      style={({ pressed }) => [
-        styles.plate,
-        { backgroundColor: colors.surface, borderColor: colors.divider },
-        pressed && styles.pressed,
-      ]}
-    >
-      <LinearGradient
-        colors={gradient}
-        start={gradientDirection.start}
-        end={gradientDirection.end}
-        style={styles.rule}
-        pointerEvents="none"
-      />
-      <View style={styles.inner}>
-        <Text style={[typography.label, { color: colors.meaning.celebrate }]}>
-          {milestoneLabel(days)}
-        </Text>
-        <View style={styles.row}>
-          <Text style={[typography.stat, tnum, { color: colors.meaning.celebrate }]}>{days}</Text>
-          <Text numberOfLines={2} style={[typography.body, styles.name, { color: colors.text }]}>
-            {title}
-          </Text>
-        </View>
-        <Text style={[typography.caption, { color: ink(colors, 65) }]}>
-          Kept every day it was owed.
-        </Text>
-      </View>
-    </Pressable>
+    <Animated.View style={{ opacity: shown }}>
+      <Pressable
+        onPress={() => done.current()}
+        accessibilityRole="button"
+        accessibilityLabel={`${milestoneLabel(days)}. ${line} Dismiss.`}
+        style={({ pressed }) => [styles.line, pressed && styles.pressed]}
+      >
+        <Hairline />
+        <Label style={styles.label}>{milestoneLabel(days)}</Label>
+        <Text style={styles.text}>{line}</Text>
+        <Hairline />
+      </Pressable>
+    </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  plate: { borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden', minHeight: hit },
-  rule: { height: 2, width: '100%' },
-  inner: { padding: spacing.card, gap: space.sm },
-  row: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
-  name: { flex: 1, minWidth: 0 },
-  pressed: { opacity: 0.7 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    line: { gap: space.sm },
+    // The one label on the screen that names what this moment is.
+    label: { color: t.colors.seal, marginTop: space.sm },
+    text: { ...t.type.italicTitle, color: t.colors.inkSoft, marginBottom: space.sm },
+    pressed: { opacity: 0.7 },
+  });

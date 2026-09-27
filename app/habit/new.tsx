@@ -1,16 +1,12 @@
 import { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { HabitForm, emptyHabit, type HabitFormValue } from '@/components/HabitForm';
-import { ModalHeader } from '@/components/ModalHeader';
+import { ModalScreen } from '@/components/ModalScreen';
 import { Notice } from '@/components/Notice';
 import { useAuth } from '@/auth/AuthProvider';
 import { useCreateHabit, useGroups } from '@/lib/queries';
-import { useTheme } from '@/theme/ThemeProvider';
-import { spacing } from '@/theme/tokens';
 
 export default function NewHabitScreen() {
-  const { colors } = useTheme();
   const { userId } = useAuth();
   const router = useRouter();
   // Set when adding straight into a group, so visibility is already decided.
@@ -37,37 +33,24 @@ export default function NewHabitScreen() {
       });
       router.back();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save the habit.');
+      setError(e instanceof Error ? e.message : 'The habit could not be saved.');
     }
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ModalHeader
-        title={inGroup ? 'New shared habit' : 'New habit'}
-        eyebrow={
-          inGroup
-            ? `Everyone in ${inGroup.name} checks in`
-            : 'Private unless you say otherwise'
-        }
-      />
+    <ModalScreen
+      title={inGroup ? 'New shared habit' : 'New habit'}
+      eyebrow={inGroup ? `Everyone in ${inGroup.name} checks in` : 'Private unless you share it'}
+    >
       <HabitForm
         initial={{ ...emptyHabit, group_id: inGroup?.id ?? null }}
-        submitLabel={inGroup ? 'Create shared habit' : 'Create habit'}
+        submitLabel={inGroup ? 'Add shared habit' : 'Add habit'}
         busy={create.isPending}
         onSubmit={onSubmit}
         groups={groups ?? []}
         lockVisibility={!!inGroup}
-        footer={
-          error ? (
-            <View style={styles.error}>
-              <Notice label="Could not save">{error}</Notice>
-            </View>
-          ) : null
-        }
+        footer={error ? <Notice label="Could not save">{error}</Notice> : null}
       />
-    </View>
+    </ModalScreen>
   );
 }
-
-const styles = StyleSheet.create({ error: { marginTop: spacing.section } });

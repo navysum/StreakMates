@@ -1,42 +1,45 @@
-import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, typography } from '@/theme/tokens';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { feel } from '@/lib/feel';
+import { space, type Theme } from '@/theme';
 
 type Props<T extends string> = {
   options: { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
+  /** Names the group for a screen reader: "Schedule", "Theme". */
+  accessibilityLabel?: string;
 };
 
 /**
- * A row of options inside one bordered track, divided by hairlines. The
- * selected one is a solid accent fill — the same treatment as the primary
- * button, because it is the same statement: this is the live one.
+ * The NavySum segmented control: a pill track in `paperDeep`, and the chosen
+ * segment filled like the primary button — the same statement, "this is the
+ * live one". Announced as a set of radio options.
+ *
+ * Unchosen labels are `inkSoft`, not muted: on the deeper track muted ink
+ * measures 4.22:1 on Washi, under AA.
  */
-export function Segmented<T extends string>({ options, value, onChange }: Props<T>) {
-  const { colors } = useTheme();
+export function Segmented<T extends string>({ options, value, onChange, accessibilityLabel }: Props<T>) {
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View style={[styles.track, { borderColor: colors.divider }]}>
-      {options.map((opt, i) => {
+    <View style={styles.track} accessibilityRole="radiogroup" accessibilityLabel={accessibilityLabel}>
+      {options.map((opt) => {
         const on = opt.value === value;
         return (
           <Pressable
             key={opt.value}
-            accessibilityRole="button"
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(opt.value)}
-            style={({ pressed }) => [
-              styles.opt,
-              i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.divider },
-              on && { backgroundColor: colors.accent },
-              pressed && !on && styles.pressed,
-            ]}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={opt.label}
+            onPress={() => {
+              if (on) return;
+              feel('select');
+              onChange(opt.value);
+            }}
+            style={({ pressed }) => [styles.segment, on && styles.on, pressed && !on && styles.pressed]}
           >
-            <Text
-              numberOfLines={1}
-              style={[typography.action, { color: on ? colors.onAccent : ink(colors, 70) }]}
-            >
+            <Text numberOfLines={1} style={[styles.label, on && styles.labelOn]}>
               {opt.label}
             </Text>
           </Pressable>
@@ -46,8 +49,24 @@ export function Segmented<T extends string>({ options, value, onChange }: Props<
   );
 }
 
-const styles = StyleSheet.create({
-  track: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.md, overflow: 'hidden' },
-  opt: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
-  pressed: { opacity: 0.6 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    track: {
+      flexDirection: 'row',
+      backgroundColor: t.colors.paperDeep,
+      borderRadius: 999,
+      padding: space.xs,
+    },
+    segment: {
+      flex: 1,
+      minHeight: 44,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: space.sm,
+    },
+    on: { backgroundColor: t.colors.button },
+    pressed: { opacity: 0.6 },
+    label: { ...t.type.button, color: t.colors.inkSoft },
+    labelOn: { color: t.colors.onButton },
+  });

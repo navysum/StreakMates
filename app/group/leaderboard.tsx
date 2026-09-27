@@ -1,11 +1,12 @@
 import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Bar } from '@/components/Bar';
 import { Notice } from '@/components/Notice';
-import { Plate } from '@/components/Plate';
+import { Row } from '@/components/Row';
 import { Screen } from '@/components/Screen';
+import { Section } from '@/components/Section';
 import { StatTrio } from '@/components/StatTrio';
 import { Tag } from '@/components/Tag';
 import { useAuth } from '@/auth/AuthProvider';
@@ -23,15 +24,15 @@ import {
   type ScoredMember,
 } from '@/lib/leaderboard';
 import { toLocalDate } from '@/lib/date';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, space, typography } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 const localDate = (iso: string) => iso.slice(0, 10);
 
 export default function LeaderboardScreen() {
-  const { colors } = useTheme();
+  const t = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuth();
-  const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const groups = useGroups();
@@ -43,13 +44,7 @@ export default function LeaderboardScreen() {
   // together — refreshing one and leaving the rest is how a screen ends up
   // showing two different moments at once.
   const onRefresh = useCallback(
-    () =>
-      Promise.all([
-        groups.refetch(),
-        members.refetch(),
-        habits.refetch(),
-        checkIns.refetch(),
-      ]),
+    () => Promise.all([groups.refetch(), members.refetch(), habits.refetch(), checkIns.refetch()]),
     [groups, members, habits, checkIns],
   );
 
@@ -97,13 +92,17 @@ export default function LeaderboardScreen() {
     const m = (members.data ?? []).find((x) => x.user_id === uid);
     return uid === userId ? `${handle(m?.profile)} (you)` : handle(m?.profile);
   };
+  // A monogram is drawn from the person's name, not their handle — "@alex"
+  // gave "AL" where the rest of the app shows Alex Moore as "AM".
+  const realName = (uid: string) =>
+    (members.data ?? []).find((x) => x.user_id === uid)?.profile?.display_name ?? '?';
 
-  const back = { label: 'Board', onPress: () => router.back() };
+  const back = { label: 'Board' };
 
   if (groups.isLoading || members.isLoading || habits.isLoading || checkIns.isLoading) {
     return (
       <Screen title="Leaderboard" back={back}>
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+        <ActivityIndicator style={styles.loader} color={t.colors.inkMuted} />
       </Screen>
     );
   }
@@ -112,7 +111,7 @@ export default function LeaderboardScreen() {
     return (
       <Screen title="Leaderboard" label={group?.name ?? ''} back={back}>
         <Notice label="Nothing to rank yet">
-          {'This group has no shared habits. Add one and everyone starts being counted from the day it was created.'}
+          {'This group has no shared habits. Add one, and everyone is counted from the day it was made.'}
         </Notice>
       </Screen>
     );
@@ -139,160 +138,118 @@ export default function LeaderboardScreen() {
       {/* Collective first, deliberately: the top of the screen is something
           the group wins together before the part where they beat each other. */}
       <StatTrio
-        labelFirst
         stats={[
-          { value: percent(groupRate(rows)), label: 'Group rate', accent: true },
-          { value: String(perfect), label: 'Perfect days' },
-          { value: percent(bestRate), label: 'Best rate' },
+          { value: percent(groupRate(rows)), label: 'the whole group', accent: true },
+          { value: String(perfect), label: perfect === 1 ? 'perfect day' : 'perfect days' },
+          { value: percent(bestRate), label: 'best of anyone' },
         ]}
       />
 
-      <Plate label="Consistency" action="This week" flush>
+      <Section label="Consistency" action="This week" list>
         {rows.map((row, i) => {
           const you = row.userId === userId;
+          const name = nameOf(row.userId);
           return (
-            <View
+            <Row
               key={row.userId}
-              style={[
-                styles.row,
-                you && { backgroundColor: colors.meaningSoft.action },
-                {
-                  borderBottomColor: colors.divider,
-                  borderBottomWidth: i === rows.length - 1 ? 0 : 1,
-                },
-              ]}
+              last={i === rows.length - 1}
+              accessibilityLabel={
+                row.rate === null
+                  ? `${name}, nothing owed yet`
+                  : `${i + 1}, ${name}, ${percent(row.rate)}`
+              }
             >
-              <Text
-                style={[
-                  styles.rank,
-                  typography.figureSmall,
-                  {
-                    color:
-                      i === 0 && row.rate !== null ? colors.meaning.celebrate : ink(colors, 62),
-                  },
-                ]}
-              >
+              <Text style={[styles.rank, i === 0 && row.rate !== null && styles.leader]}>
                 {row.rate === null ? '––' : String(i + 1).padStart(2, '0')}
               </Text>
-
-              <Avatar name={nameOf(row.userId)} size={28} />
-
+              <Avatar name={realName(row.userId)} size={28} />
               <View style={styles.main}>
                 <View style={styles.nameRow}>
-                  <Text
-                    numberOfLines={1}
-                    style={[typography.body, styles.name, { color: colors.text }]}
-                  >
-                    {nameOf(row.userId)}
+                  <Text numberOfLines={1} style={[styles.name, you && styles.you]}>
+                    {name}
                   </Text>
-                  <Text style={[typography.figureSmall, { color: colors.text }]}>
-                    {percent(row.rate)}
-                  </Text>
+                  <Text style={styles.figure}>{percent(row.rate)}</Text>
                 </View>
+                {/* Your own bar carries the accent; everyone else's is ink. */}
                 <Bar
                   value={Math.round((row.rate ?? 0) * 100)}
                   max={100}
-                  height={6}
-                  tone={you ? colors.meaning.action : colors.meaning.progress}
+                  tone={you ? undefined : t.colors.inkSoft}
                 />
               </View>
-            </View>
+            </Row>
           );
         })}
-      </Plate>
+      </Section>
 
       {improved ? (
-        <Plate label="Most improved" feature>
-          <View style={styles.standout}>
-            <Text numberOfLines={1} style={[typography.cardTitle, styles.name, { color: colors.text }]}>
-              {nameOf(improved.userId)}
-            </Text>
-            <Tag label={`▲ ${Math.round(improved.delta * 100)}%`} />
-          </View>
-          <Text style={[typography.prose, styles.hint, { color: ink(colors, 78) }]}>
-            Against last week. The one way to win that is open to whoever is bottom.
+        <Section label="Most improved">
+          <Text numberOfLines={1} style={styles.standout}>
+            {nameOf(improved.userId)}
           </Text>
-        </Plate>
+          <Text style={styles.note}>
+            Up {Math.round(improved.delta * 100)} points on last week. The one way to win that is
+            open to whoever is at the bottom.
+          </Text>
+        </Section>
       ) : null}
 
-      <Plate label="Habits" action="30 days" flush>
+      <Section label="Habits" action="30 days" list>
         {byHabit.map((h, i) => (
-          <View
+          <Row
             key={h.habit.id}
-            style={[
-              styles.row,
-              {
-                borderBottomColor: colors.divider,
-                borderBottomWidth: i === byHabit.length - 1 ? 0 : 1,
-              },
-            ]}
+            last={i === byHabit.length - 1}
+            accessibilityLabel={`${h.habit.title}, ${percent(h.rate)}${
+              h === best && h.rate !== null ? ', the strongest' : h === worst && struggling ? ', needs work' : ''
+            }`}
           >
             <View style={styles.main}>
               <View style={styles.nameRow}>
-                <Text
-                  numberOfLines={1}
-                  style={[typography.body, styles.name, { color: colors.text }]}
-                >
+                <Text numberOfLines={1} style={styles.name}>
                   {h.habit.title}
                 </Text>
-                <Text style={[typography.figureSmall, { color: colors.text }]}>
-                  {percent(h.rate)}
-                </Text>
+                <Text style={styles.figure}>{percent(h.rate)}</Text>
               </View>
+              {/* Ink, stepping back to the muted ink for a struggling habit:
+                  it fades, it does not turn red. */}
               <Bar
                 value={Math.round((h.rate ?? 0) * 100)}
                 max={100}
-                height={6}
-                // Tone by ramp step, not by hue: a struggling habit steps back
-                // down the accent, it does not turn red.
-                tone={(h.rate ?? 0) < 0.4 ? colors.accents[400] : colors.meaning.progress}
+                tone={(h.rate ?? 0) < 0.4 ? t.colors.inkMuted : t.colors.inkSoft}
               />
               {h === best && h.rate !== null ? (
-                <View style={styles.tag}>
-                  <Tag label="Strongest" />
-                </View>
+                <Tag label="Strongest" />
               ) : h === worst && struggling ? (
-                <View style={styles.tag}>
-                  <Tag label="Needs work" variant="outline" />
-                </View>
+                <Tag label="Needs work" />
               ) : null}
             </View>
-          </View>
+          </Row>
         ))}
-      </Plate>
+      </Section>
 
       {struggling ? (
         <Notice label="That habit, not those people">
-          {`${worst!.habit.title} is at ${percent(worst!.rate)} across the whole group. A habit nobody manages is usually a badly-set target rather than a lazy group — try moving the time, lowering it, or dropping it.`}
+          {`${worst!.habit.title} is at ${percent(worst!.rate)} across the whole group. A habit nobody manages is usually a target set wrong rather than a group trying too little — try moving the time, lowering it, or letting it go.`}
         </Notice>
       ) : null}
 
       <Notice label="How this is counted">
-        {'Consistency is what you completed divided by what was owed of you, so tracking more habits is not an advantage and joining late is not a penalty. Only shared habits count — private ones never reach this screen.'}
+        {'Consistency is what you did divided by what was owed of you, so tracking more habits is not an advantage and joining late is not a penalty. Only shared habits count — private ones never reach this screen.'}
       </Notice>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  loader: { marginTop: 32 },
-  row: {
-    minHeight: 64,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.lg,
-    paddingVertical: space.lg,
-  },
-  rank: { width: 22 },
-  main: { flex: 1, minWidth: 0, gap: space.sm },
-  nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
-  name: { flex: 1, minWidth: 0 },
-  tag: { flexDirection: 'row', marginTop: space.xs },
-  standout: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.lg,
-  },
-  hint: { marginTop: space.md },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    loader: { marginTop: space.xl },
+    rank: { ...t.type.figureSmall, color: t.colors.inkMuted, width: 28 },
+    leader: { color: t.colors.ink },
+    main: { flex: 1, minWidth: 0, gap: space.sm },
+    nameRow: { flexDirection: 'row', alignItems: 'baseline', gap: space.md },
+    name: { ...t.type.body, color: t.colors.ink, flex: 1, minWidth: 0 },
+    you: { fontFamily: t.fonts.uiMedium },
+    figure: { ...t.type.figureSmall, color: t.colors.ink },
+    standout: { ...t.type.heading, color: t.colors.ink },
+    note: { ...t.type.italic, color: t.colors.inkMuted, marginTop: space.sm },
+  });

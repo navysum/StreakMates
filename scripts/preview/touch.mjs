@@ -2,7 +2,7 @@ import { chromium } from 'playwright';
 import http from 'node:http'; import fs from 'node:fs'; import path from 'node:path';
 import { TABLES, IDS } from './fixtures.mjs';
 
-const DIST = '/home/user/Habit-Tracking-with-Friends/dist-demo';
+const DIST = process.env.DIST || new URL('../../dist-demo', import.meta.url).pathname;
 const types = {'.js':'text/javascript','.html':'text/html','.png':'image/png','.ico':'image/x-icon','.ttf':'font/ttf','.json':'application/json'};
 const server = http.createServer((req,res)=>{
   let f = path.join(DIST, decodeURIComponent(req.url.split('?')[0]));
@@ -29,7 +29,7 @@ function applyQuery(rows, url){ const p=url.searchParams; let out=[...rows];
     else if(op==='lte') out=out.filter(r=>String(r[k])<=v);
   } return out; }
 
-const browser = await chromium.launch({ executablePath:'/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined });
 const ctx = await browser.newContext({ viewport:{width:390,height:844}, deviceScaleFactor:2 });
 await ctx.route('**/*.supabase.co/**', async route => {
   const url = new URL(route.request().url());
@@ -51,7 +51,8 @@ await page.evaluate(([k,v]) => localStorage.setItem(k,v), ['sb-demoproject-auth-
 
 const ROUTES = [['today','/'],['groups','/groups'],['group',`/group/${IDS.GROUP}`],
   ['leaderboard',`/group/leaderboard?id=${IDS.GROUP}`],['habit','/habit/h1'],
-  ['you','/you'],['focus','/focus'],['activity','/activity']];
+  ['you','/you'],['focus','/focus'],['activity','/activity'],
+  ['new-habit','/habit/new'],['manage','/manage'],['join','/group/join']];
 
 const MIN = 44;
 const small = [];
@@ -101,7 +102,8 @@ for (const s of small) console.log(`  ${s.screen.padEnd(12)} ${String(s.w).padSt
 await page.goto('http://localhost:4601/', { waitUntil: 'networkidle' });
 await page.waitForTimeout(900);
 const labels = await page.evaluate(() => {
-  const names = /^(today|groups|focus|you)$/i;
+  // Three tabs: NavySum apps have at most three, and You moved to the corner.
+  const names = /^(today|groups|focus)$/i;
   return [...document.querySelectorAll('*')]
     .filter((el) => el.children.length === 0 && names.test((el.textContent || '').trim()))
     .map((el) => {
@@ -124,7 +126,7 @@ const labels = await page.evaluate(() => {
 });
 
 console.log('\nTab labels — rendered box vs their own line height:');
-if (labels.length < 4) {
+if (labels.length < 3) {
   console.log(`  ONLY ${labels.length} FOUND — the check is not looking at the bar`);
 } else {
   let clipped = 0;

@@ -47,3 +47,5 @@ yarn-error.*
 
 # web export
 dist/
+# the build the preview scripts screenshot
+dist-demo/

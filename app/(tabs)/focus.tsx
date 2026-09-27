@@ -1,23 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ActivityIndicator,
-  AppState,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-  StyleSheet,
-} from 'react-native';
+import { AppState, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Button } from '@/components/Button';
-import { Plate } from '@/components/Plate';
+import { Button, Label } from '@/components/ui';
+import { Bar } from '@/components/Bar';
+import { Chip } from '@/components/Chip';
+import { Clock } from '@/components/Clock';
 import { EmptyState } from '@/components/EmptyState';
+import { Field } from '@/components/Field';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
+import { Section } from '@/components/Section';
 import { Segmented } from '@/components/Segmented';
 import { Sheet } from '@/components/Sheet';
+import { RowsSkeleton } from '@/components/Skeleton';
 import { StatTrio } from '@/components/StatTrio';
 import { TaskRow } from '@/components/TaskRow';
+import { YouCorner } from '@/components/YouCorner';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   membersByGroup,
@@ -36,6 +34,7 @@ import {
 } from '@/lib/queries';
 import { byTask, doneBy, isDone, progress, sortTasks, toggleIntent } from '@/lib/tasks';
 import { confirm } from '@/lib/confirm';
+import { feel } from '@/lib/feel';
 import { useRemembered } from '@/lib/remembered';
 import { handle } from '@/lib/identity';
 import type { Task, TaskCompletionKind } from '@/lib/types';
@@ -44,7 +43,6 @@ import {
   PHASE_LABEL,
   advance,
   finishesAt,
-  format,
   idle,
   isFinished,
   minutesFor,
@@ -57,12 +55,11 @@ import {
 import { loadTimer, saveTimer } from '@/lib/focus-storage';
 import { cancelFocusAlarm, ensurePermission, scheduleFocusAlarm } from '@/lib/reminders';
 import { toLocalDate } from '@/lib/date';
-import { useTheme } from '@/theme/ThemeProvider';
-import { Bar } from '@/components/Bar';
-import { ink, radius, space, typography } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 export default function FocusScreen() {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuth();
 
   const tasks = useTasks();
@@ -97,8 +94,9 @@ export default function FocusScreen() {
   const [draft, setDraft] = useState('');
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  // The composer is a contextual action, not furniture. See the note on the
-  // Plate below.
+  // The composer is a contextual action, not furniture: a permanently open
+  // form took the best space on the screen for something most visits never
+  // use, and on a phone the keyboard covered the list it was adding to.
   const [composing, setComposing] = useState(false);
   // The task the composer is editing. Null means it is adding a new one — the
   // same field, the same keyboard, one less screen.
@@ -183,13 +181,7 @@ export default function FocusScreen() {
     await cancelFocusAlarm();
   }, [timer]);
 
-  /**
-   * Rename, using the composer the add flow already has.
-   *
-   * `useRenameTask` existed and nothing called it — the only way to change a
-   * task was to delete it and type it again, and there was no way to delete
-   * one either unless you first ticked it off.
-   */
+  /** Rename, using the composer the add flow already has. */
   async function onRename() {
     const title = draft.trim();
     if (!title || !editing) return;
@@ -200,7 +192,7 @@ export default function FocusScreen() {
       setEditing(null);
       setComposing(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not rename that.');
+      setError(e instanceof Error ? e.message : 'That task could not be renamed.');
     }
   }
 
@@ -208,7 +200,7 @@ export default function FocusScreen() {
     const yes = await confirm({
       title: `Delete ${task.title}?`,
       message: task.group_id
-        ? 'This removes it for everyone in the group, along with who had ticked it off.'
+        ? 'This removes it for everyone in the group, along with who had finished it.'
         : 'This removes it from your list. It cannot be undone.',
       confirmLabel: 'Delete',
       destructive: true,
@@ -219,8 +211,14 @@ export default function FocusScreen() {
       // The timer cannot keep pointing at a task that no longer exists.
       if (taskId === task.id) setTaskId(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not delete that.');
+      setError(e instanceof Error ? e.message : 'That task could not be deleted.');
     }
+  }
+
+  function openComposer() {
+    setError(null);
+    setEditing(null);
+    setComposing(true);
   }
 
   function closeComposer() {
@@ -253,7 +251,7 @@ export default function FocusScreen() {
       // reason showing, so nothing typed is lost to a dismissed form.
       setComposing(false);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not add that.');
+      setError(e instanceof Error ? e.message : 'That task could not be added.');
     }
   }
 
@@ -286,7 +284,7 @@ export default function FocusScreen() {
     if (addTo === null && groupList.length > 0) setAddTo(groupList[0].id);
   }, [addTo, groupList]);
 
-  /** "done by Dan", or "2 of 3" — whichever the task's kind makes true. */
+  /** "Done by Dan", or "2 of 3 done" — whichever the task's kind makes true. */
   function metaFor(task: Task): string | undefined {
     const who = doneBy(task, ticked);
     if (task.group_id && task.completion === 'once') {
@@ -298,7 +296,7 @@ export default function FocusScreen() {
     return p ? `${p.done} of ${p.total} done` : undefined;
   }
 
-  /** Ticked tasks, which are the ones it makes sense to clear away. */
+  /** Finished tasks, which are the ones it makes sense to clear away. */
   function clearable(list: Task[]): Task[] {
     return list.filter((t) => isDone(t, ticked, userId));
   }
@@ -308,15 +306,20 @@ export default function FocusScreen() {
   }
 
   function taskRow(task: Task, last: boolean) {
+    const done = isDone(task, ticked, userId);
     return (
       <TaskRow
         key={task.id}
         title={task.title}
-        done={isDone(task, ticked, userId)}
+        done={done}
         meta={metaFor(task)}
         active={task.id === taskId}
         last={last}
-        onToggle={() => toggleTask.mutate({ taskId: task.id, ...toggleIntent(task, ticked, userId) })}
+        onToggle={() => {
+          // Finishing a task is a completion; taking it back is a lighter touch.
+          feel(done ? 'select' : 'success');
+          toggleTask.mutate({ taskId: task.id, ...toggleIntent(task, ticked, userId) });
+        }}
         onPress={() => setTaskId(task.id === taskId ? null : task.id)}
         onMore={() => setTaskMenu(task)}
       />
@@ -338,52 +341,54 @@ export default function FocusScreen() {
   const total = minutesFor(timer.phase, DEFAULTS) * 60_000;
   const left = timer.state === 'idle' ? total : remainingMs(timer, Date.now());
   const barFilled = total > 0 ? 1 - left / total : 0;
+  const hours = Math.round(stats.weekMinutes / 6) / 10;
 
   return (
     <Screen
-      onRefresh={onRefresh} title="Focus" label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}>
-      <Plate feature>
-        <Text style={[typography.label, { color: ink(colors, 65) }]}>
+      onRefresh={onRefresh}
+      title="Focus"
+      label={`${PHASE_LABEL[timer.phase]} · ${minutesFor(timer.phase, DEFAULTS)} minutes`}
+      trailing={<YouCorner />}
+    >
+      <View style={styles.timer}>
+        <Label>
           {timer.phase === 'focus' ? (activeTask ? 'Working on' : 'Focus') : 'Step away from it'}
-        </Text>
+        </Label>
         {timer.phase === 'focus' && activeTask ? (
-          <Text numberOfLines={1} style={[typography.cardTitle, styles.working, { color: colors.text }]}>
+          <Text numberOfLines={2} style={styles.working}>
             {activeTask.title}
           </Text>
         ) : null}
 
-        <Text style={[typography.clock, styles.clock, { color: colors.text }]}>{format(left)}</Text>
-
-        <View style={styles.bar}>
-          <Bar value={Math.min(1, Math.max(0, barFilled))} max={1} />
-        </View>
+        <Clock ms={left} />
+        <Bar value={Math.min(1, Math.max(0, barFilled))} max={1} />
 
         <View style={styles.controls}>
           {timer.state === 'running' ? (
-            <Button label="Pause" variant="primary" onPress={onPause} style={styles.grow} />
+            <Button title="Pause" onPress={onPause} style={styles.grow} />
           ) : (
             <Button
-              label={
+              title={
                 timer.state === 'paused'
                   ? 'Resume'
                   : `Start ${PHASE_LABEL[timer.phase].toLowerCase()}`
               }
-              variant="primary"
               onPress={onStart}
               style={styles.grow}
             />
           )}
-          {timer.state !== 'idle' ? <Button label="Reset" onPress={onReset} /> : null}
+          {timer.state !== 'idle' ? <Button title="Reset" variant="outline" onPress={onReset} /> : null}
         </View>
 
-        <Text style={[typography.caption, { color: ink(colors, 65) }]}>
+        <Text style={styles.note}>
           {timer.done === 0
-            ? `${DEFAULTS.focus} minutes on, ${DEFAULTS.short} off. A longer break every ${DEFAULTS.longEvery}.`
+            ? `${DEFAULTS.focus} minutes on, ${DEFAULTS.short} off, and a longer break every ${DEFAULTS.longEvery}.`
             : `${timer.done} ${timer.done === 1 ? 'stretch' : 'stretches'} done today.`}
         </Text>
-      </Plate>
+      </View>
 
       <Segmented
+        accessibilityLabel="Which tasks"
         value={scope}
         onChange={(v) => {
           setScope(v);
@@ -399,140 +404,103 @@ export default function FocusScreen() {
         ]}
       />
 
-      {/* A permanently open creation form is desktop thinking: it sat between
-          the timer and the list, taking the best space on the screen for
-          something most visits never use, and on a phone the keyboard covered
-          the list it was adding to. It is an action now, and the screen has
-          one job again — decide what to work on, and start. */}
       {!composing ? (
         <Button
-          label={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
-          onPress={() => {
-            setError(null);
-            setEditing(null);
-            setComposing(true);
-          }}
+          title={scope === 'mine' ? 'Add a task' : 'Add a shared task'}
+          variant="outline"
+          onPress={openComposer}
         />
       ) : (
-      <Plate
-        label={
-          editing
-            ? 'Rename task'
-            : scope === 'mine'
-              ? 'Add a task'
-              : 'Add a shared task'
-        }
-        action="Cancel"
-        onAction={closeComposer}
-      >
-        <View style={styles.addRow}>
-          <TextInput
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={editing ? 'Task name' : 'Add a task'}
-            placeholderTextColor={ink(colors, 45)}
-            onSubmitEditing={editing ? onRename : onAdd}
-            returnKeyType="done"
-            maxLength={140}
-            autoFocus
-            style={[
-              styles.input,
-              typography.body,
-              { borderColor: colors.divider, color: colors.text },
-            ]}
-            accessibilityLabel={editing ? 'Task name' : 'Add a task'}
-          />
-          <Button
-            label={editing ? 'Save' : 'Add'}
-            variant="primary"
-            onPress={editing ? onRename : onAdd}
-            disabled={
-              !draft.trim() || (!editing && scope === 'shared' && !addTo)
-            }
-            busy={addTask.isPending || renameTask.isPending}
-          />
-        </View>
+        <Section
+          label={editing ? 'Rename task' : scope === 'mine' ? 'Add a task' : 'Add a shared task'}
+          action="Cancel"
+          onAction={closeComposer}
+        >
+          <View style={styles.composer}>
+            <Field
+              label="Task"
+              value={draft}
+              onChangeText={setDraft}
+              placeholder="The thing you keep putting off"
+              onSubmitEditing={editing ? onRename : onAdd}
+              returnKeyType="done"
+              maxLength={140}
+              autoFocus
+            />
 
-        {editing ? null : scope === 'shared' ? (
-          groupList.length === 0 ? (
-            <Text style={[typography.caption, styles.hint, { color: ink(colors, 70) }]}>
-              Join or create a group first, then tasks can be shared with it.
-            </Text>
-          ) : (
-            <View style={styles.options}>
-              {groupList.length > 1 ? (
-                <View style={styles.chips}>
-                  {groupList.map((g) => (
-                    <Pressable
-                      key={g.id}
-                      onPress={() => setAddTo(g.id)}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: addTo === g.id }}
-                      style={[
-                        styles.chip,
-                        addTo === g.id
-                          ? { backgroundColor: colors.accents[100], borderColor: colors.accent }
-                          : { backgroundColor: 'transparent', borderColor: colors.divider },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          typography.action,
-                          { color: addTo === g.id ? colors.accents[700] : ink(colors, 70) },
-                        ]}
-                      >
-                        {g.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-              ) : null}
+            {editing ? null : scope === 'shared' ? (
+              groupList.length === 0 ? (
+                <Text style={styles.note}>
+                  Join or start a group first, then tasks can be shared with it.
+                </Text>
+              ) : (
+                <>
+                  {groupList.length > 1 ? (
+                    <View style={styles.chips} accessibilityLabel="Which group">
+                      {groupList.map((g) => (
+                        <Chip
+                          key={g.id}
+                          label={g.name}
+                          selected={addTo === g.id}
+                          onPress={() => setAddTo(g.id)}
+                        />
+                      ))}
+                    </View>
+                  ) : null}
 
-              <Segmented
-                value={kind}
-                onChange={setKind}
-                options={[
-                  { value: 'once', label: 'One of us' },
-                  { value: 'everyone', label: 'Each of us' },
-                ]}
-              />
-              <Text style={[typography.prose, { color: ink(colors, 78) }]}>
-                {kind === 'once'
-                  ? 'Whoever does it ticks it off, and it is done for everyone.'
-                  : 'Everyone ticks off their own, and you can see who has not.'}
-              </Text>
-            </View>
-          )
-        ) : null}
+                  <Segmented
+                    accessibilityLabel="Who finishes it"
+                    value={kind}
+                    onChange={setKind}
+                    options={[
+                      { value: 'once', label: 'One of us' },
+                      { value: 'everyone', label: 'Each of us' },
+                    ]}
+                  />
+                  <Text style={styles.note}>
+                    {kind === 'once'
+                      ? 'Whoever does it marks it done, and it is done for everyone.'
+                      : 'Everyone finishes their own, and you can see who has not yet.'}
+                  </Text>
+                </>
+              )
+            ) : null}
 
-        {error ? (
-          <Notice label="Could not add">{error}</Notice>
-        ) : null}
-      </Plate>
+            {error ? <Notice label="Could not save">{error}</Notice> : null}
+
+            {/* Outlined, not filled: the timer's button is this screen's one
+                primary action. */}
+            <Button
+              title={editing ? 'Save' : 'Add'}
+              variant="outline"
+              onPress={editing ? onRename : onAdd}
+              disabled={!draft.trim() || (!editing && scope === 'shared' && !addTo)}
+              loading={addTask.isPending || renameTask.isPending}
+            />
+          </View>
+        </Section>
       )}
 
       {tasks.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+        <RowsSkeleton />
       ) : scope === 'mine' ? (
         mine.length === 0 ? (
           <EmptyState
             title="Nothing on the list"
             body="Add the one thing you keep putting off, then start a stretch of focus on it."
             actionLabel="Add a task"
-            onAction={() => {
-              setError(null);
-              setComposing(true);
-            }}
+            onAction={openComposer}
           />
         ) : (
-          <Plate
+          <Section
             label="Your list"
             action={clearable(mine).length ? `Clear ${clearable(mine).length}` : undefined}
+            actionLabel={`Clear ${clearable(mine).length} finished`}
             onAction={clearable(mine).length ? () => clearDone(mine) : undefined}
-            flush
+            list
           >
             {mine.map((t, i) => taskRow(t, i === mine.length - 1))}
-          </Plate>
+          </Section>
         )
       ) : sharedByGroup.size === 0 ? (
         <EmptyState
@@ -540,43 +508,35 @@ export default function FocusScreen() {
           body={
             groupList.length
               ? 'Either one of you does it, or all of you do — you choose when you add it.'
-              : 'Join or create a group first, then tasks can be shared with it.'
+              : 'Join or start a group first, then tasks can be shared with it.'
           }
           // The action depends on why it is empty: with no group there is
           // nothing to share *to*, so sending someone to a composer they
           // cannot submit would be a dead end.
           actionLabel={groupList.length ? 'Add a shared task' : 'Go to groups'}
-          onAction={
-            groupList.length
-              ? () => {
-                  setError(null);
-                  setComposing(true);
-                }
-              : () => router.push('/groups')
-          }
+          onAction={groupList.length ? openComposer : () => router.push('/groups')}
         />
       ) : (
         [...sharedByGroup.entries()].map(([groupId, list]) => {
           const group = groupList.find((g) => g.id === groupId);
           return (
-            <Plate
+            <Section
               key={groupId}
               label={group?.name ?? 'Group'}
               action={clearable(list).length ? `Clear ${clearable(list).length}` : undefined}
+              actionLabel={`Clear ${clearable(list).length} finished`}
               onAction={clearable(list).length ? () => clearDone(list) : undefined}
-              flush
+              list
             >
               {list.map((t, i) => taskRow(t, i === list.length - 1))}
-            </Plate>
+            </Section>
           );
         })
       )}
 
       {open.length === 0 && visible.length > 0 ? (
         <Notice label="All clear">
-          {scope === 'mine'
-            ? 'Nothing left on your list.'
-            : 'Nothing left for you in any group.'}
+          {scope === 'mine' ? 'Nothing left on your list.' : 'Nothing left for you in any group.'}
         </Notice>
       ) : null}
 
@@ -585,14 +545,15 @@ export default function FocusScreen() {
           and the tasks they interrupted the one flow the screen has. */}
       <StatTrio
         stats={[
-          { value: `${stats.todayMinutes}m`, label: 'Focused today' },
-          { value: `${Math.round(stats.weekMinutes / 6) / 10}h`, label: 'This week' },
-          { value: String(open.length), label: 'Still to do' },
+          { value: String(stats.todayMinutes), label: 'minutes today' },
+          { value: String(hours), label: hours === 1 ? 'hour this week' : 'hours this week' },
+          { value: String(open.length), label: 'still to do' },
         ]}
       />
-      {/* Reachable from the row's "⋯" as well as by holding it. A task has no
-          detail screen to hide these behind, so gesture-only would have meant
-          deleting one was a capability you could only find by accident. */}
+
+      {/* Reachable from the row's "Edit" as well as by holding it. A task has
+          no detail screen to hide these behind, so gesture-only would have
+          meant deleting one was a capability you could only find by accident. */}
       <Sheet
         visible={taskMenu !== null}
         title={taskMenu?.title}
@@ -612,9 +573,7 @@ export default function FocusScreen() {
                 {
                   label: 'Delete',
                   tone: 'danger' as const,
-                  hint: taskMenu.group_id
-                    ? 'Removes it for the whole group'
-                    : 'Cannot be undone',
+                  hint: taskMenu.group_id ? 'Removes it for the whole group' : 'Cannot be undone',
                   onPress: () => void onRemove(taskMenu),
                 },
               ]
@@ -625,29 +584,13 @@ export default function FocusScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  working: { marginTop: space.sm },
-  clock: { marginTop: space.xl },
-  bar: { marginTop: space.xl, marginBottom: space.xl },
-  controls: { flexDirection: 'row', gap: space.md, marginBottom: space.lg },
-  grow: { flex: 1 },
-  addRow: { flexDirection: 'row', gap: space.md, alignItems: 'stretch' },
-  input: {
-    flex: 1,
-    minHeight: 44,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.lg,
-  },
-  loader: { marginTop: space.xxxl },
-  options: { gap: space.md, marginTop: space.lg },
-  hint: { marginTop: space.md },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
-  chip: {
-    minHeight: 36,
-    justifyContent: 'center',
-    paddingHorizontal: space.lg,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    timer: { gap: space.md },
+    working: { ...t.type.heading, color: t.colors.ink },
+    controls: { flexDirection: 'row', gap: space.md, marginTop: space.sm },
+    grow: { flex: 1 },
+    note: { ...t.type.italic, color: t.colors.inkMuted },
+    composer: { gap: space.md },
+    chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
+  });

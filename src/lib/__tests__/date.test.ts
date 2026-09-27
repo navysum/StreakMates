@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { formatDayLabel, formatWeekOf, isoWeek } from '../date.ts';
+import { formatDayLabel, formatShortDate, formatWeekOf, isoWeek } from '../date.ts';
 
 test('iso week: 4 January is always in week 1', () => {
   assert.equal(isoWeek('2026-01-04'), 1);
@@ -34,4 +34,10 @@ test('day label: weekday, zero-padded day, month and week number', () => {
 test('week of: names the Monday the week started on, whatever day you ask from', () => {
   assert.equal(formatWeekOf('2026-09-06'), 'Week of 31 Aug');
   assert.equal(formatWeekOf('2026-08-31'), 'Week of 31 Aug');
+});
+
+test('formatShortDate: the same on every engine', () => {
+  assert.equal(formatShortDate('2026-09-24'), 'Thu 24 Sep');
+  assert.equal(formatShortDate('2026-09-06'), 'Sun 6 Sep');
+  assert.equal(formatShortDate('2026-03-02'), 'Mon 2 Mar');
 });

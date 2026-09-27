@@ -1,13 +1,14 @@
-import { MILESTONES } from '../theme/palette.ts';
+/**
+ * The runs worth one quiet line: a week, a month, a hundred days, a year.
+ *
+ * These are the NavySum milestones, the same in every app. They used to be
+ * seven, and denser in the middle; a line that arrives every fortnight stops
+ * being a moment and becomes a notification.
+ */
+export const MILESTONES = [7, 30, 100, 365] as const;
 
 /**
  * Did this check-in just reach something worth saying out loud?
- *
- * The brand reserves the gradient for "major accomplishments", and until now
- * nothing in the app produced one — `MILESTONES` and `isMilestone` were
- * written into the palette and never called. The streak spectrum already
- * changes colour as a run grows, which is a quiet signal; this is the loud
- * one, and it fires at most a handful of times a year per habit.
  *
  * Deliberately narrow. It is true only on the *transition*: checking in on day
  * seven of a run announces the week, and every later visit to a seven-day
@@ -25,11 +26,8 @@ export function reachedMilestone(before: number, after: number): boolean {
 /** How a reached milestone reads. Kept here so the wording has one home. */
 export function milestoneLabel(days: number): string {
   if (days === 7) return 'A week';
-  if (days === 14) return 'Two weeks';
   if (days === 30) return 'A month';
-  if (days === 50) return 'Fifty days';
-  if (days === 100) return 'One hundred days';
-  if (days === 200) return 'Two hundred days';
+  if (days === 100) return 'A hundred days';
   if (days === 365) return 'A year';
   return `${days} days`;
 }

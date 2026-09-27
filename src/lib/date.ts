@@ -85,6 +85,18 @@ export function formatDayLabel(iso: string): string {
   return `${weekday} ${day} ${monthLabel(iso)} · Week ${isoWeek(iso)}`;
 }
 
+const WEEKDAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+
+/**
+ * `Thu 24 Sep` — a past day, for a note or a feed row. Built from fixed names
+ * rather than `toLocaleDateString`, which spells September "Sept" in Node and
+ * "Sep" in Hermes.
+ */
+export function formatShortDate(iso: string): string {
+  const d = fromLocalDate(iso);
+  return `${WEEKDAY_NAMES[isoWeekday(iso) - 1]} ${d.getDate()} ${monthLabel(iso)}`;
+}
+
 /** `WEEK OF 31 AUG` — the Monday the current week started on. */
 export function formatWeekOf(iso: string): string {
   const monday = startOfWeek(iso);

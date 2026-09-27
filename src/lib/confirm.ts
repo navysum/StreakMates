@@ -1,4 +1,5 @@
 import { Alert, Platform } from 'react-native';
+import { feel } from './feel';
 
 /**
  * "Are you sure?", on every platform.
@@ -26,6 +27,10 @@ export function confirm({
   cancelLabel?: string;
   destructive?: boolean;
 }): Promise<boolean> {
+  // The one warning in the app: felt as the question arrives, before anything
+  // has been destroyed. A no-op on the web.
+  if (destructive) feel('warning');
+
   if (Platform.OS === 'web') {
     // The browser's own dialog: one line for the question, the rest beneath.
     // It cannot be styled and it cannot be missed, which for a destructive
