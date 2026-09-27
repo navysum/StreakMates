@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./assets/brand/logo-source.png" width="132" alt="StreakMates" />
+<img src="./assets/icon.png" width="132" alt="The StreakMates seal: 連 in white, cut into a red stamp on paper" />
 
 # StreakMates
 
@@ -12,12 +12,12 @@ A habit tracker built around the people you're doing it with.
 
 `React Native` · `Expo` · `TypeScript` · `Supabase` · `PostgreSQL`
 
-**Status (Sep 2026): live on the web.** The latest change (12 Sep) closed a
-username-enumeration gap.
+**Status (Sep 2026): live on the web.** The latest change moves it onto the
+NavySum design system — the house style it shares with every other NavySum app.
 
 </div>
 
-<img src="./docs/screens/banner.png" alt="Today, habit detail, the group leaderboard and the focus timer, in light and dark" />
+<img src="./docs/screens/banner.png" alt="Today, a habit, the leaderboard and the focus timer, in four of the six themes: Washi, Sumi, Aizome and LifeOS Dark" />
 
 ---
 
@@ -52,7 +52,10 @@ the app follows from that decision, including most of the hard parts:
 - **A live board** showing who kept what this week, updating over Realtime
 - **A leaderboard** that measures consistency, not volume — see [below](#the-leaderboard-had-to-be-fair)
 - **A focus timer** with shared task lists
-- **Streaks, heatmaps and milestones**, with a colour that changes as a run grows
+- **Streaks, heatmaps and milestones** — each check-in stamps a seal, and a run
+  that reaches a week, a month, a hundred days or a year gets one quiet line
+- **Six themes** — Washi & Seal, LifeOS and Aizome, each light, dark or
+  following the phone
 - **Works offline** — check-ins queue and replay when you're back
 - **Runs on iOS, Android and the web** from one codebase
 
@@ -238,45 +241,66 @@ There is also a second way to win. **Most improved** compares this week against
 last, because a ladder where the same person is always top is a ladder everyone
 else stops looking at.
 
-### The design system is measured, not chosen
+### One design system, shared by every NavySum app
 
-The brand palette is light by design, which makes several of its colours
-unreadable as text — orchid measures 2.98:1 on white. So each theme carries its
-own variant of each meaning, and screens read `colors.meaning.social` rather
-than reaching for a hex.
+StreakMates is one of several NavySum apps, and they are meant to feel like one
+family rather than five. So it is built on the NavySum house style, first seen
+in Parables: **paper, ink and one red seal.** The kit lives in `src/theme` and
+`src/components/ui.tsx` under the same names every NavySum app uses, so a
+component written for one reads the same in all of them.
 
-The contrast rules are **tests**, not comments:
+- **One accent.** The seal colour marks the single most important thing on a
+  screen — the stamp on a completed habit, the active tab, a text button. No
+  gradients, no second accent, no coloured backgrounds. On a list of habits
+  the week is drawn in ink and only the stamps are red; a habit's own calendar
+  is stamped in red, as a NavySum calendar is.
+- **Type carries hierarchy, not boxes.** Cormorant Garamond for content, Inter
+  for controls, small uppercase tracked labels above sections, hairlines
+  instead of cards.
+- **Completion is a stamp.** Checking a habit in brings the seal down — 1.3× to
+  its own size over 260 ms, easing out, with a success haptic; under Reduce
+  Motion it simply fades in. StreakMates' seal says 連: "in a row", and "a
+  companion who comes along". It is drawn from the font by
+  `scripts/make-icons.mjs`, which also cuts every app icon from it.
+- **Three tabs, in words.** Today, Groups and Focus. You — profile, record,
+  settings — moved behind your monogram in each tab's corner.
+- **Six themes.** Washi & Seal, LifeOS and Aizome, each designed in light and
+  dark rather than inverted, with Automatic following the phone. Each family's
+  fonts load only when it is chosen.
+
+### The palettes are measured, not trusted
+
+The design system states that its palettes pass WCAG AA. Measured over all six
+themes, three pairings it calls for do not:
+
+| Pairing | Worst case | What the app does instead |
+| --- | --- | --- |
+| muted ink on a modal's deeper paper | 4.22:1, Washi | modals and sheets are drawn in a *deepened* theme that steps muted ink up to the softer ink |
+| the accent on its own wash — a selected chip | 4.00:1, Aizome Night | a selected chip writes its label in ink, and keeps the accent for its edge and a small square mark |
+| text on an accent fill | 3.54:1, Sumi | only LifeOS, where it passes, fills anything with the accent |
+
+The rules are **tests**, not comments — every ink on every ground it is drawn
+on, in all six themes — and each workaround has a guard that fails the day the
+palette is fixed, so the workaround can go:
 
 ```
-theme: every meaning is readable as ink on every ground
-theme: the ink floor of 62 clears AA
-theme: the brand gradient does NOT carry text — which is why the other exists
+washi-light: every ink clears AA on a modal, once deepened
+aizome-dark: a selected chip's label clears AA, on the page and on a modal
+guard: the accent on its own wash fails, which is why chips write ink
 ```
 
-That last one is a guard. The sign-in button was originally filled with the full
-brand gradient, which ends in soft pink: white on it is **1.85:1**. The label was
-readable at the left of the button and not at the right. No choice of ink fixes
-that, because the sweep spans both ends of the lightness range — so there is a
-second, darker gradient for anything with a label on it, and a test that fails
-if someone "simplifies" the two back into one.
-
-### Colour carries meaning
-
-Blue is progress, violet is a primary action, orchid is social, pink is
-celebration. The full gradient is reserved for genuine accomplishments and
-appears in exactly one place in the app.
-
-A streak's colour climbs that spectrum as it grows — blue at a day, violet at a
-week, pink at a month — so the colour of a number tells you how long it has been
-true.
+The type is measured the same way. Cormorant's default figures are old-style,
+so a habit called "No phone after 10" read "after IO" until every display style
+was set in lining figures; a test now holds all of them to it, and holds every
+line box to the height its face actually needs.
 
 <div align="center">
-<img src="./docs/screens/milestone.png" width="300" alt="A seven-day streak announced with the brand gradient" />
+<img src="./docs/screens/milestone.png" width="300" alt="A run reaching a week, announced in one quiet line between two hairlines" />
 <img src="./docs/screens/loading.png" width="300" alt="Skeleton loading in the shape of the real content" />
 </div>
 
-*Left: the one place the full gradient appears. Right: loading shows structure —
-first-load layout shift is measured at 0px.*
+*Left: a run reaching a week — one quiet line, no confetti, and it goes on its
+own. Right: loading shows structure — first-load layout shift is measured at 0px.*
 
 ---
 
@@ -286,9 +310,9 @@ Three layers, because they catch different things.
 
 | Layer | What it covers | Size |
 | --- | --- | --- |
-| **Unit tests** | streaks, dates, leaderboard maths, contrast, type scaling, offline queue | 196 assertions |
+| **Unit tests** | streaks, dates, leaderboard maths, contrast and type in all six themes, offline queue | 236 tests |
 | **Attack suite** | RLS policies, from every role, on a real Postgres | 122 assertions, 25 scenarios |
-| **Browser harness** | the real screens, with a fake session and mocked network | 8 screens, both themes |
+| **Browser harness** | the real screens, with a fake session and mocked network | 11 screens, all six themes |
 
 The third layer earned its place. Everything behind the sign-in gate is
 otherwise unreviewable without a live database and a real account, so
@@ -301,7 +325,7 @@ tiny rainbows. It also measures things that are cheap to assert and easy to
 regress:
 
 ```bash
-npm run preview:screens    # all 8 screens, both themes, console errors
+npm run preview:screens    # all 11 screens, all six themes, console errors
 npm run preview:touch      # every touch target ≥ 44×44, no horizontal overflow
 npm run preview:gestures   # long-press opens the sheet — and a tap still doesn't
 npm run preview:premium    # optimistic writes, skeletons, milestone, remembered tab
@@ -326,7 +350,7 @@ through in [`supabase/README.md`](./supabase/README.md) — creating the project
 running the migrations in order, and wiring up Google sign-in.
 
 ```bash
-npm test                    # 196 unit tests
+npm test                    # 236 unit tests
 npm run typecheck           # tsc --noEmit
 ./supabase/tests/run.sh     # the attack suite (needs a local postgres)
 npm run build:web           # static export
@@ -338,26 +362,30 @@ npm run build:web           # static export
 
 ```
 app/                  screens — expo-router, file-based
-  (tabs)/             Today · Groups · Focus · You
+  (tabs)/             Today · Groups · Focus
+  you.tsx             You — opened from your monogram, not a tab
   group/  habit/      detail and modal flows
 src/
-  components/         the design system — Plate, HabitRow, WeekStrip, Tick…
+  components/         ui.tsx is the NavySum kit — Paper, Seal, Label, Button…
+                      the rest are StreakMates' own — HabitRow, Stamp, WeekStrip…
   lib/                pure logic: streaks, leaderboard, dates, outbox, tasks
-  theme/              palette.ts and type-scale.ts (pure, tested)
-                      tokens.ts — the only file that touches the platform
+  theme/              palette.ts and type-scale.ts — six themes, pure, tested
+                      index.ts — the only file that touches the platform
   auth/               session, Google OAuth, deep links
 supabase/
   migrations/         14, applied in filename order (two share the 0013 prefix)
   tests/              the attack suite
 scripts/preview/      the browser harness
+scripts/make-icons.mjs  the 連 seal and every app icon, drawn from the font
 docs/                 security notes, web deployment, Life Operating System habit-sync design, plan, screenshots
 PLAN.md               the original v1 product plan
 ```
 
-The theme is split for a reason worth stating: `tokens.ts` reads `PixelRatio`
-and therefore imports react-native, which the test runner can't parse. Keeping
-colour and type in pure files means the palette stays directly testable, and one
-named file owns the platform dependency.
+The theme is split for a reason worth stating: `index.ts` attaches the paper
+textures, which are `require`d images only the bundler understands, so the test
+runner cannot load it. Keeping colour and type in pure files means all six
+palettes stay directly testable, and one named file owns the platform
+dependency.
 
 ---
 
@@ -372,7 +400,12 @@ usually one that hasn't been looked at:
 - **A real end-to-end suite** against a disposable Supabase project; the browser
   harness mocks the network, so it proves the client and not the round trip
 - **Android predictive back** — off until it can be tested on a physical device
-- **Typography scale** — body sits at 15px against a platform norm nearer 17
+- **Large text on a device** — the type scale caps hero type and numerals as
+  the design system asks, but it has been checked in a browser, where the
+  phone's text size cannot be set
+- **The design system's palettes** — the three pairings above fail AA in the
+  shared kit; fixing them there would let every NavySum app drop its
+  workaround
 
 ---
 
