@@ -64,6 +64,13 @@ export function useProfile(userId: string | null) {
   });
 }
 
+export class AccountMissingError extends Error {
+  constructor() {
+    super('This sign-in no longer matches an account. Sign in again to carry on.');
+    this.name = 'AccountMissingError';
+  }
+}
+
 export function useSetUsername(userId: string | null) {
   const qc = useQueryClient();
   return useMutation({
@@ -87,7 +94,16 @@ export function useSetUsername(userId: string | null) {
             'Usernames are 3–20 characters, start with a letter, and use only letters, numbers and underscores.',
           );
         }
-        throw error;
+        // The session belongs to an account the database does not have: the
+        // token still verifies, but its user row is gone. Seen after a paused
+        // project was restored mid sign-in. No name can ever save for it, so
+        // say so and let the screen sign out rather than blame each name.
+        if (error.code === '23503') {
+          throw new AccountMissingError();
+        }
+        // A PostgrestError is a plain object, not an Error, so the screen
+        // would otherwise drop its message for a generic one.
+        throw new Error(error.message);
       }
     },
     onSuccess: () => {

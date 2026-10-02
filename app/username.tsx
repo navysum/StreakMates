@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/ui';
+import { TextAction } from '@/components/TextAction';
 import { Field } from '@/components/Field';
 import { Notice } from '@/components/Notice';
 import { Screen } from '@/components/Screen';
 import { useAuth } from '@/auth/AuthProvider';
-import { useProfile, useSetUsername } from '@/lib/queries';
+import { AccountMissingError, useProfile, useSetUsername } from '@/lib/queries';
 import { useThemedStyles } from '@/theme/ThemeProvider';
 import { space, type Theme } from '@/theme';
 
@@ -15,7 +16,7 @@ const VALID = /^[a-zA-Z][a-zA-Z0-9_]{2,19}$/;
 export default function UsernameScreen() {
   const styles = useThemedStyles(makeStyles);
   const router = useRouter();
-  const { userId } = useAuth();
+  const { userId, signOut } = useAuth();
 
   const profile = useProfile(userId);
   const save = useSetUsername(userId);
@@ -39,6 +40,10 @@ export default function UsernameScreen() {
       else if (router.canGoBack()) router.back();
       else router.replace('/');
     } catch (e) {
+      if (e instanceof AccountMissingError) {
+        await signOut();
+        return;
+      }
       setError(e instanceof Error ? e.message : 'That username could not be saved.');
     }
   }
@@ -87,6 +92,12 @@ export default function UsernameScreen() {
       />
 
       {error ? <Notice label="Could not save">{error}</Notice> : null}
+
+      {first ? (
+        // The only screen with no way out otherwise: everyone lands here
+        // before the tabs, and the tabs are where Sign out lives.
+        <TextAction title="Not you? Sign out" tone="muted" onPress={() => void signOut()} />
+      ) : null}
 
       <Notice label="Why a username">
         {'Names come from Google and repeat — two friends called Craig look the same on a board. A username is checked against everyone in the app, so yours is only ever yours.'}
