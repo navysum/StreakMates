@@ -1,47 +1,29 @@
 import { View } from 'react-native';
 import { useTheme } from '@/theme/ThemeProvider';
-import { radius } from '@/theme/tokens';
 
 /**
- * A proportion. Blue by default, because a bar is always progress toward
- * something — pass `tone` to say otherwise (a streak's own colour, a group
- * member's rank).
+ * A proportion, as NavySum draws one: a 3pt track in `paperEdge` with the fill
+ * laid over it, and no numbers inside — the figure beside it says the number.
  *
- * The track is a soft fill rather than an outline: on a dark card an outlined
- * empty bar reads as a stray box, while a filled track reads as a thing with
- * nothing in it yet.
+ * The fill is the accent. Pass `tone` where several bars share a screen and
+ * only one of them should carry it — your own row on the leaderboard, say —
+ * so the rest go to ink.
  */
-export function Bar({
-  value,
-  max,
-  height = 8,
-  tone,
-}: {
-  value: number;
-  max: number;
-  height?: number;
-  tone?: string;
-}) {
-  const { colors } = useTheme();
+export function Bar({ value, max, tone }: { value: number; max: number; tone?: string }) {
+  const t = useTheme();
   const fraction = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
 
   return (
     <View
-      style={{
-        height,
-        backgroundColor: colors.raised,
-        borderWidth: 1,
-        borderColor: colors.divider,
-        borderRadius: radius.pill,
-        overflow: 'hidden',
-      }}
+      style={{ height: 3, borderRadius: 1.5, backgroundColor: t.colors.paperEdge, overflow: 'hidden' }}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
     >
       <View
         style={{
           width: `${fraction * 100}%`,
           height: '100%',
-          borderRadius: radius.pill,
-          backgroundColor: tone ?? colors.meaning.progress,
+          backgroundColor: tone ?? t.colors.seal,
         }}
       />
     </View>

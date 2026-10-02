@@ -1,18 +1,20 @@
 import { useCallback, useMemo, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Avatar, initials } from '@/components/Avatar';
-import { Button } from '@/components/Button';
+import { Avatar } from '@/components/Avatar';
+import { YouCorner } from '@/components/YouCorner';
+import { Button } from '@/components/ui';
 import { DayProgress } from '@/components/DayProgress';
 import { EmptyState } from '@/components/EmptyState';
 import { HabitRow } from '@/components/HabitRow';
 import { Milestone } from '@/components/Milestone';
 import { DayProgressSkeleton, RowsSkeleton } from '@/components/Skeleton';
 import { Notice } from '@/components/Notice';
-import { Plate } from '@/components/Plate';
+import { Row } from '@/components/Row';
 import { Screen } from '@/components/Screen';
-import { Sheet } from '@/components/Sheet';
+import { Section } from '@/components/Section';
 import { Segmented } from '@/components/Segmented';
+import { Sheet } from '@/components/Sheet';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   byHabit,
@@ -34,8 +36,8 @@ import { sortHabits } from '@/lib/ordering';
 import { weekCells } from '@/lib/week';
 import { formatDayLabel, toLocalDate } from '@/lib/date';
 import { computeStreak, describeProgress, isScheduled } from '@/lib/streak';
-import { useTheme } from '@/theme/ThemeProvider';
-import { hit, ink, radius, space, typography } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 import type { Habit } from '@/lib/types';
 
 /** The schedule shape the streak helpers want, off a habit row. */
@@ -44,7 +46,7 @@ function scheduleOf(h: Habit) {
 }
 
 export default function TodayScreen() {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useRemembered('today.tab', 'mine', ['mine', 'shared'] as const);
@@ -99,7 +101,7 @@ export default function TodayScreen() {
   );
 
   // The longest run going among the habits on screen, as the one extra fact
-  // the progress plate carries.
+  // the day's progress carries.
   const best = useMemo(() => {
     let top = 0;
     for (const h of visible) {
@@ -113,7 +115,7 @@ export default function TodayScreen() {
   const run = best > 1 ? ` Longest run going: ${best} days.` : '';
   const note =
     owed.length === 0
-      ? 'Nothing is owed today.'
+      ? 'Nothing is owed today. Enjoy the rest.'
       : left > 0
         ? `${left} left today.${run}`
         : `Everything owed today is in.${run}`;
@@ -155,35 +157,31 @@ export default function TodayScreen() {
   }, [shared, positions]);
 
   /**
-   * Checking in, with the two things that make it land.
+   * Checking in, and the two things that make it land.
    *
-   * The write itself is unchanged and still optimistic — the row fills before
-   * the network is asked. What is added is acknowledgement: a tap you can
-   * feel, and, on the day a run reaches a week or a month, the moment said out
-   * loud instead of left to be noticed.
+   * The write itself is optimistic — the stamp comes down before the network
+   * is asked. What makes it land is the NavySum completion: the seal stamping
+   * down with a success haptic, and, on the day a run reaches a week or a
+   * month, one quiet line saying so. Taking a check-in back is a lighter
+   * touch, so undo is distinguishable by feel.
    *
    * The streak is computed from the set the toggle is about to produce rather
    * than from the query, because the query has not been told yet. Waiting for
-   * it would put the celebration a beat behind the tap.
+   * it would put the moment a beat behind the tap.
    */
   function onToggle(habit: Habit, dates: Set<string>, complete: boolean) {
     toggle.mutate({ habitId: habit.id, date: today, complete: !complete });
 
     if (complete) {
-      feel('undone');
+      feel('select');
       return;
     }
 
+    feel('success');
     const schedule = scheduleOf(habit);
     const before = computeStreak(schedule, dates, today);
     const after = computeStreak(schedule, new Set([...dates, today]), today);
-
-    if (reachedMilestone(before, after)) {
-      feel('milestone');
-      setMilestone({ title: habit.title, days: after });
-    } else {
-      feel('kept');
-    }
+    if (reachedMilestone(before, after)) setMilestone({ title: habit.title, days: after });
   }
 
   function row(habit: Habit, last: boolean) {
@@ -210,35 +208,21 @@ export default function TodayScreen() {
       onRefresh={onRefresh}
       title="Today"
       label={formatDayLabel(today)}
-      trailing={
-        profile.data ? (
-          <Pressable
-            onPress={() => router.push('/you')}
-            accessibilityRole="button"
-            accessibilityLabel="Your profile"
-            style={({ pressed }) => [
-              styles.avatar,
-              { borderColor: colors.divider, backgroundColor: colors.meaningSoft.social },
-              pressed && styles.pressed,
-            ]}
-          >
-            <Text style={[typography.figure, { color: colors.meaning.social }]}>
-              {initials(profile.data.display_name)}
-            </Text>
-          </Pressable>
-        ) : null
-      }
+      trailing={<YouCorner />}
     >
       {error ? (
-        <Notice label="Could not load">
-          {error instanceof Error ? error.message : 'Something went wrong.'}
+        <Notice
+          label="Could not load"
+          action={{ title: 'Try again', onPress: () => void onRefresh() }}
+        >
+          {'Your habits did not load. Check your connection, then try again.'}
         </Notice>
       ) : null}
 
       {milestone ? (
         <Milestone
           // Keyed by the run, so reaching a second milestone in one sitting
-          // restarts the banner rather than inheriting the first one's timer.
+          // starts afresh rather than inheriting the first one's timer.
           key={`${milestone.title}-${milestone.days}`}
           title={milestone.title}
           days={milestone.days}
@@ -258,6 +242,7 @@ export default function TodayScreen() {
       )}
 
       <Segmented
+        accessibilityLabel="Which habits"
         value={tab}
         onChange={setTab}
         // No counts until they are real. "Mine · 0" during the first load is
@@ -276,13 +261,13 @@ export default function TodayScreen() {
           <EmptyState
             title="No habits yet"
             body="Add your first one. All it needs is a name — everything else has a sensible default."
-            actionLabel="Add habit"
+            actionLabel="Add a habit"
             onAction={() => router.push('/habit/new')}
           />
         ) : (
-          <Plate label="Private" flush>
+          <Section label="Private" list>
             {mine.map((h, i) => row(h, i === mine.length - 1))}
-          </Plate>
+          </Section>
         )
       ) : shared.length === 0 ? (
         <EmptyState
@@ -290,7 +275,7 @@ export default function TodayScreen() {
           body={
             groupsQuery.data?.length
               ? 'Open a group and add one. Everyone in it checks in against the same habit.'
-              : 'Join or create a group first, then add a habit everyone checks in against.'
+              : 'Join or start a group first, then add a habit everyone checks in against.'
           }
           actionLabel="Go to groups"
           onAction={() => router.push('/groups')}
@@ -299,57 +284,49 @@ export default function TodayScreen() {
         [...byGroup.entries()].map(([groupId, list]) => {
           const group = groupsQuery.data?.find((g) => g.id === groupId);
           return (
-            <Plate
+            <Section
               key={groupId}
               label={group?.name ?? 'Group'}
-              action="Open board"
+              action="Board"
+              actionLabel={`Open the board for ${group?.name ?? 'the group'}`}
               onAction={() => router.push(`/group/${groupId}`)}
-              flush
+              list
             >
               {list.map((h, i) => row(h, i === list.length - 1))}
-            </Plate>
+            </Section>
           );
         })
       )}
 
       {latest ? (
-        <Plate
-          label="Activity"
-          action="See all"
-          onAction={() => router.push('/activity')}
-        >
-          <Pressable
+        <Section label="Activity" action="See all" onAction={() => router.push('/activity')} list>
+          <Row
+            last
             onPress={() => router.push('/activity')}
-            accessibilityRole="button"
-            accessibilityLabel="Open activity"
-            style={({ pressed }) => pressed && styles.pressed}
+            accessibilityLabel={`${latest.who} checked in on ${latest.habit.title}. Open activity`}
           >
-            <View style={styles.feedRow}>
-              <Avatar name={latest.who} size={32} />
-              <Text numberOfLines={2} style={[typography.body, styles.grow, { color: colors.text }]}>
-                <Text style={typography.bodyStrong}>{latest.who}</Text>
+            <Avatar name={latest.who} size={32} />
+            <View style={styles.grow}>
+              <Text numberOfLines={2} style={styles.feed}>
+                <Text style={styles.strong}>{latest.who}</Text>
                 {' checked in on '}
-                <Text style={typography.bodyStrong}>{latest.habit.title}</Text>
+                <Text style={styles.strong}>{latest.habit.title}</Text>
               </Text>
+              {latest.more > 0 ? (
+                <Text style={styles.more}>
+                  and {latest.more} more {latest.more === 1 ? 'check-in' : 'check-ins'} from your groups
+                </Text>
+              ) : null}
             </View>
-            {latest.more > 0 ? (
-              <Text style={[typography.caption, styles.more, { color: ink(colors, 70) }]}>
-                and {latest.more} more {latest.more === 1 ? 'check-in' : 'check-ins'} from the group
-              </Text>
-            ) : null}
-          </Pressable>
-        </Plate>
+          </Row>
+        </Section>
       ) : null}
 
       <View style={styles.links}>
-        <Button
-          label="Add habit"
-          variant="primary"
-          onPress={() => router.push('/habit/new')}
-          style={styles.grow}
-        />
-        <Button label="Manage" onPress={() => router.push('/manage')} />
+        <Button title="Add habit" onPress={() => router.push('/habit/new')} style={styles.grow} />
+        <Button title="Manage" variant="outline" onPress={() => router.push('/manage')} />
       </View>
+
       {/* Contextual actions. Nothing here is exclusive to the gesture:
           Open is the row's own tap, Edit is a link on the detail screen, and
           Archive is a button on the edit screen. Delete is deliberately absent
@@ -369,7 +346,7 @@ export default function TodayScreen() {
                 },
                 {
                   label: 'Edit',
-                  hint: 'Name, cadence and sharing',
+                  hint: 'Name, schedule and sharing',
                   onPress: () =>
                     router.push({ pathname: '/habit/edit', params: { id: menuFor.id } }),
                 },
@@ -392,18 +369,11 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  links: { flexDirection: 'row', gap: space.lg },
-  pressed: { opacity: 0.6 },
-  avatar: {
-    width: hit,
-    height: hit,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  feedRow: { flexDirection: 'row', alignItems: 'center', gap: space.lg },
-  grow: { flex: 1, minWidth: 0 },
-  more: { marginTop: space.md },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    links: { flexDirection: 'row', gap: space.md },
+    grow: { flex: 1, minWidth: 0 },
+    feed: { ...t.type.body, color: t.colors.ink },
+    strong: { fontFamily: t.fonts.uiMedium },
+    more: { ...t.type.italic, color: t.colors.inkMuted, marginTop: 2 },
+  });

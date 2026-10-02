@@ -1,61 +1,57 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, spacing, typography, type Palette } from '@/theme/tokens';
+import { StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { NUMERAL_MAX_SCALE, space, type Theme } from '@/theme';
 
 export type Stat = {
   value: string;
+  /** The one short italic line beneath: "days in a row". */
   label: string;
-  /** Violet, for the app's own emphasis. */
+  /**
+   * The accent, for the one figure that is the point of the screen — a
+   * current streak. At most one per trio.
+   */
   accent?: boolean;
-  /** An explicit colour, which wins over `accent` — normally a streak colour. */
-  tone?: string;
 };
 
 /**
- * Three figures in one card, divided by hairlines — not three separate cards.
- * Related numbers are framed once.
+ * Three figures side by side, NavySum style: big light numerals in lining
+ * figures, each with one short italic line beneath, and no box around them.
+ * Each reads as a single sentence to a screen reader: "41, best run".
  */
-export function StatTrio({ stats, labelFirst }: { stats: Stat[]; labelFirst?: boolean }) {
-  const { colors } = useTheme();
+export function StatTrio({ stats }: { stats: Stat[] }) {
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View
-      style={[styles.row, { backgroundColor: colors.surface, borderColor: colors.divider }]}
-    >
-      {stats.map((stat, i) => (
+    <View style={styles.row}>
+      {stats.map((stat) => (
         <View
           key={stat.label}
-          style={[
-            styles.cell,
-            i > 0 && { borderLeftWidth: 1, borderLeftColor: colors.divider },
-          ]}
+          style={styles.cell}
+          accessible
+          accessibilityLabel={`${stat.value}, ${stat.label}`}
         >
-          {labelFirst ? (
-            <>
-              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 62) }]}>
-                {stat.label}
-              </Text>
-              <Text style={[typography.stat, { color: toneOf(stat, colors) }]}>{stat.value}</Text>
-            </>
-          ) : (
-            <>
-              <Text style={[typography.stat, { color: toneOf(stat, colors) }]}>{stat.value}</Text>
-              <Text numberOfLines={2} style={[typography.labelSmall, { color: ink(colors, 62) }]}>
-                {stat.label}
-              </Text>
-            </>
-          )}
+          <Text
+            style={[styles.figure, stat.accent && styles.accent]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            maxFontSizeMultiplier={NUMERAL_MAX_SCALE}
+          >
+            {stat.value}
+          </Text>
+          <Text style={styles.label} numberOfLines={2}>
+            {stat.label}
+          </Text>
         </View>
       ))}
     </View>
   );
 }
 
-function toneOf(stat: Stat, colors: Palette): string {
-  return stat.tone ?? (stat.accent ? colors.accent : colors.text);
-}
-
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', borderWidth: 1, borderRadius: radius.lg, overflow: 'hidden' },
-  cell: { flex: 1, minWidth: 0, padding: spacing.card, gap: space.sm },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', gap: space.md },
+    cell: { flex: 1, minWidth: 0, gap: space.xs },
+    figure: { ...t.type.figure, color: t.colors.ink },
+    accent: { color: t.colors.seal },
+    label: { ...t.type.italic, color: t.colors.inkMuted },
+  });

@@ -1,81 +1,96 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildTypography } from '../type-scale.ts';
+import { PALETTES } from '../palette.ts';
+import { buildType } from '../type-scale.ts';
 
 /**
- * Text scaling, tested at sizes this machine cannot be set to.
+ * The type scale, in all six themes.
  *
- * React Native scales `fontSize` when someone turns text size up in their
- * phone's settings and does not touch `lineHeight`. Every size in the token
- * set carries a fixed line height, so at 200% text the glyphs grew and the
- * line box did not: descenders clipped, then rows overlapped.
- *
- * `buildTypography` exists to be callable at an arbitrary scale, which is the
- * only way to check this without a device.
+ * A line box shorter than its face clips the tops and tails of letters on
+ * Android, so every text style is checked against the height its face
+ * actually needs — measured from each font's hhea table, as
+ * (ascender − descender) / unitsPerEm, rather than assumed.
  */
+const FACE_HEIGHT: [RegExp, number][] = [
+  [/^CormorantGaramond/, 1.211],
+  [/^Inter/, 1.21],
+  [/^DMSans/, 1.302],
+  [/^ShipporiMincho/, 1.448],
+];
 
-const SCALES = [0.85, 1, 1.15, 1.3, 1.5, 2, 3.1];
-
-/** Every style in the set that carries both a size and a line height. */
-function sized(scale: number) {
-  return Object.entries(buildTypography(scale)).filter(
-    ([, v]) => typeof v === 'object' && 'fontSize' in v && 'lineHeight' in v,
-  ) as [string, { fontSize: number; lineHeight: number }][];
+function faceHeight(fontFamily: string): number {
+  const found = FACE_HEIGHT.find(([pattern]) => pattern.test(fontFamily));
+  assert.ok(found, `no measured height for ${fontFamily}`);
+  return found[1];
 }
 
-test('typescale: a line box is never shorter than its own glyphs', () => {
-  for (const scale of SCALES) {
-    for (const [name, style] of sized(scale)) {
-      // fontSize is scaled by the platform at render, so compare like with
-      // like: the rendered glyph height is fontSize * scale.
-      const rendered = style.fontSize * Math.max(1, scale);
+type Style = { fontFamily: string; fontSize: number; lineHeight: number; fontVariant?: readonly string[] };
+
+function styles(id: keyof typeof PALETTES): [string, Style][] {
+  return Object.entries(buildType(PALETTES[id])) as [string, Style][];
+}
+
+const ids = Object.keys(PALETTES) as (keyof typeof PALETTES)[];
+
+test('typescale: every line box clears the height of its face', () => {
+  for (const id of ids) {
+    for (const [name, s] of styles(id)) {
+      // A style that only ever holds lining figures never reaches the
+      // ascender or descender, so it may sit tighter — but never under its
+      // own size. Named, because every display style has lining figures.
+      const figure = ['numeral', 'clock', 'figure', 'figureSmall', 'code'].includes(name);
+      const need = figure ? s.fontSize : s.fontSize * faceHeight(s.fontFamily);
       assert.ok(
-        style.lineHeight >= rendered - 1,
-        `${name} at ${scale}x: line box ${style.lineHeight} under glyphs ${rendered.toFixed(1)}`,
+        s.lineHeight >= need - 0.5,
+        `${id} ${name}: line box ${s.lineHeight} under ${need.toFixed(1)}`,
       );
     }
   }
 });
 
-test('typescale: the proportions the design was drawn at are preserved', () => {
-  const base = new Map(sized(1).map(([n, s]) => [n, s.lineHeight / s.fontSize]));
-  for (const scale of [1.3, 2, 3.1]) {
-    for (const [name, style] of sized(scale)) {
-      const ratio = style.lineHeight / (style.fontSize * scale);
-      // Rounding to whole points moves the ratio a little; a tenth is slack
-      // enough for that and tight enough to catch a lost multiplication.
-      assert.ok(
-        Math.abs(ratio - base.get(name)!) < 0.1,
-        `${name} at ${scale}x: ratio ${ratio.toFixed(2)} vs ${base.get(name)!.toFixed(2)}`,
-      );
+test('typescale: every display style is set in lining figures', () => {
+  // Cormorant's default figures are old-style, where "11" reads as "II" — a
+  // habit called "No phone after 10" came out as "after IO".
+  for (const id of ids) {
+    for (const [name, s] of styles(id)) {
+      if (!/^(CormorantGaramond|DMSans_500|DMSans_300|DMSans_400Regular_Italic)/.test(s.fontFamily)) continue;
+      assert.ok(s.fontVariant?.includes('lining-nums'), `${id} ${name} has old-style figures`);
     }
   }
 });
 
-test('typescale: smaller text still gets a full-height line box', () => {
-  // Someone choosing *smaller* text does not need the lines squeezed further;
-  // the floor of 1 is what stops a sub-1 scale clipping.
-  for (const [name, style] of sized(0.85)) {
-    const [, atOne] = sized(1).find(([n]) => n === name)!;
-    assert.equal(style.lineHeight, atOne.lineHeight, `${name} shrank below its drawn size`);
+test('typescale: LifeOS is the same scale, with display sizes at 0.84', () => {
+  const washi = buildType(PALETTES['washi-light']);
+  const lifeos = buildType(PALETTES['lifeos-light']);
+  assert.equal(lifeos.title.fontSize, Math.round(washi.title.fontSize * 0.84));
+  assert.equal(lifeos.numeral.fontSize, Math.round(washi.numeral.fontSize * 0.84));
+  // Interface sizes are shared: a label is a label in every app.
+  assert.equal(lifeos.body.fontSize, washi.body.fontSize);
+  assert.equal(lifeos.label.fontSize, 11);
+  assert.equal(washi.label.fontSize, 11);
+});
+
+test('typescale: labels are uppercase with their family’s tracking', () => {
+  for (const id of ids) {
+    const p = PALETTES[id];
+    const { label } = buildType(p);
+    assert.equal(label.textTransform, 'uppercase');
+    assert.equal(label.letterSpacing, p.labelTracking);
+    assert.equal(label.color, p.colors.inkMuted);
   }
 });
 
-test('typescale: the tab label is what the bar is sized from', () => {
-  // app/(tabs)/_layout.tsx computes the bar height from this exact value at a
-  // capped scale, so it has to keep growing with the scale it is given.
-  const at1 = buildTypography(1).tabLabel.lineHeight;
-  const at13 = buildTypography(1.3).tabLabel.lineHeight;
-  assert.ok(at13 > at1, 'the tab label line height stopped tracking its scale');
+test('typescale: buttons are tracked capitals on paper and sentence case on LifeOS', () => {
+  assert.equal(buildType(PALETTES['washi-light']).button.textTransform, 'uppercase');
+  assert.equal(buildType(PALETTES['aizome-dark']).button.textTransform, 'uppercase');
+  assert.equal('textTransform' in buildType(PALETTES['lifeos-light']).button, false);
 });
 
-test('typescale: nothing returns a fractional or NaN line height', () => {
-  for (const scale of [...SCALES, 0, -1, NaN]) {
-    for (const [name, style] of sized(Number.isFinite(scale) ? scale : 1)) {
-      assert.ok(
-        Number.isInteger(style.lineHeight) && style.lineHeight > 0,
-        `${name} at ${scale}x: ${style.lineHeight}`,
-      );
+test('typescale: nothing is fractional', () => {
+  for (const id of ids) {
+    for (const [name, s] of styles(id)) {
+      assert.ok(Number.isInteger(s.fontSize) && s.fontSize > 0, `${id} ${name} size ${s.fontSize}`);
+      assert.ok(Number.isInteger(s.lineHeight) && s.lineHeight > 0, `${id} ${name} line ${s.lineHeight}`);
     }
   }
 });

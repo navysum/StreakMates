@@ -1,12 +1,15 @@
 import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { Button } from '@/components/Button';
-import { Plate } from '@/components/Plate';
-import { StatTrio } from '@/components/StatTrio';
-import { WeekStrip } from '@/components/WeekStrip';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Button, Label } from '@/components/ui';
+import { FieldRow, FieldValue } from '@/components/Field';
 import { Notice } from '@/components/Notice';
+import { Row } from '@/components/Row';
 import { Screen } from '@/components/Screen';
+import { Section } from '@/components/Section';
+import { StatTrio } from '@/components/StatTrio';
+import { TextAction } from '@/components/TextAction';
+import { WeekStrip } from '@/components/WeekStrip';
 import { useAuth } from '@/auth/AuthProvider';
 import {
   byHabit,
@@ -18,7 +21,8 @@ import {
   useHabit,
   useToggleCheckIn,
 } from '@/lib/queries';
-import { addDays, toLocalDate, WEEKDAY_LABELS } from '@/lib/date';
+import { addDays, formatShortDate, toLocalDate, WEEKDAY_LABELS } from '@/lib/date';
+import { feel } from '@/lib/feel';
 import { gridCells } from '@/lib/week';
 import {
   bestStreak,
@@ -27,13 +31,15 @@ import {
   isScheduled,
   weeklyProgress,
 } from '@/lib/streak';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, radius, space, streakColor, tapPadding, typography } from '@/theme/tokens';
+import { useTheme, useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 const HISTORY = 40;
+const DAY_NAMES = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function HabitDetailScreen() {
-  const { colors } = useTheme();
+  const t = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuth();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -46,12 +52,7 @@ export default function HabitDetailScreen() {
   // together — refreshing one and leaving the rest is how a screen ends up
   // showing two different moments at once.
   const onRefresh = useCallback(
-    () =>
-      Promise.all([
-        habitQuery.refetch(),
-        checkIns.refetch(),
-        groups.refetch(),
-      ]),
+    () => Promise.all([habitQuery.refetch(), checkIns.refetch(), groups.refetch()]),
     [habitQuery, checkIns, groups],
   );
   const toggle = useToggleCheckIn(userId);
@@ -77,29 +78,25 @@ export default function HabitDetailScreen() {
     [checkIns.data, id, userId],
   );
 
-  const back = { label: 'Back', onPress: () => router.back() };
-
   if (habitQuery.isLoading) {
     return (
-      <Screen title="Habit" back={back}>
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+      <Screen title="Habit" back={{}}>
+        <ActivityIndicator style={styles.loader} color={t.colors.inkMuted} />
       </Screen>
     );
   }
 
   // Loading and gone are different answers, and running them together as
   // `isLoading || !habit` meant a deleted habit span its loader forever with
-  // no way out. The query settles, `data` is null, `isLoading` is false — and
-  // the screen sat on a spinner that would never resolve because there was
-  // nothing left to load. Deleting a habit lands here every time; so does
-  // opening one on a second device after deleting it on the first.
+  // no way out. Deleting a habit lands here every time; so does opening one on
+  // a second device after deleting it on the first.
   if (!habit) {
     return (
-      <Screen title="Habit" label="Not found" back={back}>
+      <Screen title="Habit" label="Not found" back={{}}>
         <Notice label="Gone">
           {'This habit no longer exists. It may have been deleted here or on another device.'}
         </Notice>
-        <Button label="Back to today" onPress={() => router.replace('/')} />
+        <Button title="Back to Today" variant="outline" onPress={() => router.replace('/')} />
       </Screen>
     );
   }
@@ -115,9 +112,6 @@ export default function HabitDetailScreen() {
   const owed = days.filter((d) => isScheduled(schedule, d) && d >= habit.created_at.slice(0, 10));
   const hit = owed.filter((d) => dates.has(d)).length;
   const streak = computeStreak(schedule, dates, today);
-  // The heatmap is coloured by the run it belongs to, so twelve weeks of a
-  // long streak read pink and a fresh one reads blue.
-  const kept = streakColor(colors, streak) ?? undefined;
   const best = bestStreak(schedule, dates, today);
   const grid = gridCells(12, dates, schedule, today);
   const week = weeklyProgress(schedule, dates, today);
@@ -129,141 +123,125 @@ export default function HabitDetailScreen() {
   const roster = members.data ?? [];
   const inToday = roster.filter((m) => everyone.has(doneKey(habit.id, m.user_id, today))).length;
   const third = group
-    ? { value: `${inToday}/${roster.length}`, label: 'In today' }
+    ? { value: `${inToday}/${roster.length}`, label: 'in today' }
     : {
         value: owed.length === 0 ? '—' : `${Math.round((hit / owed.length) * 100)}%`,
-        label: `${HISTORY}-day rate`,
+        label: `kept, last ${HISTORY} days`,
       };
+
+  function checkIn() {
+    feel(completeToday ? 'select' : 'success');
+    toggle.mutate({ habitId: habit!.id, date: today, complete: !completeToday });
+  }
+
+  // "Any three days a week" has no fixed days, so none is marked; every day
+  // and chosen days are marked where they fall.
+  const flexible = habit.cadence === 'weekly';
+  const owedOn = (day: number) =>
+    habit.cadence === 'daily' || (habit.cadence === 'days' && habit.target_days.includes(day));
 
   return (
     <Screen
       onRefresh={onRefresh}
       title={habit.title}
       label={`${group ? group.name : 'Private'} · ${cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}`}
-      back={back}
+      back={{}}
       footer={
-        <Button
-          label={completeToday ? 'Checked in today' : 'Check in for today'}
-          variant={completeToday ? 'secondary' : 'primary'}
-          onPress={() =>
-            toggle.mutate({ habitId: habit.id, date: today, complete: !completeToday })
-          }
-        />
+        completeToday ? (
+          <Button title="Undo today’s check-in" variant="outline" onPress={checkIn} />
+        ) : (
+          <Button title="Check in for today" onPress={checkIn} />
+        )
       }
     >
       <StatTrio
         stats={[
-          { value: String(streak), label: 'Streak', tone: streakColor(colors, streak) ?? undefined },
-          { value: String(best), label: 'Best' },
+          { value: String(streak), label: streak === 1 ? 'day in a row' : 'days in a row', accent: streak > 0 },
+          { value: String(best), label: 'longest run' },
           third,
         ]}
       />
 
       {habit.cadence === 'weekly' ? (
-        <View style={[styles.weekRow, { borderColor: colors.divider }]}>
-          <Text style={[typography.label, { color: ink(colors, 62) }]}>This week</Text>
-          <Text style={[typography.cardTitle, { color: colors.text }]}>
-            {week.done} of {week.target}
-          </Text>
-        </View>
+        <Section label="This week" list>
+          <Row last accessibilityLabel={`${week.done} of ${week.target} this week`}>
+            <Text style={styles.week}>
+              {week.done} of {week.target}
+            </Text>
+          </Row>
+        </Section>
       ) : null}
 
-      <Plate feature>
-        <Text style={[typography.label, { color: ink(colors, 65) }]}>Last 12 weeks</Text>
-        <View style={styles.grid}>
+      <Section label="Last 12 weeks">
+        {/* Twelve weeks as columns, Monday at the top: the same strip as
+            everywhere else, turned on its side — and stamped in the accent,
+            because this one is a calendar. */}
+        <View style={styles.grid} accessible accessibilityLabel={`Last 12 weeks: kept ${hit} of the ${owed.length} days owed in the last ${HISTORY}`}>
           {grid.map((column, i) => (
-            <WeekStrip key={i} cells={column} size={20} direction="column" tone={kept} />
+            <WeekStrip key={i} cells={column} size={20} direction="column" calendar />
           ))}
         </View>
-      </Plate>
+      </Section>
 
-      <Plate label="Cadence">
-        <View style={styles.chips}>
+      <Section label="Schedule">
+        <View
+          style={styles.days}
+          accessible
+          accessibilityLabel={
+            flexible
+              ? `Any ${habit.target_per_week} days a week. ${describeProgress(schedule, dates, today)}`
+              : habit.cadence === 'daily'
+                ? `Every day. ${describeProgress(schedule, dates, today)}`
+                : `${habit.target_days.map((d) => DAY_NAMES[d - 1]).join(', ')}. ${describeProgress(schedule, dates, today)}`
+          }
+        >
           {WEEKDAY_LABELS.map((letter, i) => {
-            // A flexible cadence has no fixed days, so none of the seven is
-            // marked — an even row of neutrals says "any day" without lying.
-            const flexible = habit.cadence !== 'days';
-            const on = !flexible && habit.target_days.includes(i + 1);
+            // A weekly target has no fixed days, so none of the seven is
+            // marked — an even row says "any day" without lying.
+            const on = owedOn(i + 1);
             return (
-              <View
-                key={i}
-                style={[
-                  styles.chip,
-                  flexible
-                    ? { backgroundColor: colors.neutral[100], borderColor: colors.divider }
-                    : on
-                      ? { backgroundColor: colors.accents[100], borderColor: colors.accent }
-                      : { backgroundColor: 'transparent', borderColor: colors.divider },
-                ]}
-              >
-                <Text
-                  style={[typography.labelSmall, { color: on ? colors.accents[700] : ink(colors, 62) }]}
-                >
-                  {letter}
-                </Text>
+              <View key={i} style={styles.day}>
+                <Label style={[styles.letter, on && styles.letterOn]}>{letter}</Label>
+                <View style={[styles.mark, on && styles.markOn]} />
               </View>
             );
           })}
         </View>
-        <Text style={[typography.caption, styles.cadenceNote, { color: ink(colors, 70) }]}>
-          {describeProgress(schedule, dates, today)}
-        </Text>
-      </Plate>
+        <Text style={styles.note}>{describeProgress(schedule, dates, today)}</Text>
+      </Section>
 
-      <Plate label="Details">
-        <Row
-          label="Cadence"
-          value={cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}
-        />
-        <Row label="Visibility" value={group ? `Shared · ${group.name}` : 'Private'} />
-        <Row
-          label="Reminder"
-          value={habit.reminder_at ? habit.reminder_at.slice(0, 5) : 'Off'}
-          last
-        />
-      </Plate>
+      <Section label="Details" list>
+        <FieldRow label="Schedule">
+          <FieldValue>{cadenceLabel(habit.cadence, habit.target_days, habit.target_per_week)}</FieldValue>
+        </FieldRow>
+        <FieldRow label="Who sees it">
+          <FieldValue>{group ? `Everyone in ${group.name}` : 'Only you'}</FieldValue>
+        </FieldRow>
+        <FieldRow label="Reminder" last>
+          <FieldValue>{habit.reminder_at ? habit.reminder_at.slice(0, 5) : 'Off'}</FieldValue>
+        </FieldRow>
+      </Section>
 
       {notes.length > 0 ? (
-        <Plate label="Notes">
+        <Section label="Notes" list>
           {notes.map((note, i) => (
-            <View
-              key={note.id}
-              style={[
-                styles.note,
-                {
-                  borderBottomColor: colors.divider,
-                  borderBottomWidth: i === notes.length - 1 ? 0 : 1,
-                },
-              ]}
-            >
-              <Text style={[typography.body, styles.noteText, { color: colors.text }]}>
-                “{note.note}”
-              </Text>
-              <Text style={[typography.labelSmall, { color: ink(colors, 62) }]}>
-                {note.local_date === today ? 'Today' : note.local_date}
-              </Text>
-            </View>
+            <Row key={note.id} last={i === notes.length - 1} style={styles.noteRow}>
+              <Text style={styles.noteText}>“{note.note}”</Text>
+              <Label>{note.local_date === today ? 'Today' : formatShortDate(note.local_date)}</Label>
+            </Row>
           ))}
-        </Plate>
+        </Section>
       ) : null}
 
-      {/* A Link renders as one line of text, which measured 14px tall. The
-          padding gives it a real 44pt target on every platform. */}
-      <Link
-        href={{ pathname: '/habit/edit', params: { id: habit.id } }}
-        style={[
-          typography.label,
-          styles.edit,
-          tapPadding(typography.label.lineHeight),
-          { color: colors.meaning.action },
-        ]}
-      >
-        Edit habit
-      </Link>
+      <TextAction
+        title="Edit habit"
+        onPress={() => router.push({ pathname: '/habit/edit', params: { id: habit.id } })}
+        style={styles.start}
+      />
 
       {habit.archived_at ? (
         <Notice label="Archived">
-          {'This habit is archived, so it no longer appears on Today. Its history is kept and you can restore it from the edit screen.'}
+          {'This habit is archived, so it no longer appears on Today. Its history is kept, and you can restore it from the edit screen.'}
         </Notice>
       ) : null}
     </Screen>
@@ -276,52 +254,20 @@ function cadenceLabel(cadence: string, days: number[], perWeek: number): string 
   return days.map((d) => WEEKDAY_LABELS[d - 1]).join(' ') || 'No days picked';
 }
 
-function Row({ label, value, last }: { label: string; value: string; last?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      style={[styles.row, { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 }]}
-    >
-      <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
-      <Text style={[typography.body, styles.value, { color: colors.text }]}>{value}</Text>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  loader: { marginTop: 32 },
-  weekRow: {
-    minHeight: 56,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: space.xl,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.md,
-  },
-  // Twelve weeks as columns, Monday at the top: the same strip as everywhere
-  // else, turned on its side.
-  grid: { flexDirection: 'row', gap: 4, justifyContent: 'space-between', marginTop: space.lg },
-  chips: { flexDirection: 'row', gap: space.sm },
-  chip: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cadenceNote: { marginTop: space.lg },
-  row: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.xl,
-  },
-  value: { flexShrink: 1, textAlign: 'right' },
-  note: { paddingVertical: space.md, gap: space.xs },
-  noteText: { fontStyle: 'italic' },
-  edit: { paddingHorizontal: 2 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    loader: { marginTop: space.xl },
+    week: { ...t.type.figureSmall, color: t.colors.ink },
+    grid: { flexDirection: 'row', gap: 4, justifyContent: 'space-between' },
+    days: { flexDirection: 'row' },
+    day: { flex: 1, alignItems: 'center', gap: 6 },
+    letter: { letterSpacing: 0 },
+    letterOn: { color: t.colors.ink },
+    // The tab bar's own mark, under each day the habit is owed.
+    mark: { width: 4, height: 4 },
+    markOn: { backgroundColor: t.colors.seal },
+    note: { ...t.type.italic, color: t.colors.inkMuted, marginTop: space.md },
+    noteRow: { flexDirection: 'column', alignItems: 'flex-start', gap: space.xs },
+    noteText: { ...t.type.italicTitle, color: t.colors.inkSoft },
+    start: { alignSelf: 'flex-start' },
+  });

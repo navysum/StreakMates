@@ -45,19 +45,19 @@ const habits = [
     created_at: iso(20), archived_at: null },
 ];
 
-// h1 is a long streak (pink), h2 mid (violet), h3 short (blue) — so the
-// spectrum is visible on one screen rather than having to be imagined.
+// h1 is a long run, h2 a middling one and h3 a short one, so one screen shows
+// the range of what a row's week and its italic line can say.
 const checkIns = [];
 let n = 0;
 const add = (habit, user, back, note = null) =>
   checkIns.push({ id: `c${n++}`, habit_id: habit, user_id: user, local_date: d(back),
                   note, created_at: iso(back) });
 
-for (let i = 0; i < 41; i++) add('h1', ME, i);          // 41-day streak → pink
-for (let i = 0; i < 9; i++) add('h2', ME, i);           // 9 days       → violet
-for (let i = 0; i < 2; i++) add('h3', ME, i * 2);       // 2 days       → blue
+for (let i = 0; i < 41; i++) add('h1', ME, i);          // 41 days in a row
+for (let i = 0; i < 9; i++) add('h2', ME, i);           // 9 days in a row
+for (let i = 0; i < 2; i++) add('h3', ME, i * 2);       // two of its days
 // Exactly six days, ending yesterday. Checking in today makes it a week —
-// the transition the milestone banner exists for.
+// the transition the milestone line exists for.
 for (let i = 1; i <= 6; i++) add('h6', ME, i);
 // Two days, ending yesterday. Checking in today makes three — an ordinary
 // day, which must stay quiet.

@@ -1,13 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { AvatarRow } from '@/components/Avatar';
 import { Bar } from '@/components/Bar';
-import { Button } from '@/components/Button';
+import { Button } from '@/components/ui';
 import { EmptyState } from '@/components/EmptyState';
 import { Notice } from '@/components/Notice';
-import { Plate } from '@/components/Plate';
+import { Row } from '@/components/Row';
 import { Screen } from '@/components/Screen';
+import { Section } from '@/components/Section';
+import { RowsSkeleton } from '@/components/Skeleton';
+import { YouCorner } from '@/components/YouCorner';
 import {
   checkInIndex,
   doneKey,
@@ -19,11 +22,11 @@ import {
 } from '@/lib/queries';
 import { formatWeekOf, toLocalDate } from '@/lib/date';
 import { aggregateCells } from '@/lib/week';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, space, tnum, typography } from '@/theme/tokens';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 export default function GroupsScreen() {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const router = useRouter();
 
   const groups = useGroups();
@@ -35,13 +38,8 @@ export default function GroupsScreen() {
   // together — refreshing one and leaving the rest is how a screen ends up
   // showing two different moments at once.
   const onRefresh = useCallback(
-    () =>
-      Promise.all([
-        groups.refetch(),
-        habits.refetch(),
-        checkIns.refetch(),
-      ]),
-    [groups, habits, checkIns],
+    () => Promise.all([groups.refetch(), members.refetch(), habits.refetch(), checkIns.refetch()]),
+    [groups, members, habits, checkIns],
   );
 
   const today = toLocalDate();
@@ -50,12 +48,10 @@ export default function GroupsScreen() {
   /**
    * How much of this week each group has actually kept.
    *
-   * This is deliberately the same walk the board itself draws — one row per
-   * member, a day counting only when everything owed that day was kept — so
-   * the ratio on this card and the ratio at the top of the board are the same
-   * number arrived at the same way. Multiplying members by habits by days
-   * instead, as this used to, answers a different question and disagreed with
-   * the board by a wide margin on any group with more than one habit.
+   * Deliberately the same walk the board itself draws — one row per member, a
+   * day counting only when everything owed that day was kept — so the ratio
+   * here and the ratio at the top of the board are the same number arrived at
+   * the same way.
    */
   const stats = useMemo(() => {
     const done = checkInIndex(checkIns.data);
@@ -96,91 +92,83 @@ export default function GroupsScreen() {
   const list = groups.data ?? [];
 
   return (
-    <Screen
-      onRefresh={onRefresh} title="Groups" label={formatWeekOf(today)}>
+    <Screen onRefresh={onRefresh} title="Groups" label={formatWeekOf(today)} trailing={<YouCorner />}>
       {groups.error ? (
-        <Notice label="Could not load">
-          {groups.error instanceof Error ? groups.error.message : 'Something went wrong.'}
+        <Notice label="Could not load" action={{ title: 'Try again', onPress: () => void onRefresh() }}>
+          {'Your groups did not load. Check your connection, then try again.'}
         </Notice>
       ) : null}
 
       {groups.isLoading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+        <RowsSkeleton rows={2} />
       ) : list.length === 0 ? (
         <EmptyState
           title="No groups yet"
-          body="Create one and share its six-character code, or enter a friend’s code to join theirs."
-          actionLabel="Create a group"
+          body="Start one and share its six-character code, or enter a friend’s code to join theirs."
+          actionLabel="Start a group"
           onAction={() => router.push('/group/new')}
         />
       ) : (
-        list.map((group) => {
-          const people = byGroup.get(group.id) ?? [];
-          const stat = stats.get(group.id) ?? { habits: 0, done: 0, owed: 0 };
-          return (
-            <Pressable
-              key={group.id}
-              onPress={() => router.push(`/group/${group.id}`)}
-              accessibilityRole="button"
-              accessibilityLabel={`Open ${group.name}`}
-              style={({ pressed }) => pressed && styles.pressed}
-            >
-              <Plate>
-                <View style={styles.top}>
-                  <Text
-                    numberOfLines={1}
-                    style={[typography.cardTitle, styles.grow, { color: colors.text }]}
-                  >
-                    {group.name}
-                  </Text>
-                  <Text style={[typography.label, { color: colors.meaning.action }]}>Open</Text>
-                </View>
-
-                <Text style={[typography.caption, styles.meta, { color: ink(colors, 70) }]}>
-                  {people.length} {people.length === 1 ? 'member' : 'members'} · {stat.habits} shared{' '}
-                  {stat.habits === 1 ? 'habit' : 'habits'}
+        <Section label="Your groups" list>
+          {list.map((group, i) => {
+            const people = byGroup.get(group.id) ?? [];
+            const stat = stats.get(group.id) ?? { habits: 0, done: 0, owed: 0 };
+            const members = `${people.length} ${people.length === 1 ? 'member' : 'members'}`;
+            const shared = `${stat.habits} shared ${stat.habits === 1 ? 'habit' : 'habits'}`;
+            return (
+              <Row
+                key={group.id}
+                last={i === list.length - 1}
+                onPress={() => router.push(`/group/${group.id}`)}
+                accessibilityLabel={`${group.name}, ${members}, ${shared}${
+                  stat.owed > 0 ? `, ${stat.done} of ${stat.owed} days kept this week` : ''
+                }. Open`}
+                style={styles.group}
+              >
+                <Text numberOfLines={1} style={styles.name}>
+                  {group.name}
+                </Text>
+                <Text style={styles.meta}>
+                  {members} · {shared}
                 </Text>
 
                 {people.length ? (
-                  <View style={styles.faces}>
-                    <AvatarRow
-                      people={people.map((m) => ({
-                        id: m.user_id,
-                        name: m.profile?.display_name ?? '?',
-                      }))}
-                    />
+                  <AvatarRow
+                    people={people.map((m) => ({
+                      id: m.user_id,
+                      name: m.profile?.display_name ?? '?',
+                    }))}
+                  />
+                ) : null}
+
+                {stat.owed > 0 ? (
+                  <View style={styles.ratio}>
+                    <View style={styles.grow}>
+                      <Bar value={stat.done} max={stat.owed} />
+                    </View>
+                    <Text style={styles.figure}>
+                      {stat.done} of {stat.owed}
+                    </Text>
                   </View>
                 ) : null}
 
-                <View style={styles.ratio}>
-                  <View style={styles.grow}>
-                    <Bar value={stat.done} max={stat.owed} />
-                  </View>
-                  <Text style={[typography.figureSmall, tnum, { color: colors.text }]}>
-                    {stat.done} / {stat.owed}
-                  </Text>
-                </View>
-
-                <Text style={[typography.caption, styles.caption, { color: ink(colors, 70) }]}>
+                <Text style={styles.meta}>
                   {stat.owed > 0
-                    ? 'Days kept this week, of what the group owed'
-                    : 'No shared habits yet'}
+                    ? 'Days kept this week, of what the group owed.'
+                    : 'No shared habits yet.'}
                 </Text>
-              </Plate>
-            </Pressable>
-          );
-        })
+              </Row>
+            );
+          })}
+        </Section>
       )}
 
       <View style={styles.actions}>
+        <Button title="New group" onPress={() => router.push('/group/new')} style={styles.grow} />
         <Button
-          label="New group"
-          variant="primary"
-          onPress={() => router.push('/group/new')}
-          style={styles.grow}
-        />
-        <Button
-          label="Join with code"
+          title="Join"
+          variant="outline"
+          accessibilityLabel="Join a group with a code"
           onPress={() => router.push('/group/join')}
           style={styles.grow}
         />
@@ -189,14 +177,13 @@ export default function GroupsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  loader: { marginTop: space.xxxl },
-  top: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  meta: { marginTop: space.sm },
-  faces: { marginTop: space.lg },
-  ratio: { flexDirection: 'row', alignItems: 'center', gap: space.lg, marginTop: space.lg },
-  caption: { marginTop: space.sm },
-  actions: { flexDirection: 'row', gap: space.md },
-  grow: { flex: 1, minWidth: 0 },
-  pressed: { opacity: 0.7 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    group: { flexDirection: 'column', alignItems: 'stretch', gap: space.sm, paddingVertical: space.lg },
+    name: { ...t.type.heading, color: t.colors.ink },
+    meta: { ...t.type.italic, color: t.colors.inkMuted },
+    ratio: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginTop: space.xs },
+    figure: { ...t.type.figureSmall, color: t.colors.ink },
+    actions: { flexDirection: 'row', gap: space.md },
+    grow: { flex: 1, minWidth: 0 },
+  });

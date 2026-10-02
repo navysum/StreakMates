@@ -66,15 +66,17 @@
         flex: 1;
       }
 
-      /* The page colour, so an overscroll bounce shows the app's own ground
-         rather than a band of white. These two are bg from src/theme/tokens.ts;
-         if the palette changes, they change with it. */
+      /* The page colour before the app has loaded, so the first paint is the
+         app's own ground rather than a flash of white. These are Washi and
+         Sumi's paper from src/theme/palette.ts, the default theme; once the
+         app is running, app/_layout.tsx sets the body to whichever theme the
+         person has chosen. */
       body {
-        background-color: #f8f7fc;
+        background-color: #f3ede2;
       }
       @media (prefers-color-scheme: dark) {
         body {
-          background-color: #050611;
+          background-color: #1c1a17;
         }
       }
 

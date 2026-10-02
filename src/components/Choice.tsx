@@ -1,14 +1,15 @@
-import { Pressable, Text, View, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, space, typography } from '@/theme/tokens';
-import { Tick } from './Tick';
+import { StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { feel } from '@/lib/feel';
+import type { Theme } from '@/theme';
+import { Row } from './Row';
 
 type Option<T> = { value: T; label: string; hint?: string };
 
 /**
- * A vertical list of options, for when the number of them grows — someone can
- * be in any number of groups. The mark is the same square check used
- * everywhere else.
+ * A ruled list of options, for when there are too many for a segmented control
+ * or the options need a line of explanation each — a theme, a group to share
+ * with. Announced as radio options.
  */
 export function Choice<T extends string | null>({
   options,
@@ -19,52 +20,54 @@ export function Choice<T extends string | null>({
   value: T;
   onChange: (v: T) => void;
 }) {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View>
+    <View accessibilityRole="radiogroup">
       {options.map((opt, i) => {
         const on = opt.value === value;
         return (
-          <Pressable
+          <Row
             key={String(opt.value)}
-            onPress={() => onChange(opt.value)}
+            last={i === options.length - 1}
+            onPress={() => {
+              if (on) return;
+              feel('select');
+              onChange(opt.value);
+            }}
             accessibilityRole="radio"
-            accessibilityState={{ selected: on }}
-            style={({ pressed }) => [
-              styles.row,
-              {
-                borderBottomColor: colors.divider,
-                borderBottomWidth: i === options.length - 1 ? 0 : 1,
-              },
-              pressed && styles.pressed,
-            ]}
+            accessibilityState={{ checked: on }}
+            accessibilityLabel={opt.hint ? `${opt.label}, ${opt.hint}` : opt.label}
           >
             <View style={styles.text}>
-              <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+              <Text numberOfLines={1} style={styles.label}>
                 {opt.label}
               </Text>
-              {opt.hint ? (
-                <Text style={[typography.caption, { color: ink(colors, 70) }]}>{opt.hint}</Text>
-              ) : null}
+              {opt.hint ? <Text style={styles.hint}>{opt.hint}</Text> : null}
             </View>
-            <Tick checked={on} size={22} />
-          </Pressable>
+            <View style={styles.mark}>{on ? <View style={styles.dot} /> : null}</View>
+          </Row>
         );
       })}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    minHeight: 52,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.xl,
-    paddingVertical: space.md,
-  },
-  text: { flex: 1, minWidth: 0, gap: 2 },
-  pressed: { opacity: 0.6 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    text: { flex: 1, minWidth: 0, gap: 2 },
+    label: { ...t.type.body, color: t.colors.ink },
+    hint: { ...t.type.italic, color: t.colors.inkMuted },
+    // A square radio, like the seal it echoes: an edge that clears 3:1, and
+    // the accent square inside it when chosen.
+    mark: {
+      width: 20,
+      height: 20,
+      borderWidth: 1.5,
+      borderColor: t.colors.inkMuted,
+      borderRadius: 3,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: { width: 10, height: 10, borderRadius: 1, backgroundColor: t.colors.seal },
+  });

@@ -1,28 +1,41 @@
-import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, space, typography } from '@/theme/tokens';
+import { StyleSheet, Text, View } from 'react-native';
+import { Label } from './ui';
+import { TextAction } from './TextAction';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 /**
- * An aside, on a 2px accent left rule.
+ * An aside: a label, then a few plain sentences in the softer ink.
  *
- * A rule rather than a tinted panel. A filled callout would compete with the
- * card it sits inside, and a colour spent on "notice" is a colour not
- * available to say "you kept a streak". The rule carries the same "read this"
- * weight with none of the fill.
+ * No panel and no coloured rule — the accent is kept for what matters most on
+ * the screen, and an explanation is not that. An error uses the same shape:
+ * plain words for what happened and what to do, and, when there is something
+ * to do, the action to do it.
  */
-export function Notice({ label, children }: { label?: string; children: string }) {
-  const { colors } = useTheme();
+export function Notice({
+  label,
+  children,
+  action,
+}: {
+  label?: string;
+  children: string;
+  /** One way forward, like "Try again". */
+  action?: { title: string; onPress: () => void };
+}) {
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View style={[styles.box, { borderLeftColor: colors.accent }]}>
-      {label ? (
-        <Text style={[typography.label, { color: ink(colors, 62) }]}>{label}</Text>
-      ) : null}
-      <Text style={[typography.prose, { color: ink(colors, 78) }]}>{children}</Text>
+    <View style={styles.box}>
+      {label ? <Label accessibilityRole="header">{label}</Label> : null}
+      <Text style={styles.text}>{children}</Text>
+      {action ? <TextAction title={action.title} onPress={action.onPress} style={styles.action} /> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  box: { borderLeftWidth: 2, paddingLeft: space.xl, gap: space.sm },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    box: { gap: space.sm },
+    text: { ...t.type.body, color: t.colors.inkSoft },
+    action: { alignSelf: 'flex-start' },
+  });

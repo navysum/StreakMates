@@ -1,12 +1,13 @@
-import { Pressable, View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '@/theme/ThemeProvider';
-import { ink, space, typography } from '@/theme/tokens';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 import { WeekStrip } from './WeekStrip';
-import { Tick } from './Tick';
+import { Stamp } from './Stamp';
 import type { Cell } from '@/lib/week';
 
 type Props = {
   name: string;
+  /** One short italic line: "12 days in a row", "3 of 4 in today". */
   meta?: string;
   /** This week, drawn beside the meta line. */
   week?: Cell[];
@@ -23,34 +24,19 @@ type Props = {
 };
 
 /**
- * A habit, with its week beside it and the check divided off into its own
- * column by a hairline. The rule matters: the row body opens the habit and
- * the column only toggles, so the two never fight over a tap.
+ * A habit: its name in the display face, its week and one italic line beneath,
+ * and the stamp at the end of the row.
  *
- * The check is a violet fill, not a violet card — a completed habit marks
- * itself, it does not repaint the row around it.
+ * The row body opens the habit and the stamp only checks in, so the two never
+ * fight over a tap. Completing it stamps the seal down; see Stamp.
  */
-export function HabitRow({
-  name,
-  meta,
-  week,
-  complete,
-  last,
-  onToggle,
-  onPress,
-  onLongPress,
-}: Props) {
-  const { colors } = useTheme();
+export function HabitRow({ name, meta, week, complete, last, onToggle, onPress, onLongPress }: Props) {
+  const styles = useThemedStyles(makeStyles);
 
   return (
-    <View
-      style={[
-        styles.row,
-        { borderBottomColor: colors.divider, borderBottomWidth: last ? 0 : 1 },
-      ]}
-    >
+    <View style={styles.row}>
       <Pressable
-        style={({ pressed }) => [styles.info, pressed && onPress ? styles.pressed : null]}
+        style={({ pressed }) => [styles.body, pressed && (onPress || onLongPress) && styles.pressed]}
         onPress={onPress}
         onLongPress={onLongPress}
         // The default 500ms reads as a lag before anything happens. 350 is
@@ -58,18 +44,18 @@ export function HabitRow({
         delayLongPress={350}
         disabled={!onPress && !onLongPress}
         accessibilityRole={onPress ? 'button' : undefined}
-        accessibilityLabel={onPress ? `Open ${name}` : undefined}
+        accessibilityLabel={onPress ? `Open ${name}${meta ? `, ${meta}` : ''}` : undefined}
         // Announced by a screen reader, so the shortcut is not sighted-only.
         accessibilityHint={onLongPress ? 'Double tap and hold for options' : undefined}
       >
-        <Text numberOfLines={1} style={[typography.body, { color: colors.text }]}>
+        <Text numberOfLines={2} style={styles.name}>
           {name}
         </Text>
         {week || meta ? (
           <View style={styles.under}>
             {week ? <WeekStrip cells={week} /> : null}
             {meta ? (
-              <Text numberOfLines={1} style={[typography.caption, styles.meta, { color: ink(colors, 70) }]}>
+              <Text numberOfLines={1} style={styles.meta}>
                 {meta}
               </Text>
             ) : null}
@@ -81,30 +67,57 @@ export function HabitRow({
         onPress={onToggle}
         disabled={!onToggle}
         accessibilityRole="checkbox"
-        accessibilityState={{ checked: complete }}
-        accessibilityLabel={complete ? `Undo ${name}` : `Check in ${name}`}
-        style={({ pressed }) => [
-          styles.check,
-          { borderLeftColor: colors.divider },
-          pressed && styles.pressed,
-        ]}
+        accessibilityState={{ checked: complete, disabled: !onToggle }}
+        accessibilityLabel={complete ? `${name}, checked in today. Undo` : `Check in ${name}`}
+        style={({ pressed }) => [styles.check, pressed && styles.pressedStamp]}
       >
-        <Tick checked={complete} size={24} />
+        <Stamp checked={complete} />
       </Pressable>
+
+      {last ? null : <View style={styles.rule} />}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  row: { minHeight: 60, flexDirection: 'row', alignItems: 'stretch' },
-  info: { flex: 1, minWidth: 0, gap: space.sm, justifyContent: 'center', paddingVertical: space.lg },
-  under: { flexDirection: 'row', alignItems: 'center', gap: space.md },
-  meta: { flex: 1, minWidth: 0 },
-  check: {
-    width: 56,
-    borderLeftWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.6 },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    // Reaches through the page gutter so a pressed row washes edge to edge,
+    // while the content and the rule stay on the gutter.
+    row: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      minHeight: 72,
+      marginHorizontal: -space.gutter,
+    },
+    body: {
+      flex: 1,
+      minWidth: 0,
+      justifyContent: 'center',
+      gap: space.xs,
+      paddingVertical: space.md,
+      paddingLeft: space.gutter,
+      paddingRight: space.sm,
+    },
+    name: { ...t.type.row, color: t.colors.ink },
+    under: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
+    meta: { ...t.type.italic, color: t.colors.inkMuted, flex: 1, minWidth: 0 },
+    // The stamp's edge lands on the gutter; the target runs out to the screen
+    // edge, where a thumb actually is.
+    check: {
+      width: 72,
+      paddingRight: space.gutter,
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+    pressed: { backgroundColor: t.colors.paperDeep },
+    pressedStamp: { opacity: 0.7 },
+    rule: {
+      position: 'absolute',
+      left: space.gutter,
+      right: space.gutter,
+      bottom: 0,
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: t.colors.inkFaint,
+      opacity: 0.8,
+    },
+  });

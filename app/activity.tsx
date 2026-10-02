@@ -1,12 +1,15 @@
 import { useCallback, useMemo } from 'react';
-import { ActivityIndicator, Pressable, Text, View, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
-import { Plate } from '@/components/Plate';
 import { EmptyState } from '@/components/EmptyState';
+import { Label } from '@/components/ui';
 import { Notice } from '@/components/Notice';
 import { ReactionBar } from '@/components/ReactionBar';
+import { Row } from '@/components/Row';
 import { Screen } from '@/components/Screen';
+import { Section } from '@/components/Section';
+import { RowsSkeleton } from '@/components/Skeleton';
 import { useAuth } from '@/auth/AuthProvider';
 import { handle } from '@/lib/identity';
 import {
@@ -19,14 +22,14 @@ import {
   useReactions,
   useToggleReaction,
 } from '@/lib/queries';
-import { addDays, toLocalDate } from '@/lib/date';
-import { useTheme } from '@/theme/ThemeProvider';
-import { hit, ink, radius, space, typography } from '@/theme/tokens';
+import { addDays, formatShortDate, toLocalDate } from '@/lib/date';
+import { useThemedStyles } from '@/theme/ThemeProvider';
+import { space, type Theme } from '@/theme';
 
 const FEED_DAYS = 14;
 
 export default function ActivityScreen() {
-  const { colors } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { userId } = useAuth();
   const router = useRouter();
 
@@ -40,13 +43,7 @@ export default function ActivityScreen() {
   // together — refreshing one and leaving the rest is how a screen ends up
   // showing two different moments at once.
   const onRefresh = useCallback(
-    () =>
-      Promise.all([
-        habits.refetch(),
-        checkIns.refetch(),
-        groups.refetch(),
-        reactions.refetch(),
-      ]),
+    () => Promise.all([habits.refetch(), checkIns.refetch(), groups.refetch(), reactions.refetch()]),
     [habits, checkIns, groups, reactions],
   );
   const toggle = useToggleReaction(userId);
@@ -71,87 +68,61 @@ export default function ActivityScreen() {
   }, [checkIns.data, habits.data]);
 
   const loading = habits.isLoading || checkIns.isLoading || people.isLoading;
+  const today = toLocalDate();
 
   return (
     <Screen
       onRefresh={onRefresh}
       title="Activity"
-      label={feed.length ? `Last ${FEED_DAYS} days` : 'Nothing yet'}
-      trailing={
-        <Pressable
-          onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          style={({ pressed }) => [
-            styles.close,
-            { borderColor: colors.divider },
-            pressed && styles.pressed,
-          ]}
-        >
-          <Text style={[typography.action, { color: ink(colors, 70) }]}>✕</Text>
-        </Pressable>
-      }
+      label={feed.length ? `The last ${FEED_DAYS} days` : 'Your groups'}
+      back={{}}
     >
       {loading ? (
-        <ActivityIndicator style={styles.loader} color={ink(colors, 62)} />
+        <RowsSkeleton />
       ) : feed.length === 0 ? (
         <EmptyState
           title="Nothing yet"
           body={
             groups.data?.length
               ? 'Check in on a shared habit and it shows up here for the group.'
-              : 'Join or create a group, add a shared habit, and check-ins appear here.'
+              : 'Join or start a group, add a shared habit, and check-ins appear here.'
           }
           actionLabel="Go to groups"
           onAction={() => router.push('/groups')}
         />
       ) : (
-        <Plate label="Recent" flush>
+        <Section label="Recent" list>
           {feed.map(({ checkIn, habit }, i) => {
             const person = names.get(checkIn.user_id);
             const group = groups.data?.find((g) => g.id === habit.group_id);
+            const who = checkIn.user_id === userId ? 'You' : handle(person);
+            const when = checkIn.local_date === today ? 'Today' : formatShortDate(checkIn.local_date);
             return (
-              <View
-                key={checkIn.id}
-                style={[
-                  styles.row,
-                  {
-                    borderBottomColor: colors.divider,
-                    borderBottomWidth: i === feed.length - 1 ? 0 : 1,
-                  },
-                ]}
-              >
+              <Row key={checkIn.id} last={i === feed.length - 1} style={styles.row}>
                 <Avatar name={person?.display_name ?? 'Someone'} size={32} />
-
                 <View style={styles.text}>
-                  <Text style={[typography.body, { color: colors.text }]}>
-                    <Text style={typography.bodyStrong}>
-                      {checkIn.user_id === userId ? 'You' : handle(person)}
-                    </Text>
+                  <Text style={styles.line}>
+                    <Text style={styles.strong}>{who}</Text>
                     {' checked in on '}
-                    <Text style={typography.bodyStrong}>{habit.title}</Text>
+                    <Text style={styles.strong}>{habit.title}</Text>
                   </Text>
 
-                  {checkIn.note ? (
-                    <Text style={[typography.body, styles.note, { color: ink(colors, 70) }]}>
-                      “{checkIn.note}”
-                    </Text>
-                  ) : null}
+                  {checkIn.note ? <Text style={styles.note}>“{checkIn.note}”</Text> : null}
 
-                  <Text style={[typography.caption, { color: ink(colors, 70) }]}>
-                    {checkIn.local_date === toLocalDate() ? 'Today' : checkIn.local_date}
+                  <Label>
+                    {when}
                     {group ? ` · ${group.name}` : ''}
-                  </Text>
+                  </Label>
 
                   <ReactionBar
                     counts={summary.get(checkIn.id)}
                     onToggle={(emoji, on) => toggle.mutate({ checkInId: checkIn.id, emoji, on })}
                   />
                 </View>
-              </View>
+              </Row>
             );
           })}
-        </Plate>
+        </Section>
       )}
 
       <Notice label="Shared only">
@@ -161,18 +132,11 @@ export default function ActivityScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  loader: { marginTop: space.xxxl },
-  close: {
-    width: hit,
-    height: hit,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: { opacity: 0.6 },
-  row: { flexDirection: 'row', gap: space.lg, paddingVertical: space.xl },
-  text: { flex: 1, minWidth: 0, gap: space.xs },
-  note: { fontStyle: 'italic' },
-});
+const makeStyles = (t: Theme) =>
+  StyleSheet.create({
+    row: { alignItems: 'flex-start', paddingVertical: space.lg },
+    text: { flex: 1, minWidth: 0, gap: space.xs },
+    line: { ...t.type.body, color: t.colors.ink },
+    strong: { fontFamily: t.fonts.uiMedium },
+    note: { ...t.type.italicTitle, color: t.colors.inkSoft },
+  });

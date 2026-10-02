@@ -1,9 +1,15 @@
 /**
- * Screenshot every signed-in screen, in both themes, without a Supabase
- * project.
+ * Screenshot every signed-in screen, in all six NavySum themes, without a
+ * Supabase project.
  *
  *   npm run build:web -- --output-dir dist-demo    # with any .env that parses
  *   node scripts/preview/screens.mjs
+ *
+ *   THEMES=washi-light,aizome-dark HEIGHT=2400 node scripts/preview/screens.mjs
+ *
+ * The theme is chosen the way the app stores it — a family and a mode in
+ * localStorage, which is where AsyncStorage lives on the web — so these are
+ * the themes exactly as someone who picked them would see them.
  *
  * Needs Playwright and a Chromium, which are deliberately NOT dependencies of
  * this app — it ships to phones and browsers, not to CI:
@@ -96,16 +102,25 @@ const SHOTS = [
   ['you', '/you'],
   ['focus', '/focus'],
   ['activity', '/activity'],
+  ['new-habit', '/habit/new'],
+  ['manage', '/manage'],
+  ['join', '/group/join'],
 ];
+
+const THEMES = (process.env.THEMES ||
+  'washi-light,washi-dark,lifeos-light,lifeos-dark,aizome-light,aizome-dark').split(',');
 
 const OUT = process.env.OUT || '/tmp/screens';
 fs.mkdirSync(OUT, { recursive: true });
 
 const problems = [];
 
-for (const scheme of ['light', 'dark']) {
+for (const theme of THEMES) {
+  const [family, scheme] = theme.split('-');
   const ctx = await browser.newContext({
-    viewport: { width: 402, height: 850 }, deviceScaleFactor: 2, colorScheme: scheme,
+    // HEIGHT=2400 shows a whole screen at once: the app scrolls inside a
+    // fixed frame, so a full-page screenshot would stop at the fold.
+    viewport: { width: 402, height: Number(process.env.HEIGHT || 850) }, deviceScaleFactor: 2, colorScheme: scheme,
     reducedMotion: process.env.REDUCED ? 'reduce' : 'no-preference',
   });
 
@@ -140,20 +155,23 @@ for (const scheme of ['light', 'dark']) {
     const t = m.text();
     // The realtime socket cannot leave this sandbox; that is the network, not the app.
     if (/WebSocket|realtime/.test(t)) return;
-    if (m.type() === 'error' || /Refused to|Content Security/.test(t)) problems.push(`${scheme} console: ${t}`);
+    if (m.type() === 'error' || /Refused to|Content Security/.test(t)) problems.push(`${theme} console: ${t}`);
   });
-  page.on('pageerror', e => problems.push(`${scheme} pageerror: ${e.message}`));
+  page.on('pageerror', e => problems.push(`${theme} pageerror: ${e.message}`));
 
   await page.goto('http://localhost:4600/', { waitUntil: 'domcontentloaded' });
-  await page.evaluate(([key, value]) => localStorage.setItem(key, value),
-    ['sb-demoproject-auth-token', JSON.stringify(SESSION)]);
+  await page.evaluate(([session, family, scheme]) => {
+    localStorage.setItem('sb-demoproject-auth-token', session);
+    localStorage.setItem('habits.theme-family', family);
+    localStorage.setItem('habits.theme-mode', scheme);
+  }, [JSON.stringify(SESSION), family, scheme]);
 
   for (const [name, route] of SHOTS) {
     await page.goto('http://localhost:4600' + route, { waitUntil: 'networkidle' });
     await page.waitForTimeout(1200);
-    await page.screenshot({ path: `${OUT}/${scheme}-${name}.png` });
+    await page.screenshot({ path: `${OUT}/${theme}-${name}.png` });
     const text = await page.evaluate(() => document.body.innerText.replace(/\n+/g, ' | ').slice(0, 110));
-    console.log(`${scheme.padEnd(5)} ${name.padEnd(12)} ${text}`);
+    console.log(`${theme.padEnd(12)} ${name.padEnd(12)} ${text}`);
   }
   await ctx.close();
 }
